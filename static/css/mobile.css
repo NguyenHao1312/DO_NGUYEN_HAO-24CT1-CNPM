@@ -162,10 +162,24 @@ html, body {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   display: block;
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-4);
+  /* Custom scrollbar cho mobile */
+}
+.table-responsive::-webkit-scrollbar {
+  height: 6px;
+}
+.table-responsive::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
 }
 
 .data-table {
-  min-width: 600px; /* Ensure table logic doesn't squash too much */
+  min-width: 650px; /* Ensure table logic doesn't squash too much */
+  width: 100%;
+}
+.data-table th, .data-table td {
+  white-space: nowrap; /* Không xuống dòng làm vỡ bảng */
 }
 
 .table-container {
