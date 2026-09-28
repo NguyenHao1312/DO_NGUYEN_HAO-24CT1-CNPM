@@ -1,0 +1,294 @@
+/* mobile.css - CSS specifically for mobile and tablet devices */
+
+/* 1. Global Overflow & Anchoring */
+html, body {
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100vw;
+  position: relative;
+}
+
+.main-wrapper {
+  margin-left: 0 !important;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+/* 2. Sidebar Drawer Mode */
+.sidebar {
+  transform: translateX(-100%);
+  width: var(--sidebar-width);
+  z-index: calc(var(--z-sidebar-overlay) + 1);
+  box-shadow: 4px 0 10px rgba(0,0,0,0.1);
+}
+
+.sidebar.active {
+  transform: translateX(0);
+}
+
+.mobile-menu-toggle {
+  display: flex !important;
+  margin-right: 4px !important;
+  gap: 4px !important;
+}
+
+/* 3. Header & Navigation */
+.top-header {
+  padding: 0 4px;
+  max-width: 100vw;
+  box-sizing: border-box;
+}
+
+#realtime-clock, .header-logo > span {
+  display: none !important;
+}
+
+#header-university-display {
+  padding: 4px 8px !important;
+  margin-right: 4px !important;
+}
+#header-university-display .fa-university {
+  font-size: 0.7rem !important;
+}
+#header-university-display > div:first-child {
+  width: 24px !important;
+  height: 24px !important;
+}
+#header-university-name {
+  font-size: 0.75rem !important;
+}
+#header-university-desc {
+  font-size: 0.6rem !important;
+  max-width: 80px !important;
+}
+
+.header-left {
+  gap: 4px;
+}
+
+.search-global i {
+  left: 8px;
+  font-size: 0.8rem;
+}
+
+.search-global input {
+  width: 90px;
+  font-size: 0.75rem;
+  padding: 6px 8px 6px 24px;
+}
+.search-global input:focus {
+  width: 140px;
+}
+
+.search-box {
+  min-width: 100% !important;
+}
+
+.header-right {
+  gap: 2px;
+}
+
+/* 4. Tab & Button Downscaling */
+.tabs {
+  gap: var(--space-2);
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 5px; /* For scrollbar */
+}
+
+.tab-btn {
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.tab-btn i {
+  font-size: 1rem;
+}
+
+.btn {
+  padding: 8px 12px;
+  font-size: 0.85rem;
+}
+
+.btn-icon {
+  width: 26px;
+  height: 26px;
+  font-size: 0.8rem;
+}
+
+.page-header {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-4);
+}
+
+.page-header .btn {
+  width: 100%;
+  justify-content: center;
+}
+
+/* 5. Grid & Cards */
+.grid-cards {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
+}
+
+@media (max-width: 768px) {
+  .grid-cards, .grid-row[style] {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* 6. Form Optimization */
+.form-row {
+  flex-direction: column;
+  gap: var(--space-3) !important;
+}
+
+.form-group label {
+  font-size: 0.85rem;
+}
+
+.form-input {
+  padding: 8px 12px;
+  font-size: 0.9rem;
+}
+
+/* 7. Table Overflow Fix */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  display: block;
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-4);
+  /* Custom scrollbar cho mobile */
+}
+.table-responsive::-webkit-scrollbar {
+  height: 6px;
+}
+.table-responsive::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+.data-table {
+  min-width: 650px; /* Ensure table logic doesn't squash too much */
+  width: 100%;
+}
+.data-table th, .data-table td {
+  white-space: nowrap; /* Không xuống dòng làm vỡ bảng */
+}
+
+.table-container {
+  max-width: 100%;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+/* 8. Chart Anchoring */
+.chart-wrapper canvas {
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  max-height: 250px !important;
+}
+
+.chart-card {
+  width: 100%;
+  max-width: 100vw;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* 9. Calendar */
+.cal-left {
+  min-width: 100% !important;
+  border-right: none !important;
+  padding-right: 0 !important;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+.cal-right {
+  min-width: 100% !important;
+}
+
+/* 10. News Ticker */
+.news-ticker-container {
+  padding: 6px 10px !important;
+}
+.news-ticker-label {
+  font-size: 0.75rem !important;
+  margin-right: 6px !important;
+  padding: 2px 6px;
+}
+
+/* 11. Modals */
+.modal {
+  max-width: 95vw !important;
+  width: 95vw !important;
+  margin: var(--space-2);
+}
+
+.app-content-container {
+  padding: var(--space-3) var(--space-2) !important;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+/* Fix Login scale on very small screens */
+@media (max-width: 768px) {
+  .login-container {
+    flex-direction: column;
+    justify-content: center;
+  }
+  
+  .login-theme-switcher {
+    position: relative !important;
+    top: 0 !important;
+    right: 0 !important;
+    justify-content: flex-end !important;
+    margin-bottom: var(--space-3);
+    padding-right: var(--space-3);
+    gap: 8px;
+    width: 100%;
+  }
+  .login-theme-switcher button {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 0.9rem !important;
+  }
+  
+  .login-card {
+    margin-top: 0 !important;
+    max-width: 92vw !important;
+    padding: var(--space-4) !important;
+    max-height: 80vh;
+    overflow-y: auto;
+    margin: 0 auto !important;
+  }
+  
+  .login-header { margin-bottom: var(--space-4) !important; }
+  .role-tabs { margin-bottom: var(--space-4) !important; }
+  .login-card .form-group { margin-bottom: var(--space-3) !important; }
+  
+  .login-logo {
+    font-size: 1.6rem !important;
+  }
+}
+
+@media (max-height: 500px) {
+  .login-glass {
+    padding: var(--space-4);
+  }
+  .login-header {
+    margin-bottom: var(--space-4);
+  }
+  .login-card {
+    margin-top: 10px !important;
+    max-height: 95vh;
+  }
+}

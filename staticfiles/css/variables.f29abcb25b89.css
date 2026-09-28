@@ -1,0 +1,124 @@
+:root {
+  /* Primary - Monochromatic Blue */
+  --primary-50: #eff6ff; 
+  --primary-100: #dbeafe;
+  --primary-200: #bfdbfe;
+  --primary-300: #93c5fd;
+  --primary-400: #60a5fa;
+  --primary-500: #3b82f6; 
+  --primary-600: #2563eb; 
+  --primary-700: #1d4ed8;
+  --primary-800: #1e40af; 
+  --primary-900: #1e3a8a; 
+  --primary-950: #172554;
+
+  /* Accent - Blue */
+  --accent-50: #eff6ff;
+  --accent-100: #dbeafe;
+  --accent-500: #3b82f6;
+  --accent-600: #2563eb;
+  --accent-700: #1d4ed8;
+
+  /* Semantic Colors */
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #3b82f6;
+
+  /* ── 1. MAIN CONTENT (Light Mode) ── */
+  --bg-primary: #FFFFFF; /* White for Main Workspace */
+  --bg-secondary: #f8fafc;
+  --bg-tertiary: #f1f5f9;
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --text-tertiary: #64748B;
+  --border-color: #E2E8F0;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.05);
+
+  /* ── 2. SIDEBAR & HEADER (Always Dark Navy) ── */
+  --sidebar-bg: #0F172A; /* Dark Navy cố định cho cả 2 chế độ */
+  --sidebar-border: #1E293B; /* Viền xám tối phân tách không gian */
+  --sidebar-text: #94A3B8; /* Xám sáng đảm bảo WCAG */
+  --sidebar-text-active: #FFFFFF; /* Trắng sáng khi Active */
+  --sidebar-hover: rgba(255, 255, 255, 0.05);
+  --sidebar-active-bg: rgba(59, 130, 246, 0.15); /* Nền xanh dương opacity thấp */
+  --sidebar-active-border: #3B82F6;
+  --sidebar-width: 260px;
+  --sidebar-collapsed-width: 70px;
+
+  /* Typography */
+  --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+
+  /* Spacing */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+
+  /* Border Radius */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-base: 250ms ease;
+  --transition-slow: 350ms ease;
+
+  /* Z-Index Scale */
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-modal-backdrop: 300;
+  --z-modal: 400;
+  --z-chatbot: 450;
+  --z-sidebar-overlay: 150;
+
+  /* Glassmorphism */
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.3);
+  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+}
+
+/* ── DARK MODE THEME ── */
+[data-theme="dark"], body.dark-mode {
+  /* 1. MAIN CONTENT (Dark Mode) */
+  --bg-primary: #121212; /* Đen nhám cho nội dung chính */
+  --bg-secondary: #1E1E1E;
+  --bg-tertiary: #2C2C2C;
+  --text-primary: #F8FAFC;
+  --text-secondary: #94A3B8;
+  --text-tertiary: #64748B;
+  --border-color: #333333;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.5);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.5);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.5);
+
+  /* 2. SIDEBAR & HEADER (Dark Mode) */
+  --sidebar-bg: #0F172A; /* Dark Navy - Tránh dính nền với Main Content */
+  --sidebar-border: #1E293B; /* Viền xám tối phân tách không gian */
+  --sidebar-text: #94A3B8; /* Xám sáng đảm bảo WCAG */
+  --sidebar-text-active: #FFFFFF; /* Trắng sáng khi Active */
+  --sidebar-hover: rgba(255, 255, 255, 0.05);
+  --sidebar-active-bg: rgba(59, 130, 246, 0.15); /* Nền xanh dương opacity thấp */
+  --sidebar-active-border: #3B82F6;
+
+  --glass-bg: rgba(15, 23, 42, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.05);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+}
