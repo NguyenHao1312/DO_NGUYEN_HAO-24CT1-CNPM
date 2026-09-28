@@ -9,13 +9,13 @@ RUN apt-get update && apt-get install -y \
     && ACCEPT_EULA=Y apt-get install -y msodbcsql17 \
     && apt-get clean
 
+# ... (giữ nguyên các đoạn trên)
 WORKDIR /app
 COPY requirements.txt /app/
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . /app/
 
 RUN python manage.py collectstatic --noinput
-RUN python manage.py migrate
 
-# Khởi chạy server bằng Gunicorn
-CMD ["gunicorn", "core.wsgi:application", "--bind", "0.0.0.0:8000"]
+# Chạy migrate lúc khởi động server, sau đó bật Gunicorn
+CMD ["sh", "-c", "python manage.py migrate && gunicorn core.wsgi:application --bind 0.0.0.0:8000"]
