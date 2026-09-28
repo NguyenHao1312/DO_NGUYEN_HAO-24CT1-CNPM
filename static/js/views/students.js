@@ -394,24 +394,40 @@ const StudentsView = {
       Utils.toast(t('error') + ': Permission denied', 'error');
       return;
     }
-    Utils.showConfirm(t('confirm_delete'), () => {
+    const doDelete = () => {
       const s = Database.students.getById(id);
       Database.students.delete(id);
       Utils.logActivity('deleted', 'student', id, `Xóa sinh viên ${s ? s.name : ''}`);
-      Utils.toast(t('delete_student_success') || 'Đã xoá sinh viên thành công!', 'success');
       
-      // Prevent empty page if deleting last item
       const totalItems = Database.students.count();
       if ((this.currentPage - 1) * this.perPage >= totalItems && this.currentPage > 1) {
         this.currentPage--;
       }
       this.loadData();
-      
-      // Auto-reload as requested
-      setTimeout(() => {
-        window.location.reload();
-      }, 800);
-    });
+    };
+
+    if (typeof Swal !== 'undefined') {
+      Swal.fire({
+        title: t('confirm_delete') || 'Xác nhận xoá?',
+        text: 'Sinh viên và toàn bộ điểm số liên quan sẽ bị xoá vĩnh viễn!',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: t('delete') || 'Xoá',
+        cancelButtonText: t('cancel') || 'Huỷ',
+      }).then((result) => {
+        if (result.isConfirmed) {
+          doDelete();
+          Swal.fire({ icon: 'success', title: 'Đã xoá!', timer: 1500, showConfirmButton: false });
+        }
+      });
+    } else {
+      Utils.showConfirm(t('confirm_delete'), () => {
+        doDelete();
+        Utils.toast(t('delete_student_success') || 'Đã xoá sinh viên thành công!', 'success');
+      });
+    }
   },
 
   showDetailModal(id) {

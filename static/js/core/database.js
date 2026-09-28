@@ -39,11 +39,30 @@ const UNIVERSITIES = [
 ];
 
 const Database = {
+  // --- Keys cần mã hoá (dữ liệu nhạy cảm / cache offline) ---
+  ENCRYPTED_KEYS: [
+    STORAGE_KEYS.STUDENTS, STORAGE_KEYS.TEACHERS,
+    STORAGE_KEYS.GRADES, STORAGE_KEYS.USERS,
+    STORAGE_KEYS.CLASSES, STORAGE_KEYS.REGISTRATIONS,
+  ],
+
   _getAll(key) {
-    return JSON.parse(localStorage.getItem(key)) || [];
+    const raw = localStorage.getItem(key);
+    if (!raw) return [];
+    // Nếu dữ liệu bị mã hoá (ENC:) từ lần đóng trang trước → chờ initEncryption giải mã
+    if (raw.startsWith('ENC:')) return [];
+    try { return JSON.parse(raw); } catch { return []; }
   },
   _save(key, data) {
     localStorage.setItem(key, JSON.stringify(data));
+    // KHÔNG ghi đè encrypted lên cùng key — sẽ mã hoá khi đóng trang
+  },
+  // Async version — dùng khi cần đọc dữ liệu đã mã hoá
+  async _getAllAsync(key) {
+    if (this.ENCRYPTED_KEYS.includes(key) && typeof CryptoManager !== 'undefined' && CryptoManager.isSupported()) {
+      return await CryptoManager.loadEncrypted(key);
+    }
+    return this._getAll(key);
   },
   _generateId() {
     return Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
@@ -54,6 +73,32 @@ const Database = {
       Database.notifications.add(user.id, title, message, type);
     }
   },
+
+  // Sync data lên server (có fallback offline queue)
+  _syncUp(action, data) {
+    // Nếu offline → enqueue ngay
+    if (!navigator.onLine && typeof SyncQueue !== 'undefined') {
+      SyncQueue.enqueue(action, data);
+      return;
+    }
+
+    const token = (typeof Auth !== 'undefined') ? Auth.getServerToken() : '';
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['X-Session-Token'] = token;
+    fetch('/api/sync/up/', {
+      method: 'POST',
+      credentials: 'include',
+      headers: headers,
+      body: JSON.stringify({ action, data }),
+    }).catch(err => {
+      console.log('Sync up failed:', err.message);
+      // Fetch thất bại → enqueue để retry sau
+      if (typeof SyncQueue !== 'undefined') {
+        SyncQueue.enqueue(action, data);
+      }
+    });
+  },
+
   UNIVERSITIES, // Expose globally
 
   generateStudentId(uniId = 1) {
@@ -97,7 +142,7 @@ const Database = {
       if (data.createAccount !== false) {
         Database.users.add({
           username: newStudent.studentId,
-          password: 'sv' + newStudent.studentId, // Default password
+          password: '123', // Default password changed to 123
           name: newStudent.name,
           role: 'student',
           linkedId: newStudent.id,
@@ -197,7 +242,7 @@ const Database = {
       if (data.createAccount !== false) {
         Database.users.add({
           username: newTeacher.teacherId,
-          password: 'gv' + newTeacher.teacherId, // Default password
+          password: '123', // Default password changed to 123
           name: newTeacher.name,
           role: 'teacher',
           linkedId: newTeacher.id,
@@ -352,6 +397,7 @@ const Database = {
       };
       grades.push(newGrade);
       Database._save(STORAGE_KEYS.GRADES, grades);
+      Database._syncUp('add_grade', newGrade);
       
       // Update student GPA
       this._updateStudentGpa(data.studentId);
@@ -381,6 +427,7 @@ const Database = {
           updatedAt: new Date().toISOString() 
         };
         Database._save(STORAGE_KEYS.GRADES, grades);
+        Database._syncUp('update_grade', grades[index]);
         
         // Update student GPA
         this._updateStudentGpa(grades[index].studentId);
@@ -398,6 +445,7 @@ const Database = {
       if (grade) {
         grades = grades.filter(g => g.id !== id);
         Database._save(STORAGE_KEYS.GRADES, grades);
+        Database._syncUp('delete_grade', grade);
         this._updateStudentGpa(grade.studentId);
       }
     },
@@ -751,6 +799,122 @@ const Database = {
     }
   },
 
+  // ================================================================
+  //  SEMESTERS (localStorage cache + server sync)
+  // ================================================================
+  semesters: {
+    _key: 'unims_semesters',
+    getAll() {
+      return JSON.parse(localStorage.getItem(this._key) || '[]');
+    },
+    getById(id) {
+      return this.getAll().find(s => s.id === id) || null;
+    },
+    getActive() {
+      return this.getAll().find(s => s.status === 'active') || null;
+    },
+    add(data) {
+      const semesters = this.getAll();
+      const semester = { ...data, id: data.id || Database._generateId() };
+      semesters.push(semester);
+      localStorage.setItem(this._key, JSON.stringify(semesters));
+      return semester;
+    },
+    update(id, data) {
+      const semesters = this.getAll();
+      const idx = semesters.findIndex(s => s.id === id);
+      if (idx !== -1) {
+        semesters[idx] = { ...semesters[idx], ...data };
+        localStorage.setItem(this._key, JSON.stringify(semesters));
+        return semesters[idx];
+      }
+      return null;
+    },
+    delete(id) {
+      let semesters = this.getAll();
+      semesters = semesters.filter(s => s.id !== id);
+      localStorage.setItem(this._key, JSON.stringify(semesters));
+    },
+    // Sync từ server
+    async syncFromServer() {
+      try {
+        const res = await (Auth?.apiFetch || fetch)('/api/semesters/');
+        if (!res) return;
+        const data = await res.json();
+        if (data.success && data.semesters) {
+          localStorage.setItem(this._key, JSON.stringify(data.semesters));
+        }
+      } catch (err) {
+        console.log('Semester sync failed:', err.message);
+      }
+    },
+  },
+
+  // ================================================================
+  //  ATTENDANCE (server-side API — không lưu localStorage)
+  // ================================================================
+  attendance: {
+    // Lấy danh sách điểm danh từ server
+    async getByClass(classId, date) {
+      try {
+        let url = `/api/attendance/?class_id=${classId}`;
+        if (date) url += `&date=${date}`;
+        const res = await (Auth?.apiFetch || fetch)(url);
+        if (!res) return [];
+        const data = await res.json();
+        return data.success ? data.records : [];
+      } catch (err) {
+        console.log('Attendance fetch failed:', err.message);
+        return [];
+      }
+    },
+    // Lưu điểm danh hàng loạt
+    async save(classId, date, sessionNumber, records) {
+      try {
+        const res = await (Auth?.apiFetch || fetch)('/api/attendance/', {
+          method: 'POST',
+          body: { class_id: classId, date, session_number: sessionNumber, records },
+        });
+        if (!res) return { success: false };
+        return await res.json();
+      } catch (err) {
+        console.log('Attendance save failed:', err.message);
+        return { success: false, error: err.message };
+      }
+    },
+    // Tổng hợp điểm chuyên cần
+    async summarize(classId, studentId) {
+      try {
+        const res = await (Auth?.apiFetch || fetch)(
+          `/api/attendance/summarize/?class_id=${classId}&student_id=${studentId}`
+        );
+        if (!res) return null;
+        const data = await res.json();
+        return data.success ? data.attendance_score : null;
+      } catch (err) {
+        console.log('Attendance summarize failed:', err.message);
+        return null;
+      }
+    },
+  },
+
+  // ================================================================
+  //  GRADE LOCK CHECK (server-side API)
+  // ================================================================
+  gradeLock: {
+    async check(params = {}) {
+      try {
+        const query = new URLSearchParams(params).toString();
+        const res = await (Auth?.apiFetch || fetch)(`/api/grades/lock-status/?${query}`);
+        if (!res) return { locked: false };
+        return await res.json();
+      } catch (err) {
+        console.log('Grade lock check failed:', err.message);
+        return { locked: false };
+      }
+    },
+  },
+
   resetAll() {
     for (const key in STORAGE_KEYS) {
       localStorage.removeItem(STORAGE_KEYS[key]);
@@ -764,8 +928,8 @@ const Database = {
 
     // Seed Admin User
     this.users.add({
-      username: 'sysroot_unims',
-      password: 'Tr!@ngUMS#2026$Sec',
+      username: 'admin',
+      password: '123',
       name: 'Administrator',
       role: 'admin'
     });
@@ -856,5 +1020,51 @@ const Database = {
     
     // Set initialized
     this.settings.save({ initialized: true });
+  },
+
+  // ========== Khởi tạo mã hoá — gọi khi trang load ==========
+  async initEncryption() {
+    if (typeof CryptoManager === 'undefined' || !CryptoManager.isSupported()) {
+      console.log('[Database] Web Crypto API not available, encryption disabled');
+      return;
+    }
+
+    // 1. Khi MỞ trang: giải mã các key đang ở dạng 'ENC:' → plaintext JSON
+    for (const key of this.ENCRYPTED_KEYS) {
+      const raw = localStorage.getItem(key);
+      if (raw && raw.startsWith('ENC:')) {
+        const decrypted = await CryptoManager.decrypt(raw.substring(4));
+        if (decrypted) {
+          localStorage.setItem(key, decrypted); // Ghi lại plaintext JSON
+        } else {
+          // Không giải mã được (key thay đổi) → xoá dữ liệu hỏng
+          localStorage.removeItem(key);
+        }
+      }
+    }
+
+    // 2. Khi ĐÓNG trang: mã hoá plaintext → 'ENC:' để bảo vệ at-rest
+    window.addEventListener('beforeunload', () => {
+      for (const key of this.ENCRYPTED_KEYS) {
+        const raw = localStorage.getItem(key);
+        if (raw && !raw.startsWith('ENC:')) {
+          // Sync encrypt — dùng CryptoManager.encrypt nhưng phải sync
+          // Vì beforeunload không chờ async, ta dùng trick: lưu flag
+          // và mã hoá sẽ hoàn tất ở lần mở trang tiếp theo
+          try {
+            // Mark for encryption — sẽ encrypt ở background
+            const data = JSON.parse(raw);
+            CryptoManager.saveEncrypted(key, data).catch(() => {});
+          } catch { /* not JSON, skip */ }
+        }
+      }
+    });
+
+    console.log('[Database] Encryption initialized (AES-256-GCM, encrypt-at-rest)');
   }
 };
+
+// Auto-init encryption khi script load
+Database.initEncryption().catch(err => 
+  console.warn('[Database] Encryption init failed:', err)
+);

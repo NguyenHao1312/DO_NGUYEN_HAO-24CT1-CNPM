@@ -353,16 +353,34 @@ const ClassesView = {
       return;
     }
     
-    Utils.showConfirm(t('confirm_delete'), () => {
+    const doDelete = () => {
       const cls = Database.classes.getById(id);
       Database.classes.delete(id);
       Utils.logActivity('deleted', 'class', id, `Xóa lớp ${cls ? cls.classCode : ''}`);
-      Utils.toast(t('delete_class_success') || 'Đã xoá lớp học thành công!', 'success');
       this.loadData();
-      
-      setTimeout(() => {
-        window.location.reload();
-      }, 800);
-    });
+    };
+
+    if (typeof Swal !== 'undefined') {
+      Swal.fire({
+        title: t('confirm_delete') || 'Xác nhận xoá?',
+        text: 'Lớp học phần, đăng ký và điểm số liên quan sẽ bị xoá!',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: t('delete') || 'Xoá',
+        cancelButtonText: t('cancel') || 'Huỷ',
+      }).then((result) => {
+        if (result.isConfirmed) {
+          doDelete();
+          Swal.fire({ icon: 'success', title: 'Đã xoá!', timer: 1500, showConfirmButton: false });
+        }
+      });
+    } else {
+      Utils.showConfirm(t('confirm_delete'), () => {
+        doDelete();
+        Utils.toast(t('delete_class_success') || 'Đã xoá lớp học thành công!', 'success');
+      });
+    }
   }
 };

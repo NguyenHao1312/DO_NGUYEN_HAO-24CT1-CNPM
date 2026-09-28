@@ -5,7 +5,8 @@ const GradesView = {
   searchQuery: '',
   filters: {
     classId: '',
-    classification: ''
+    classification: '',
+    semester: ''
   },
 
   render() {
@@ -20,6 +21,13 @@ const GradesView = {
     const classes = Database.classes.getAll();
     const classOptions = classes.map(c => `<option value="${c.id}">${c.classCode} - ${t(c.name)}</option>`).join('');
     const isStudent = Auth.isStudent();
+
+    // Build semester options from classes data
+    const semesterSet = new Set();
+    classes.forEach(c => { if (c.semester) semesterSet.add(c.semester); });
+    const semesterOptions = [...semesterSet].sort().map(s =>
+      `<option value="${s}">${s}</option>`
+    ).join('');
 
     return `
       <div class="page-header">
@@ -48,6 +56,10 @@ const GradesView = {
           <input type="text" id="search-grade" class="form-input" placeholder="${t('search_placeholder')}" style="padding-left: 2.5rem; width: 100%;">
         </div>
         <div class="filter-group" style="display: flex; gap: var(--space-2); flex-wrap: wrap;">
+          <select id="filter-semester" class="form-input" style="width: auto; min-width: 170px;">
+            <option value="">${t('all_semesters') || '-- Tất cả học kì --'}</option>
+            ${semesterOptions}
+          </select>
           <select id="filter-class" class="form-input" style="width: auto; min-width: 150px;">
             <option value="">${t('-- Tất cả lớp --')}</option>
             ${classOptions}
@@ -288,6 +300,17 @@ const GradesView = {
       });
     }
 
+    // Lọc theo học kì
+    const filterSemester = document.getElementById('filter-semester');
+    if (filterSemester) {
+      filterSemester.addEventListener('change', (e) => {
+        this.filters.semester = e.target.value;
+        this.currentPage = 1;
+        this.loadData();
+        this.renderSummary();
+      });
+    }
+
     // Lọc theo xếp loại
     const filterClassif = document.getElementById('filter-classification');
     if (filterClassif) {
@@ -329,6 +352,14 @@ const GradesView = {
     // Lọc theo classId
     if (this.filters.classId) {
       items = items.filter(g => g.classId === this.filters.classId);
+    }
+
+    // Lọc theo học kì (semester)
+    if (this.filters.semester) {
+      const semClasses = Database.classes.getAll()
+        .filter(c => c.semester === this.filters.semester)
+        .map(c => c.id);
+      items = items.filter(g => semClasses.includes(g.classId));
     }
 
     // Lọc theo xếp loại
@@ -552,7 +583,7 @@ const GradesView = {
     document.getElementById('btn-save-grade').addEventListener('click', () => this.saveGrade());
   },
 
-    saveGrade() {
+    async saveGrade() {
       if (typeof Auth !== 'undefined' && !(Auth.isAdmin() || Auth.isTeacher())) {
         Utils.toast(t('error') + ': Permission denied', 'error');
         return;
@@ -575,6 +606,48 @@ const GradesView = {
     if (midterm < 0 || midterm > 10 || final < 0 || final > 10 || assignment < 0 || assignment > 10) {
       Utils.toast(t('error') + ': ' + (t('grade_range_error') || 'Điểm phải từ 0 đến 10'), 'error');
       return;
+    }
+
+    // === Grade Lock Check (Server-side) ===
+    try {
+      const lockStatus = await Database.gradeLock.check({ class_id: classId, student_id: studentId });
+      if (lockStatus.locked) {
+        // Nếu pre_exam lock: chỉ cho nhập điểm cuối kì
+        if (lockStatus.lock_type === 'pre_exam' && !id) {
+          // Cho phép nhập final nếu chưa có grade
+        } else if (lockStatus.lock_type === 'pre_exam' && id) {
+          // Cho phép sửa final, khoá assignment + midterm
+          const existingGrade = Database.grades.getAll().find(g => g.id === id);
+          if (existingGrade && (assignment !== existingGrade.assignment || midterm !== existingGrade.midterm)) {
+            if (typeof Swal !== 'undefined') {
+              Swal.fire({
+                icon: 'warning',
+                title: 'Điểm thành phần đã bị khoá',
+                text: lockStatus.message,
+                confirmButtonText: 'Đã hiểu',
+              });
+            } else {
+              Utils.toast(lockStatus.message, 'error');
+            }
+            return;
+          }
+        } else if (lockStatus.lock_type !== 'pre_exam') {
+          // Mọi lock type khác: chặn hoàn toàn
+          if (typeof Swal !== 'undefined') {
+            Swal.fire({
+              icon: 'error',
+              title: 'Bảng điểm đã bị khoá',
+              text: lockStatus.message,
+              confirmButtonText: 'Đã hiểu',
+            });
+          } else {
+            Utils.toast(lockStatus.message, 'error');
+          }
+          return;
+        }
+      }
+    } catch (err) {
+      console.log('Lock check failed, proceeding:', err.message);
     }
 
     const gradeData = {
@@ -614,15 +687,38 @@ const GradesView = {
       return;
     }
     
-    Utils.showConfirm(t('confirm_delete'), () => {
-      Database.grades.delete(id);
-      Utils.toast(t('success'), 'success');
-      this.loadData();
-      this.renderSummary();
-      
-      setTimeout(() => {
-        window.location.reload();
-      }, 800);
-    });
+    // SweetAlert2 confirmation (fallback to Utils.showConfirm)
+    if (typeof Swal !== 'undefined') {
+      Swal.fire({
+        title: t('confirm_delete') || 'Xác nhận xoá?',
+        text: 'Hành động này không thể hoàn tác!',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: t('delete') || 'Xoá',
+        cancelButtonText: t('cancel') || 'Huỷ',
+      }).then((result) => {
+        if (result.isConfirmed) {
+          Database.grades.delete(id);
+          Swal.fire({
+            icon: 'success',
+            title: 'Đã xoá!',
+            text: 'Bản ghi điểm đã được xoá thành công.',
+            timer: 1500,
+            showConfirmButton: false,
+          });
+          this.loadData();
+          this.renderSummary();
+        }
+      });
+    } else {
+      Utils.showConfirm(t('confirm_delete'), () => {
+        Database.grades.delete(id);
+        Utils.toast(t('success'), 'success');
+        this.loadData();
+        this.renderSummary();
+      });
+    }
   }
 };

@@ -1,6 +1,20 @@
 // review.js — Standalone Review/Preview Page Logic
 // No dependencies on app.js, auth.js, or other view files
 
+const UNIVERSITIES = [
+  { id: 1, name: 'Đại học Bách Khoa', enName: 'University of Science and Technology', desc: 'Đại học kỹ thuật hàng đầu miền Trung', shortName: 'DUT', feePerCredit: 385000, increaseRate: 10 },
+  { id: 2, name: 'Đại học Kinh tế', enName: 'University of Economics', desc: 'Đào tạo kinh tế, quản trị kinh doanh', shortName: 'DUE', feePerCredit: 425600, increaseRate: 12 },
+  { id: 3, name: 'Đại học Sư phạm', enName: 'University of Education', desc: 'Trung tâm đào tạo giáo viên và khoa học cơ bản', shortName: 'UED', feePerCredit: 320000, increaseRate: 0 },
+  { id: 4, name: 'Đại học Ngoại ngữ', enName: 'University of Foreign Language Studies', desc: 'Nơi khởi nguồn ngôn ngữ và văn hóa', shortName: 'UFLS', feePerCredit: 340000, increaseRate: 0 },
+  { id: 5, name: 'Đại học FPT Đà Nẵng', enName: 'FPT University Da Nang', desc: 'Trường đại học của doanh nghiệp (Tư thục)', shortName: 'FPT', feePerCredit: 1296000, increaseRate: 8 },
+  { id: 6, name: 'Đại học Duy Tân', enName: 'Duy Tan University', desc: 'Đại học tư thục lớn nhất miền Trung (Tư thục)', shortName: 'DTU', feePerCredit: 977500, increaseRate: 15 },
+  { id: 7, name: 'Đại học Đông Á', enName: 'Dong A University', desc: 'Đầu tư phát triển toàn diện (Tư thục)', shortName: 'UDA', feePerCredit: 817500, increaseRate: 9 },
+  { id: 8, name: 'Đại học Kiến trúc Đà Nẵng', enName: 'Da Nang Architecture University', desc: 'Kiến trúc, Mỹ thuật và Xây dựng (Tư thục)', shortName: 'DAU', feePerCredit: 650000, increaseRate: 0 },
+  { id: 9, name: 'Đại học Sư phạm Kỹ thuật', enName: 'University of Technology and Education', desc: 'Kỹ thuật thực hành và Ứng dụng', shortName: 'UTE', feePerCredit: 410400, increaseRate: 14 },
+  { id: 10, name: 'Đại học CNTT & TT Việt - Hàn', enName: 'Vietnam-Korea University of IT & C', desc: 'Công nghệ Thông tin và Kinh tế số', shortName: 'VKU', feePerCredit: 444000, increaseRate: 11 },
+  { id: 11, name: 'Khoa Y Dược', enName: 'School of Medicine and Pharmacy', desc: 'Đào tạo Y bác sĩ chất lượng cao', shortName: 'UMP', feePerCredit: 678000, increaseRate: 13 }
+];
+
 const ReviewApp = {
   currentTab: 'home',
   _chatHistory: [],
@@ -181,19 +195,52 @@ const ReviewApp = {
     }
   },
 
+  showToast(message, type) {
+    if (!type) type = 'success';
+    var container = document.getElementById('rv-toast-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'rv-toast-container';
+      container.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 10px; pointer-events: none;';
+      document.body.appendChild(container);
+    }
+    var bgColor = type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6';
+    var iconClass = type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle';
+    var toast = document.createElement('div');
+    toast.style.cssText = 'pointer-events: auto; background: ' + bgColor + '; color: white; padding: 12px 20px; border-radius: 8px; font-weight: 500; font-size: 0.95rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); transform: translateY(-20px); opacity: 0; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);';
+    toast.innerHTML = '<i class="fas ' + iconClass + '" style="margin-right: 8px;"></i>' + message;
+    container.appendChild(toast);
+    requestAnimationFrame(function() {
+      toast.style.transform = 'translateY(0)';
+      toast.style.opacity = '1';
+    });
+    setTimeout(function() {
+      toast.style.transform = 'translateY(-20px)';
+      toast.style.opacity = '0';
+      setTimeout(function() { toast.remove(); }, 300);
+    }, 3000);
+  },
+
   init() {
+    this.initScrollQoL(); // MUST run before renderContent to initialize revealObserver
     this.renderTabs();
     this.renderContent();
     this.bindEvents();
     this.initClock();
     this.updateTranslations();
-    this.initScrollQoL();
+
+    if (window.location.hash === '#login') {
+      setTimeout(() => this.showLoginModal(), 300);
+    }
   },
 
   initScrollQoL() {
     const progressBar = document.getElementById('rv-progress-bar');
     const scrollTopBtn = document.getElementById('rv-scroll-top');
     const reviewContent = document.getElementById('review-content');
+
+    let lastScrollTop = 0;
+    const reviewHeader = document.querySelector('.review-header');
 
     // ✅ Reading progress bar + scroll-to-top visibility
     const onScroll = () => {
@@ -221,8 +268,15 @@ const ReviewApp = {
       // ✅ Scroll spy — highlight active nav tab based on visible section
       this.updateActiveNavByScroll(scrollTop);
       
-      // ✅ Scroll scrubbing for uni cards
-      this.updateScrollScrub();
+      // Smart Header logic
+      if (reviewHeader) {
+        if (scrollTop > 50 && scrollTop > lastScrollTop) {
+          document.body.classList.add('smart-header-hidden');
+        } else if (scrollTop < lastScrollTop) {
+          document.body.classList.remove('smart-header-hidden');
+        }
+      }
+      lastScrollTop = Math.max(0, scrollTop); // For Mobile or negative scrolling
     };
 
     if (reviewContent) {
@@ -244,10 +298,11 @@ const ReviewApp = {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           entry.target.classList.add('active');
-          observer.unobserve(entry.target);
+        } else {
+          entry.target.classList.remove('active');
         }
       });
-    }, { threshold: 0.1, rootMargin: "0px 0px -50px 0px" });
+    }, { threshold: 0 });
 
     // Expose observer to the instance so newly rendered items can be observed
     this.revealObserver = observer;
@@ -263,41 +318,6 @@ const ReviewApp = {
     });
   },
 
-  updateScrollScrub() {
-    const cards = document.querySelectorAll('.rv-uni-item');
-    if (!cards.length) return;
-    
-    const windowHeight = window.innerHeight || document.documentElement.clientHeight;
-    
-    cards.forEach((card, idx) => {
-      const rect = card.getBoundingClientRect();
-      
-      // Calculate start and end trigger points
-      // Start revealing when the top of the card is slightly above the bottom of the viewport
-      const start = windowHeight - 20; 
-      // Fully revealed when it scrolls up by 150px
-      const end = windowHeight - 170;
-      
-      let progress = (start - rect.top) / (start - end);
-      
-      // Clamp between 0 and 1
-      if (progress < 0) progress = 0;
-      if (progress > 1) progress = 1;
-      
-      if (progress === 1) {
-        // Fully revealed: remove inline styles so CSS hover and transitions work
-        card.style.transition = '';
-        card.style.transitionDelay = '0ms'; // Remove reveal delay so hover is instant
-        card.style.opacity = '';
-        card.style.transform = '';
-      } else {
-        // Scrubbing: override CSS transitions for instant manual scrubbing
-        card.style.transition = 'none';
-        card.style.opacity = progress;
-        card.style.transform = `translateY(${(1 - progress) * 50}px)`;
-      }
-    });
-  },
 
   initClock() {
     const timeEl = document.getElementById('rv-time');
@@ -360,9 +380,12 @@ const ReviewApp = {
     const content = document.getElementById('review-content');
     if (!content) return;
     
-    // Add fade-in reset by cloning and replacing
-    const newContent = content.cloneNode(false);
-    content.parentNode.replaceChild(newContent, content);
+    // Reset fade-in animation safely without destroying DOM node
+    content.style.animation = 'none';
+    void content.offsetWidth; // trigger reflow
+    content.style.animation = 'rvFadeIn 0.3s ease';
+    
+    const newContent = content;
 
     const views = {
       home:         () => this.renderHome(),
@@ -378,17 +401,10 @@ const ReviewApp = {
     
     // Fetch news dynamically if on home tab
     if (this.currentTab === 'home') {
-      this.fetchRealNews().then(newsArray => {
-        const grid = document.getElementById('rv-home-news-grid');
-        if (grid) {
-          this._mockNews = newsArray; // Store for modal reference
-          grid.innerHTML = newsArray.slice(0, 3).map((news, idx) => this._newsCard(news, idx)).join('');
-          
-          if (this.revealObserver) {
-            grid.querySelectorAll('.reveal').forEach(el => this.revealObserver.observe(el));
-          }
-        }
-      });
+      const grid = document.getElementById('rv-home-news-grid');
+      if (grid && this.revealObserver) {
+        grid.querySelectorAll('.reveal').forEach(el => this.revealObserver.observe(el));
+      }
     }
 
     // Attach IntersectionObserver for Scroll Reveal on static elements
@@ -406,12 +422,40 @@ const ReviewApp = {
     requestAnimationFrame(() => {
       newContent.style.transition = 'opacity 0.3s ease';
       newContent.style.opacity = '1';
-      this.updateScrollScrub();
     });
   },
 
   // ── HOME TAB (Trang chủ) ──
   renderHome() {
+    const newsData = [
+      {
+        title: 'Nhiều trường Đại học công bố phương án tuyển sinh 2026',
+        desc: 'Xu hướng xét tuyển kết hợp chứng chỉ quốc tế và điểm thi đánh giá năng lực tiếp tục tăng mạnh tại các trường Đại học trên cả nước.',
+        source: 'VNExpress Giáo dục',
+        url: 'https://vnexpress.net/giao-duc',
+        time: '2 giờ trước',
+        imgUrl: '/static/assets/logos/BGD.jfif'
+      },
+      {
+        title: 'Bộ GD&ĐT hướng dẫn triển khai nhiệm vụ năm học mới 2026-2027',
+        desc: 'Tập trung nâng cao chất lượng giáo dục đại học, đẩy mạnh chuyển đổi số trong quản lý và đào tạo nguồn nhân lực chất lượng cao.',
+        source: 'Bộ GD&ĐT',
+        url: 'https://moet.gov.vn',
+        time: '5 giờ trước',
+        imgUrl: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800&q=80'
+      },
+      {
+        title: 'Chính sách hỗ trợ tín dụng sinh viên và học bổng năm 2026',
+        desc: 'Thủ tướng phê duyệt gói hỗ trợ lãi suất 0% cho sinh viên khối ngành sư phạm, kỹ thuật và công nghệ thông tin trên toàn quốc.',
+        source: 'Dân Trí Giáo dục',
+        url: 'https://dantri.com.vn/giao-duc',
+        time: 'Hôm qua',
+        imgUrl: 'https://images.unsplash.com/photo-1577412647305-991150c7d163?w=800&q=80'
+      }
+    ];
+
+    const newsHtml = newsData.map((n, i) => this._newsCard(n, i)).join('');
+
     return `
       <!-- Ticker Tuyển sinh -->
       <div class="rv-ticker-wrap rv-interactive">
@@ -433,7 +477,7 @@ const ReviewApp = {
       </div>
 
       <div class="rv-news-grid" id="rv-home-news-grid">
-        <div style="text-align: center; color: var(--text-secondary); width: 100%;"><i class="fas fa-spinner fa-spin"></i> Đang tải tin tức từ Google News... / Loading news...</div>
+        ${newsHtml}
       </div>
 
       <!-- Liên kết tĩnh (Static Links) -->
@@ -473,7 +517,91 @@ const ReviewApp = {
           </div>
         </a>
       </div>
-      
+
+      <!-- Section 1: Data Highlights -->
+      <section class="rv-stats-strip reveal" style="background: linear-gradient(135deg, var(--primary-800), var(--primary-900)); color: #fff; border-radius: var(--radius-lg); padding: var(--space-8); margin-bottom: var(--space-8); display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-6); text-align: center; box-shadow: var(--shadow-lg);">
+        <div>
+          <div style="font-size: 2.5rem; font-weight: 800; color: var(--primary-300); margin-bottom: 8px;">1.2M+</div>
+          <div style="font-size: 1.05rem; opacity: 0.9;">Số lượng học sinh 2026</div>
+        </div>
+        <div>
+          <div style="font-size: 2.5rem; font-weight: 800; color: var(--success); margin-bottom: 8px;">95.6%</div>
+          <div style="font-size: 1.05rem; opacity: 0.9;">Tỷ lệ đậu Đại học</div>
+        </div>
+        <div>
+          <div style="font-size: 2.5rem; font-weight: 800; color: var(--warning); margin-bottom: 8px;">680K+</div>
+          <div style="font-size: 1.05rem; opacity: 0.9;">Tổng chỉ tiêu tuyển sinh</div>
+        </div>
+      </section>
+
+      <!-- Section 2: Admission Quotas -->
+      <section style="margin-bottom: var(--space-8);">
+        <div style="margin-bottom: var(--space-5); text-align: center;">
+          <h2 style="font-size: 1.8rem; font-weight: 800; color: var(--text-primary); margin-bottom: 8px;">Thông tin Chỉ tiêu các Trường</h2>
+          <p style="font-size: 1.05rem; color: var(--text-secondary);">Dự kiến chỉ tiêu tuyển sinh năm 2026 của các trường Top đầu</p>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--space-5);">
+          <div class="rv-news-card reveal" style="padding: var(--space-5); text-align: center; background: #fff;">
+            <div style="width: 80px; height: 80px; margin: 0 auto var(--space-4); background: url('https://upload.wikimedia.org/wikipedia/commons/2/2c/Toa_S_DUT.jpg') center/cover; border-radius: 50%;"></div>
+            <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--primary-700); margin-bottom: 8px;">Đại học Bách Khoa</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 16px;">Kỹ thuật, Công nghệ & IT</p>
+            <div style="font-size: 1.5rem; font-weight: 800; color: var(--success);">4,500 <span style="font-size: 0.9rem; font-weight: 500; color: var(--text-tertiary);">chỉ tiêu</span></div>
+          </div>
+          <div class="rv-news-card reveal" style="padding: var(--space-5); text-align: center; background: #fff; transition-delay: 100ms;">
+            <div style="width: 80px; height: 80px; margin: 0 auto var(--space-4); background: url('https://upload.wikimedia.org/wikipedia/commons/4/49/Logo_DUE.jpg') center/cover; border-radius: 50%;"></div>
+            <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--primary-700); margin-bottom: 8px;">Đại học Kinh tế</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 16px;">Kinh tế, Quản trị & Marketing</p>
+            <div style="font-size: 1.5rem; font-weight: 800; color: var(--success);">3,200 <span style="font-size: 0.9rem; font-weight: 500; color: var(--text-tertiary);">chỉ tiêu</span></div>
+          </div>
+          <div class="rv-news-card reveal" style="padding: var(--space-5); text-align: center; background: #fff; transition-delay: 200ms;">
+            <div style="width: 80px; height: 80px; margin: 0 auto var(--space-4); background: url('https://images.unsplash.com/photo-1577412647305-991150c7d163?w=800&q=80') center/cover; border-radius: 50%;"></div>
+            <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--primary-700); margin-bottom: 8px;">Đại học Sư phạm</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 16px;">Giáo dục, Khoa học Tự nhiên & Xã hội</p>
+            <div style="font-size: 1.5rem; font-weight: 800; color: var(--success);">2,800 <span style="font-size: 0.9rem; font-weight: 500; color: var(--text-tertiary);">chỉ tiêu</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 3: Gallery / Info Block -->
+      <section style="margin-bottom: var(--space-8);">
+        <div style="margin-bottom: var(--space-6); text-align: center;">
+          <h2 style="font-size: 1.8rem; font-weight: 800; color: var(--text-primary); margin-bottom: 8px;">Hành trang & Định hướng</h2>
+          <p style="font-size: 1.05rem; color: var(--text-secondary);">Chuẩn bị tốt nhất cho chặng đường Đại học phía trước</p>
+        </div>
+        
+        <div style="display: flex; flex-direction: column; gap: var(--space-6);">
+          <div class="reveal" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--space-6); align-items: center;">
+            <div style="border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-md);">
+              <img src="/static/assets/logos/MTHT.jfif" alt="Môi trường học tập" style="width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block;" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1546410531-df4cb71576ac?w=800&q=80';">
+            </div>
+            <div>
+              <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--primary-600); margin-bottom: 12px;">Môi trường học tập hiện đại</h3>
+              <p style="color: var(--text-secondary); font-size: 1.05rem; line-height: 1.6; margin-bottom: 16px;">Trải nghiệm không gian học thuật tiên tiến với trang thiết bị đầy đủ, thư viện số và các phòng thí nghiệm mô phỏng thực tế giúp sinh viên phát triển toàn diện kỹ năng chuyên môn.</p>
+              <ul style="color: var(--text-secondary); padding-left: 20px; line-height: 1.8;">
+                <li>Phòng Lab tiêu chuẩn quốc tế</li>
+                <li>Thư viện thông minh 24/7</li>
+                <li>Khu vực Coworking space sáng tạo</li>
+              </ul>
+            </div>
+          </div>
+          
+          <div class="reveal" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--space-6); align-items: center; transition-delay: 150ms;">
+            <div style="order: 2;">
+              <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--primary-600); margin-bottom: 12px;">Kết nối Doanh nghiệp & Việc làm</h3>
+              <p style="color: var(--text-secondary); font-size: 1.05rem; line-height: 1.6; margin-bottom: 16px;">Mạng lưới đối tác doanh nghiệp rộng khắp mang đến hàng ngàn cơ hội thực tập và việc làm ngay từ khi còn ngồi trên ghế nhà trường. Sinh viên được trang bị kỹ năng thực chiến.</p>
+              <ul style="color: var(--text-secondary); padding-left: 20px; line-height: 1.8;">
+                <li>Thực tập hưởng lương (Paid Internship)</li>
+                <li>Job Fair thường niên</li>
+                <li>Định hướng nghề nghiệp 1-1</li>
+              </ul>
+            </div>
+            <div style="border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-md); order: 1;">
+              <img src="/static/assets/logos/KNDN.jfif" alt="Kết nối việc làm" style="width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block;" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1546410531-df4cb71576ac?w=800&q=80';">
+            </div>
+          </div>
+        </div>
+      </section>
+
       </div>
     `;
   },
@@ -764,16 +892,14 @@ const ReviewApp = {
 
   _newsCard(news, delayIdx) {
     return `
-      <div class="rv-news-card rv-news-item reveal" data-news-id="${news.id}" style="transition-delay: ${delayIdx * 50}ms; cursor: pointer;">
-        <div class="rv-news-img" style="background-image: url('${news.imgUrl}');">
-          <div class="rv-news-badge">Tin mới</div>
-        </div>
+      <a href="${news.url}" target="_blank" class="rv-news-card rv-news-item reveal" style="transition-delay: ${delayIdx * 50}ms; cursor: pointer; text-decoration: none; display: block; background: #fff; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
+        <img src="${news.imgUrl}" alt="${news.title}" class="rv-news-img" style="aspect-ratio: 16/9; width: 100%; object-fit: cover; background-color: var(--bg-tertiary); display: block;" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1546410531-df4cb71576ac?w=800&q=80';">
         <div class="rv-news-content">
-          <div class="rv-news-time"><i class="far fa-clock"></i> ${news.time}</div>
-          <h3 class="rv-news-title">${news.title}</h3>
-          <p class="rv-news-excerpt">${news.excerpt}</p>
+          <div class="rv-news-time"><i class="far fa-clock"></i> ${news.time} - ${news.source}</div>
+          <h3 class="rv-news-title" style="display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${news.title}</h3>
+          <p class="rv-news-excerpt" style="display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">${news.desc}</p>
         </div>
-      </div>
+      </a>
     `;
   },
 
@@ -976,10 +1102,9 @@ const ReviewApp = {
     const content = document.getElementById('review-content');
     const modal = document.getElementById('rv-login-modal');
     const closeBtn = document.getElementById('rv-modal-close');
-    const loginBtn = document.getElementById('rv-modal-login');
     const headerLogin = document.getElementById('rv-header-login');
     const headerSignup = document.getElementById('rv-header-signup');
-    const watermarkLogin = document.getElementById('rv-watermark-login');
+
     const langToggleBtn = document.getElementById('rv-lang-toggle');
     
     // Bind global events only once (header, nav, modal)
@@ -1000,10 +1125,7 @@ const ReviewApp = {
         if (tab) this.switchTab(tab.dataset.tab);
       });
       
-      this._globalEventsBound = true;
-    }
-
-    // Intercept ALL interactive clicks → show login modal
+      // Intercept ALL interactive clicks → show login modal
     content?.addEventListener('click', (e) => {
       const newsItem = e.target.closest('.rv-news-item');
       if (newsItem) {
@@ -1063,19 +1185,315 @@ const ReviewApp = {
       if (e.target === infoModal) this.hideInfoModal();
     });
 
-    // Login redirects
-    loginBtn?.addEventListener('click', () => {
-      window.location.href = '/#/login';
+    // Header buttons → show login modal (not redirect)
+    headerLogin?.addEventListener('click', () => this.showLoginModal());
+    headerSignup?.addEventListener('click', () => this.showLoginModal());
+
+    // ── Login Form: Segmented Tab Switching ──
+    const loginTabs = document.querySelectorAll('.rv-login-tab');
+    const loginIndicator = document.getElementById('rv-login-indicator');
+    loginTabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        loginTabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        // Slide indicator
+        if (loginIndicator) {
+          if (tab.dataset.role === 'teacher') {
+            loginIndicator.classList.add('right');
+          } else {
+            loginIndicator.classList.remove('right');
+          }
+        }
+        // Update placeholder
+        const usernameInput = document.getElementById('rv-login-username');
+        if (usernameInput) {
+          usernameInput.placeholder = tab.dataset.role === 'teacher'
+            ? 'Nhập mã giáo viên hoặc tên đăng nhập'
+            : 'Nhập mã sinh viên hoặc tên đăng nhập';
+        }
+      });
     });
-    headerLogin?.addEventListener('click', () => {
-      window.location.href = '/#/login';
+
+    // ── Toggle Password Visibility ──
+    const togglePw = document.getElementById('rv-toggle-pw');
+    const pwInput = document.getElementById('rv-login-password');
+    togglePw?.addEventListener('click', () => {
+      if (pwInput) {
+        const isPassword = pwInput.type === 'password';
+        pwInput.type = isPassword ? 'text' : 'password';
+        togglePw.innerHTML = isPassword 
+          ? '<i class="fas fa-eye-slash"></i>' 
+          : '<i class="fas fa-eye"></i>';
+      }
     });
-    headerSignup?.addEventListener('click', () => {
-      window.location.href = '/#/login';
+
+    // ── Login Form Submit with Ripple ──
+    const loginForm = document.getElementById('rv-login-form');
+    const loginSubmit = document.getElementById('rv-login-submit');
+    loginSubmit?.addEventListener('click', (e) => {
+      // Ripple effect
+      const rect = loginSubmit.getBoundingClientRect();
+      const ripple = document.createElement('span');
+      ripple.className = 'rv-ripple';
+      const size = Math.max(rect.width, rect.height);
+      ripple.style.width = ripple.style.height = size + 'px';
+      ripple.style.left = (e.clientX - rect.left - size / 2) + 'px';
+      ripple.style.top = (e.clientY - rect.top - size / 2) + 'px';
+      loginSubmit.appendChild(ripple);
+      setTimeout(() => ripple.remove(), 600);
     });
-    watermarkLogin?.addEventListener('click', () => {
-      window.location.href = '/#/login';
+
+    loginForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const username = document.getElementById('rv-login-username')?.value?.trim();
+      const password = document.getElementById('rv-login-password')?.value;
+      const rememberMe = loginForm.querySelector('input[type="checkbox"]')?.checked || false;
+      const errorEl = document.getElementById('rv-login-error');
+      const errorText = document.getElementById('rv-login-error-text');
+      const submitText = loginSubmit?.querySelector('.rv-login-submit-text');
+      const submitLoading = loginSubmit?.querySelector('.rv-login-submit-loading');
+
+      // Get current role from segmented tabs
+      const activeTab = document.querySelector('.rv-login-tab.active');
+      const selectedRole = activeTab?.dataset?.role || 'student';
+
+      // Validation
+      if (!username || !password) {
+        if (errorEl) { errorEl.style.display = 'flex'; }
+        if (errorText) { errorText.textContent = 'Vui lòng nhập đầy đủ thông tin đăng nhập'; }
+        return;
+      }
+
+      // ── Admin protection: admin chỉ được login qua tab "Giáo viên" ──
+      if (username.toLowerCase() === 'admin' && selectedRole !== 'teacher') {
+        if (errorEl) { errorEl.style.display = 'flex'; }
+        if (errorText) { errorText.textContent = 'Tài khoản quản trị viên phải đăng nhập qua tab "Giáo viên"'; }
+        return;
+      }
+
+      // Show loading state
+      if (submitText) submitText.style.display = 'none';
+      if (submitLoading) submitLoading.style.display = 'inline';
+      if (loginSubmit) loginSubmit.disabled = true;
+      if (errorEl) errorEl.style.display = 'none';
+
+      try {
+        const resp = await fetch('/api/login/', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password, role: selectedRole })
+        });
+
+        const result = await resp.json();
+
+                if (resp.ok && result.success) {
+          // ── Đăng nhập thành công ──
+          const session = {
+            id: result.user.id,
+            username: result.user.username,
+            name: result.user.name,
+            role: result.user.role || selectedRole,
+            avatar: result.user.avatar || null,
+            linkedId: result.user.linkedId || null,
+            universityId: null,
+            device: navigator.userAgent,
+            loginAt: new Date().toISOString(),
+            sessionToken: result.session_token,
+          };
+
+          if (result.session_token) {
+            localStorage.setItem('unims_server_token', result.session_token);
+          }
+          
+          localStorage.setItem('unims_session_auto', JSON.stringify(session));
+          sessionStorage.setItem('unims_session', JSON.stringify(session));
+
+          try {
+            const activeSessionsStr = localStorage.getItem('unims_active_sessions');
+            const activeSessions = activeSessionsStr ? JSON.parse(activeSessionsStr) : {};
+            activeSessions[result.user.id] = {
+              token: result.session_token,
+              ip: 'Đang phân tích...',
+              device: navigator.userAgent,
+              loginAt: session.loginAt,
+              username: session.username
+            };
+            localStorage.setItem('unims_active_sessions', JSON.stringify(activeSessions));
+          } catch(e) {}
+
+          if (rememberMe) {
+            localStorage.setItem('unims_remember_user', username);
+            localStorage.setItem('unims_remember_me', JSON.stringify({
+               username: username,
+               password: password,
+               role: selectedRole,
+               universityId: null
+            }));
+          } else {
+            localStorage.removeItem('unims_remember_user');
+            localStorage.removeItem('unims_remember_me');
+          }
+
+          // Show toast before redirect
+          this.showToast('Đăng nhập thành công! Đang chuyển hướng...', 'success');
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 800);
+        } else {
+          // ── Đăng nhập thất bại ──
+          if (errorEl) errorEl.style.display = 'flex';
+          let errorMessage = 'Sai tên đăng nhập hoặc mật khẩu';
+          if (resp.status === 401) {
+            errorMessage = result.message || 'Mật khẩu không đúng';
+          } else if (resp.status === 404) {
+            errorMessage = result.message || 'Tài khoản không tồn tại trong hệ thống';
+          } else if (resp.status >= 500) {
+            errorMessage = 'Lỗi máy chủ. Vui lòng thử lại sau.';
+          } else {
+            errorMessage = result.message || errorMessage;
+          }
+          if (errorText) errorText.textContent = errorMessage;
+          this.showToast(errorMessage, 'error');
+        }
+      } catch (err) {
+        if (errorEl) errorEl.style.display = 'flex';
+        if (errorText) errorText.textContent = 'Không thể kết nối tới máy chủ. Kiểm tra kết nối mạng và thử lại.';
+      } finally {
+        if (submitText) submitText.style.display = 'inline';
+        if (submitLoading) submitLoading.style.display = 'none';
+        if (loginSubmit) loginSubmit.disabled = false;
+      }
     });
+
+    // ── Khôi phục Remember Me ──
+    const savedUser = localStorage.getItem('unims_remember_user');
+    if (savedUser) {
+      const usernameInput = document.getElementById('rv-login-username');
+      const rememberCheckbox = loginForm?.querySelector('input[type="checkbox"]');
+      if (usernameInput) usernameInput.value = savedUser;
+      if (rememberCheckbox) rememberCheckbox.checked = true;
+    }
+
+    // Forgot Password
+    const forgotBtn = document.getElementById('rv-forgot-password');
+    if (forgotBtn) {
+      forgotBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.showToast('Chức năng cấp lại mật khẩu đang được bảo trì.', 'info');
+      });
+    }
+
+    // Register Toggle Logic
+    const registerLink = document.getElementById('rv-register-link');
+    const backToLoginLink = document.getElementById('rv-back-to-login');
+    const loginFormEl = document.getElementById('rv-login-form');
+    const registerFormEl = document.getElementById('rv-register-form');
+    
+    if (registerLink && loginFormEl && registerFormEl) {
+      registerLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        loginFormEl.style.display = 'none';
+        registerFormEl.style.display = 'block';
+      });
+    }
+    if (backToLoginLink && loginFormEl && registerFormEl) {
+      backToLoginLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        registerFormEl.style.display = 'none';
+        loginFormEl.style.display = 'block';
+      });
+    }
+
+    // Register Form Submit Logic
+    const regSubmit = document.getElementById('rv-reg-submit');
+    if (regSubmit) {
+      regSubmit.addEventListener('click', (e) => {
+        const rect = regSubmit.getBoundingClientRect();
+        const ripple = document.createElement('span');
+        ripple.className = 'rv-ripple';
+        const size = Math.max(rect.width, rect.height);
+        ripple.style.width = ripple.style.height = size + 'px';
+        ripple.style.left = (e.clientX - rect.left - size / 2) + 'px';
+        ripple.style.top = (e.clientY - rect.top - size / 2) + 'px';
+        regSubmit.appendChild(ripple);
+        setTimeout(() => ripple.remove(), 600);
+      });
+    }
+
+    if (registerFormEl) {
+      registerFormEl.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('rv-reg-name')?.value?.trim();
+        const username = document.getElementById('rv-reg-username')?.value?.trim();
+        const password = document.getElementById('rv-reg-password')?.value;
+        const errorEl = document.getElementById('rv-reg-error');
+        const errorText = document.getElementById('rv-reg-error-text');
+        const submitText = regSubmit?.querySelector('.rv-login-submit-text');
+        const submitLoading = regSubmit?.querySelector('.rv-login-submit-loading');
+        
+        const activeTab = document.querySelector('.rv-login-tab.active');
+        const selectedRole = activeTab?.dataset?.role || 'student';
+
+        if (!name || !username || !password) {
+          if (errorEl) errorEl.style.display = 'flex';
+          if (errorText) errorText.textContent = 'Vui lòng nhập đầy đủ thông tin đăng ký';
+          return;
+        }
+
+        if (submitText) submitText.style.display = 'none';
+        if (submitLoading) submitLoading.style.display = 'inline';
+        if (regSubmit) regSubmit.disabled = true;
+        if (errorEl) errorEl.style.display = 'none';
+
+        try {
+          const resp = await fetch('/api/register/', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, username, password, role: selectedRole })
+          });
+          const result = await resp.json();
+
+          if (resp.ok && result.success) {
+            this.showToast('Đăng ký thành công! Vui lòng đăng nhập.', 'success');
+            setTimeout(() => {
+              registerFormEl.style.display = 'none';
+              loginFormEl.style.display = 'block';
+              document.getElementById('rv-login-username').value = username;
+            }, 1000);
+          } else {
+            if (errorEl) errorEl.style.display = 'flex';
+            if (errorText) errorText.textContent = result.message || 'Tên đăng nhập đã tồn tại';
+            this.showToast(result.message || 'Tên đăng nhập đã tồn tại', 'error');
+          }
+        } catch (err) {
+          if (errorEl) errorEl.style.display = 'flex';
+          if (errorText) errorText.textContent = 'Lỗi kết nối máy chủ.';
+          this.showToast('Lỗi kết nối máy chủ.', 'error');
+        } finally {
+          if (submitText) submitText.style.display = 'inline';
+          if (submitLoading) submitLoading.style.display = 'none';
+          if (regSubmit) regSubmit.disabled = false;
+        }
+      });
+      
+      const regToggle = document.getElementById('rv-reg-toggle');
+      const regPass = document.getElementById('rv-reg-password');
+      if (regToggle && regPass) {
+        regToggle.addEventListener('click', () => {
+          if (regPass.type === 'password') {
+            regPass.type = 'text';
+            regToggle.classList.remove('fa-eye');
+            regToggle.classList.add('fa-eye-slash');
+          } else {
+            regPass.type = 'password';
+            regToggle.classList.remove('fa-eye-slash');
+            regToggle.classList.add('fa-eye');
+          }
+        });
+      }
+    }
 
     // Keyboard escape to close modal
     document.addEventListener('keydown', (e) => {
@@ -1084,6 +1502,9 @@ const ReviewApp = {
         this.hideInfoModal();
       }
     });
+    
+    this._globalEventsBound = true;
+    }
   },
 
   showLoginModal() {
@@ -1239,4 +1660,13 @@ const ReviewApp = {
 
 // Init on DOM ready
 document.addEventListener('DOMContentLoaded', () => ReviewApp.init());
+
+
+
+
+
+
+
+
+
 

@@ -1,5 +1,20 @@
 // app.js
 
+// Global Error Handler
+window.addEventListener('error', (event) => {
+    if (window.Utils && typeof window.Utils.showToast === 'function') {
+        window.Utils.showToast('Lỗi hệ thống: ' + event.message, 'error');
+    }
+    console.error('Global JS Error:', event.error);
+});
+
+window.addEventListener('unhandledrejection', (event) => {
+    if (window.Utils && typeof window.Utils.showToast === 'function') {
+        window.Utils.showToast('Lỗi Promise ngầm: ' + (event.reason ? event.reason.message || event.reason : 'Không xác định'), 'error');
+    }
+    console.error('Unhandled Promise Rejection:', event.reason);
+});
+
 const translations = {
   vi: {
     // Navigation
@@ -948,7 +963,11 @@ const translations = {
     teacher_role: 'Teacher',
     student_role: 'Student',
     user: 'User',
-    no_permission: 'You do not have permission to access this page'
+    no_permission: 'You do not have permission to access this page',
+    import: 'Import',
+    lecturer: 'Lecturer',
+    assoc_prof: 'Associate Professor',
+    professor: 'Professor'
   }
 };
 
@@ -986,7 +1005,7 @@ const NAV_ITEMS = [
 ];
 
 const routes = {
-  '#/login': () => typeof LoginView !== 'undefined' ? LoginView.render() : console.log('LoginView missing'),
+  
   '#/dashboard': () => typeof DashboardView !== 'undefined' ? DashboardView.render() : console.log('DashboardView missing'),
   '#/students': () => typeof StudentsView !== 'undefined' ? StudentsView.render() : console.log('StudentsView missing'),
   '#/teachers': () => typeof TeachersView !== 'undefined' ? TeachersView.render() : console.log('TeachersView missing'),
@@ -1001,7 +1020,15 @@ const routes = {
 };
 
 const App = {
-  init() {
+  async init() {
+    // 1. CHỜ giải mã dữ liệu offline hoàn tất trước khi làm việc khác
+    if (typeof Database.initEncryption === 'function') {
+      try {
+        await Database.initEncryption();
+      } catch (e) {
+        console.error('Encryption init failed:', e);
+      }
+    }
     // Force reseed data to sync with the new university IDs
     if (!localStorage.getItem('unims_v2_seeded')) {
       if (typeof Database.resetAll === 'function') {
@@ -1012,14 +1039,28 @@ const App = {
 
     Database.seedData();
     
-    // Auth Check
     if (!Auth.isLoggedIn()) {
-      if (window.location.hash === '#/login') {
-        if (routes['#/login']) routes['#/login']();
-      } else {
-        window.location.href = '/review/';
-      }
+      window.location.href = '/review/#login';
       return;
+    }
+
+    // Đã đăng nhập -> Kéo dữ liệu từ server (Sync Down)
+    try {
+      const res = await Auth.apiFetch('/api/sync/down/');
+      if (res && res.ok) {
+        const data = await res.json();
+        if (data.classes && data.classes.length > 0) {
+          localStorage.setItem('unims_classes', JSON.stringify(data.classes));
+        }
+        if (data.registrations && data.registrations.length > 0) {
+          localStorage.setItem('unims_registrations', JSON.stringify(data.registrations));
+        }
+        if (data.grades && data.grades.length > 0) {
+          localStorage.setItem('unims_grades', JSON.stringify(data.grades));
+        }
+      }
+    } catch(err) {
+      console.log("Offline mode: Skipping sync down");
     }
 
     this.setupUserProfile();
@@ -1033,33 +1074,6 @@ const App = {
     this.setupNotifications();
     this.setupHelpdeskBadge();
     this.setupRealtimeClock();
-    this.setupParticles();
-  },
-
-  setupParticles() {
-    const container = document.getElementById('dashboard-particles');
-    if (!container) return;
-    container.innerHTML = '';
-    const shapes = ['circle', 'square', 'triangle'];
-    for (let i = 0; i < 20; i++) {
-      const particle = document.createElement('div');
-      particle.className = 'login-particle';
-      const shape = shapes[Math.floor(Math.random() * shapes.length)];
-      const size = Math.random() * 20 + 8;
-      particle.style.cssText = `
-        position: absolute;
-        width: ${size}px;
-        height: ${size}px;
-        left: ${Math.random() * 100}%;
-        top: ${Math.random() * 100}%;
-        background: rgba(20, 184, 166, ${Math.random() * 0.15 + 0.05});
-        border-radius: ${shape === 'circle' ? '50%' : shape === 'square' ? '4px' : '50%'};
-        animation: floatParticle ${Math.random() * 15 + 10}s linear infinite;
-        animation-delay: ${Math.random() * -20}s;
-        pointer-events: none;
-      `;
-      container.appendChild(particle);
-    }
   },
 
   setupUserProfile() {
@@ -1127,8 +1141,8 @@ const App = {
       newBtn.addEventListener('click', (e) => {
         e.preventDefault();
         Auth.logout();
-        window.location.hash = '#/login';
-        window.location.reload(); // Refresh to clean state
+        window.location.href = '/review/';
+        
       });
     }
   },
@@ -1251,8 +1265,8 @@ const App = {
   },
 
   navigate(hash) {
-    if (!Auth.isLoggedIn() && hash !== '#/login') {
-      window.location.href = '/review/';
+    if (!Auth.isLoggedIn()) {
+      window.location.href = '/review/#login';
       return;
     }
 
@@ -1380,11 +1394,116 @@ const App = {
     const searchInput = document.getElementById('global-search');
     if (!searchInput) return;
     
-    searchInput.placeholder = t('search_placeholder');
+    searchInput.placeholder = t('search_placeholder') || 'Tìm kiếm...';
+    
+    // Create dropdown wrapper
+    let dropdown = document.getElementById('global-search-results');
+    if (!dropdown) {
+      dropdown = document.createElement('div');
+      dropdown.id = 'global-search-results';
+      dropdown.style.cssText = 'position:absolute; top:100%; left:0; right:0; background:var(--surface); border:1px solid var(--border-color); border-radius:var(--radius-md); box-shadow:var(--shadow-lg); z-index:1000; display:none; max-height:300px; overflow-y:auto; margin-top:4px;';
+      // Ensure parent is relative
+      searchInput.parentNode.style.position = 'relative';
+      searchInput.parentNode.appendChild(dropdown);
+    }
+
+    const routes = [
+      { path: '#/dashboard', icon: 'fa-chart-pie', name: 'nav_dashboard', roles: ['admin', 'teacher', 'student'] },
+      { path: '#/students', icon: 'fa-user-graduate', name: 'nav_students', roles: ['admin'] },
+      { path: '#/teachers', icon: 'fa-chalkboard-teacher', name: 'nav_teachers', roles: ['admin'] },
+      { path: '#/classes', icon: 'fa-layer-group', name: 'nav_classes', roles: ['admin', 'teacher'] },
+      { path: '#/registration', icon: 'fa-edit', name: 'nav_registration', roles: ['admin', 'student'] },
+      { path: '#/tuition', icon: 'fa-money-bill-wave', name: 'nav_tuition', roles: ['student'] },
+      { path: '#/grades', icon: 'fa-star', name: 'nav_grades', roles: ['admin', 'teacher', 'student'] },
+      { path: '#/profile', icon: 'fa-user-circle', name: 'nav_profile', roles: ['admin', 'teacher', 'student'] },
+      { path: '#/helpdesk', icon: 'fa-headset', name: 'nav_helpdesk', roles: ['admin', 'teacher', 'student'] },
+      { path: '#/chatbot', icon: 'fa-robot', name: 'nav_chatbot', roles: ['admin', 'teacher', 'student'] },
+      { path: '#/workshop', icon: 'fa-tools', name: 'nav_workshop', roles: ['admin'] }
+    ];
+
+    let currentResults = [];
+    let selectedIndex = -1;
+
+    const renderResults = () => {
+      if (currentResults.length === 0) {
+        dropdown.innerHTML = `<div style="padding:12px; text-align:center; color:var(--text-secondary); font-size:0.85rem;">${t('no_data') || 'Không tìm thấy kết quả'}</div>`;
+      } else {
+        dropdown.innerHTML = currentResults.map((r, i) => `
+          <div class="search-item ${i === selectedIndex ? 'selected' : ''}" data-path="${r.path}" style="padding:10px 12px; display:flex; align-items:center; gap:10px; cursor:pointer; font-size:0.9rem; color:var(--text-primary); border-bottom:1px solid var(--border-light); ${i === selectedIndex ? 'background:var(--primary-50);' : ''}">
+            <i class="fas ${r.icon}" style="color:var(--primary-500); width:20px; text-align:center;"></i>
+            <span>${t(r.name) || r.name}</span>
+          </div>
+        `).join('');
+      }
+      dropdown.style.display = 'block';
+    };
+
+    // Global click listener to close dropdown
+    document.addEventListener('click', (e) => {
+      if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+        dropdown.style.display = 'none';
+      }
+    });
+
+    // Event listeners
+    dropdown.addEventListener('click', (e) => {
+      const item = e.target.closest('.search-item');
+      if (item) {
+        window.location.hash = item.dataset.path;
+        dropdown.style.display = 'none';
+        searchInput.value = '';
+      }
+    });
+
+    searchInput.addEventListener('keydown', (e) => {
+      if (dropdown.style.display !== 'block') return;
+      
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        selectedIndex = Math.min(selectedIndex + 1, currentResults.length - 1);
+        renderResults();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        selectedIndex = Math.max(selectedIndex - 1, 0);
+        renderResults();
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (selectedIndex >= 0 && selectedIndex < currentResults.length) {
+          window.location.hash = currentResults[selectedIndex].path;
+        } else if (currentResults.length > 0) {
+          window.location.hash = currentResults[0].path; // Default to first result
+        }
+        dropdown.style.display = 'none';
+        searchInput.value = '';
+        searchInput.blur();
+      } else if (e.key === 'Escape') {
+        dropdown.style.display = 'none';
+      }
+    });
+
     searchInput.addEventListener('input', Utils.debounce((e) => {
-      const query = e.target.value.trim();
-      console.log('Global search for:', query);
-    }, 300));
+      const query = e.target.value.trim().toLowerCase();
+      if (!query) {
+        dropdown.style.display = 'none';
+        return;
+      }
+      
+      const role = Auth.getCurrentUser()?.role || 'student';
+      currentResults = routes.filter(r => {
+        if (!r.roles.includes(role)) return false;
+        const translatedName = (t(r.name) || r.name).toLowerCase();
+        return translatedName.includes(query);
+      });
+      
+      selectedIndex = -1;
+      renderResults();
+    }, 200));
+    
+    searchInput.addEventListener('focus', () => {
+      if (searchInput.value.trim().length > 0) {
+        dropdown.style.display = 'block';
+      }
+    });
   },
 
   setupMobileMenu() {
@@ -1560,7 +1679,8 @@ const App = {
     if (user.role === 'admin' || user.role === 'teacher') {
       btn.style.display = 'inline-flex';
       const badge = document.getElementById('helpdesk-badge');
-      const pendingBugsCount = Database.bugs.countByStatus ? Database.bugs.countByStatus('new') + Database.bugs.countByStatus('in-progress') : 0;
+      const bugStats = Database.bugs.countByStatus ? Database.bugs.countByStatus() : {};
+      const pendingBugsCount = (bugStats['new'] || 0) + (bugStats['in-progress'] || 0);
       
       if (badge) {
         badge.textContent = pendingBugsCount > 99 ? '99+' : pendingBugsCount;
@@ -1606,4 +1726,6 @@ const App = {
 };
 
 document.addEventListener('DOMContentLoaded', () => App.init());
+
+
 

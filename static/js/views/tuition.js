@@ -129,46 +129,32 @@ const TuitionView = {
   },
 
   showPaymentModal(user, totalFee) {
-    const studentInfo = Database.students.getAll().find(s => s.id === user.linkedId) || { id: user.linkedId, name: user.name };
+    const studentInfo = Database.students.getAll().find(s => s.id === user.linkedId) || { id: user.linkedId, name: user.name, studentId: user.username };
     const formattedFee = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(totalFee);
+    const syntax = (studentInfo.studentId || user.username) + " - " + (studentInfo.name || user.name);
 
     Utils.showModal(t('tuition_payment'), `
       <div style="padding: var(--space-2); color: var(--text-primary);">
         <div class="alert alert-info" style="margin-bottom: var(--space-4);">
           <i class="fas fa-info-circle"></i>
-          <strong>${t('note')}:</strong> ${t('payment_warning')}
+          <strong>${t('note')}:</strong> Quét mã QR dưới đây để thanh toán học phí. Vui lòng nhập đúng cú pháp chuyển khoản.
         </div>
         
-        <p style="margin-bottom: var(--space-2);">${t('please_transfer')} <strong>${formattedFee}</strong> ${t('to_the_following_accounts')}:</p>
+        <p style="margin-bottom: var(--space-2); text-align: center;">Số tiền cần thanh toán: <strong style="color: var(--danger); font-size: 1.2rem;">${formattedFee}</strong></p>
         
-        <div style="display: flex; flex-direction: column; gap: var(--space-3); margin-top: var(--space-4);">
-          <div style="border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: var(--space-4); background: var(--bg-tertiary); display: flex; align-items: center; gap: var(--space-4);">
-            <div style="font-size: 2rem; color: #1f3c88; font-weight: 800; min-width: 80px; text-align: center;">MB</div>
-            <div>
-              <div style="font-weight: 600; font-size: 1.1rem;">${t('mb_bank')}</div>
-              <div style="color: var(--text-secondary); font-family: monospace; font-size: 1.1rem; margin: 4px 0;">${t('account_number')}: <strong>0123 456 789 999</strong></div>
-              <div style="color: var(--text-secondary); font-size: 0.9rem;">${t('account_holder')}: TRUONG DAI HOC XYZ</div>
-            </div>
-          </div>
-
-          <div style="border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: var(--space-4); background: var(--bg-tertiary); display: flex; align-items: center; gap: var(--space-4);">
-            <div style="font-size: 2rem; color: #006846; font-weight: 800; min-width: 80px; text-align: center;">VCB</div>
-            <div>
-              <div style="font-weight: 600; font-size: 1.1rem;">${t('vcb_bank')}</div>
-              <div style="color: var(--text-secondary); font-family: monospace; font-size: 1.1rem; margin: 4px 0;">${t('account_number')}: <strong>0041 000 111 222</strong></div>
-              <div style="color: var(--text-secondary); font-size: 0.9rem;">${t('account_holder')}: TRUONG DAI HOC XYZ</div>
-            </div>
+        <div style="display: flex; justify-content: center; margin-top: var(--space-4); margin-bottom: var(--space-4);">
+          <div style="background: #fff; border-radius: var(--radius-lg); padding: 8px; box-shadow: 0 2px 12px rgba(0,0,0,0.08);">
+            <img src="/static/assets/logos/BANK_PAYMENT_QR.png" alt="QR Thanh toán" style="max-width: 280px; width: 100%; object-fit: contain; display: block;">
           </div>
         </div>
 
         <div class="form-group" style="margin-top: var(--space-4);">
-          <label style="font-weight: 600;">${t('transfer_syntax')}:</label>
-          <div style="background: var(--primary-50); padding: 12px; border-left: 4px solid var(--primary-500); font-family: monospace; font-size: 1.1rem; font-weight: bold; color: var(--primary-800); margin-top: 8px; word-break: break-all;">
-            ${studentInfo.studentId} - ${studentInfo.name.toUpperCase()} - HOC PHI HK1
+          <label style="font-weight: 600;">Cú pháp chuyển khoản:</label>
+          <div style="background: var(--primary-50); padding: 12px; border-left: 4px solid var(--primary-500); font-family: monospace; font-size: 1.1rem; font-weight: bold; color: var(--primary-800); margin-top: 8px; word-break: break-all; text-align: center;">
+            ${syntax}
           </div>
-          <small style="color: var(--text-secondary); display: block; margin-top: 8px;">${t('payment_note')}</small>
+          <small style="color: var(--text-secondary); display: block; margin-top: 8px; text-align: center;">* Hệ thống sẽ cập nhật trạng thái sau khi xác nhận thanh toán thành công (Thủ công).</small>
         </div>
-
       </div>
     `);
   }
