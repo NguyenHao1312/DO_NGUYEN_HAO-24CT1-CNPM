@@ -20,7 +20,7 @@
     .sidebar.collapsed .sidebar-user { justify-content: center; }
     .sidebar.collapsed .sidebar-footer { padding: var(--space-4) 0; display: flex; justify-content: center; }
   </style>
-  <script src="{% static 'js/apexcharts.js' %}"></script>
+  <script src="{% static 'js/vendor/apexcharts.js' %}?v=1789141934"></script>
 </head>
 <body>
   <!-- Sidebar Navigation -->
@@ -151,24 +151,27 @@
   </button>
 
   <!-- Scripts (order matters!) -->
-  <script src="{% static 'js/database.js' %}"></script>
-  <script src="{% static 'js/auth.js' %}"></script>
-  <script src="{% static 'js/utils.js' %}"></script>
-  <script src="{% static 'js/components/LoginBackground.js' %}"></script>
-  <script src="{% static 'js/views/login.js' %}?v=1.1"></script>
-  <script src="{% static 'js/views/dashboard.js' %}?v=2.4"></script>
-  <script src="{% static 'js/views/students.js' %}"></script>
-  <script src="{% static 'js/views/teachers.js' %}"></script>
-  <script src="{% static 'js/views/classes.js' %}"></script>
-  <script src="{% static 'js/views/grades.js' %}"></script>
-  <script src="{% static 'js/views/chatbot.js' %}"></script>
-  <script src="{% static 'js/views/helpdesk.js' %}"></script>
-  <script src="{% static 'js/views/workshop.js' %}"></script>
-  <script src="{% static 'js/views/profile.js' %}"></script>
-  <script src="{% static 'js/views/forgot_password.js' %}"></script>
-  <script src="{% static 'js/views/registration.js' %}"></script>
-  <script src="{% static 'js/views/tuition.js' %}"></script>
-  <script src="{% static 'js/app.js' %}"></script>
+  <script src="{% static 'js/vendor/sweetalert2.all.min.js' %}?v=1789141934"></script>
+  <script src="{% static 'js/core/crypto.js' %}?v=1789141934"></script>
+  <script src="{% static 'js/core/database.js' %}?v=1789141934"></script>
+  <script src="{% static 'js/core/auth.js' %}?v=1789141934"></script>
+  <script src="{% static 'js/core/sync-queue.js' %}?v=1789141934"></script>
+  <script src="{% static 'js/core/utils.js' %}?v=1789141934"></script>
+  <script src="{% static 'js/components/LoginBackground.js' %}?v=1789141934"></script>
+  
+  <script src="{% static 'js/views/dashboard.js' %}?v=1789141934"></script>
+  <script src="{% static 'js/views/students.js' %}?v=1789141934"></script>
+  <script src="{% static 'js/views/teachers.js' %}?v=1789141934"></script>
+  <script src="{% static 'js/views/classes.js' %}?v=1789141934"></script>
+  <script src="{% static 'js/views/grades.js' %}?v=1789141934"></script>
+  <script src="{% static 'js/views/chatbot.js' %}?v=1789141934"></script>
+  <script src="{% static 'js/views/helpdesk.js' %}?v=1789141934"></script>
+  <script src="{% static 'js/views/workshop.js' %}?v=1789141934"></script>
+  <script src="{% static 'js/views/profile.js' %}?v=1789141934"></script>
+  <script src="{% static 'js/views/forgot_password.js' %}?v=1789141934"></script>
+  <script src="{% static 'js/views/registration.js' %}?v=1789141934"></script>
+  <script src="{% static 'js/views/tuition.js' %}?v=1789141934"></script>
+  <script src="{% static 'js/core/app.js' %}?v=1789141934"></script>
 </body>
 </html>
 

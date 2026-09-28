@@ -12,7 +12,7 @@
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'css/variables.css' %}">
   <link rel="stylesheet" href="{% static 'css/review.css' %}">
-  <link rel="stylesheet" href="{% static 'css/review-mobile.css' %}" media="screen and (max-width: 1024px)">
+  
 </head>
 <body>
   <div class="review-page">
@@ -63,21 +63,129 @@
       <!-- Rendered by review.js -->
     </div>
 
-    <!-- ═══ LOGIN REQUIRED MODAL ═══ -->
+    <!-- ═══ LOGIN FORM MODAL ═══ -->
     <div class="rv-modal-overlay" id="rv-login-modal">
-      <div class="rv-modal">
-        <div class="rv-modal-icon">
-          <i class="fas fa-lock"></i>
+      <div class="rv-login-wrapper">
+        <!-- Close button -->
+        <button class="rv-login-close" id="rv-modal-close" aria-label="Đóng">
+          <i class="fas fa-times"></i>
+        </button>
+
+        <!-- Left: Campus background panel -->
+        <div class="rv-login-hero">
+          <div class="rv-login-hero-content">
+            <i class="fas fa-graduation-cap" style="font-size: 3rem; margin-bottom: 16px; opacity: 0.9;"></i>
+            <h2>Uni<span style="color: var(--primary-300);">MS</span></h2>
+            <p>Hệ thống Quản lý Sinh viên Thông minh</p>
+            <div style="margin-top: 24px; font-size: 0.85rem; opacity: 0.7; line-height: 1.6;">
+              <div><i class="fas fa-check-circle" style="margin-right: 6px;"></i> Quản lý điểm số & học phí</div>
+              <div><i class="fas fa-check-circle" style="margin-right: 6px;"></i> Theo dõi tiến trình học tập</div>
+              <div><i class="fas fa-check-circle" style="margin-right: 6px;"></i> Đồng bộ dữ liệu đa thiết bị</div>
+            </div>
+          </div>
         </div>
-        <h3 data-i18n="login_required">Yêu cầu Đăng nhập</h3>
-        <p data-i18n="login_required_desc">Hãy đăng nhập hoặc đăng ký tài khoản để có thể khám phá thêm các tính năng quản lý chuyên sâu và trải nghiệm môi trường số toàn diện của UniMS.</p>
-        <div class="rv-modal-actions">
-          <button class="rv-btn-ghost" id="rv-modal-close">
-            <i class="fas fa-times" style="margin-right: 6px;"></i> <span data-i18n="close">Đóng</span>
-          </button>
-          <button class="rv-btn-primary" id="rv-modal-login">
-            <i class="fas fa-sign-in-alt" style="margin-right: 6px;"></i> <span data-i18n="login_now">Đăng nhập ngay</span>
-          </button>
+
+        <!-- Right: Login form -->
+        <div class="rv-login-form-panel">
+          <div class="rv-login-form-header">
+            <h3>Đăng nhập</h3>
+            <p>Chào mừng trở lại! Vui lòng chọn vai trò và đăng nhập.</p>
+          </div>
+
+          <!-- Segmented Control Tabs -->
+          <div class="rv-login-tabs">
+            <div class="rv-login-tab-indicator" id="rv-login-indicator"></div>
+            <button class="rv-login-tab active" data-role="student">
+              <i class="fas fa-user-graduate"></i> Sinh viên
+            </button>
+            <button class="rv-login-tab" data-role="teacher">
+              <i class="fas fa-chalkboard-teacher"></i> Giáo viên
+            </button>
+          </div>
+
+          <!-- Form -->
+          <form class="rv-login-form" id="rv-login-form" autocomplete="off">
+            <div class="rv-input-group">
+              <label for="rv-login-username"><i class="fas fa-user"></i> Mã số / Username</label>
+              <input type="text" id="rv-login-username" placeholder="Nhập mã sinh viên hoặc tên đăng nhập" autocomplete="username" required>
+            </div>
+            <div class="rv-input-group">
+              <label for="rv-login-password"><i class="fas fa-lock"></i> Mật khẩu</label>
+              <div class="rv-input-password-wrap">
+                <input type="password" id="rv-login-password" placeholder="Nhập mật khẩu" autocomplete="current-password" required>
+                <button type="button" class="rv-toggle-pw" id="rv-toggle-pw" tabindex="-1"><i class="fas fa-eye"></i></button>
+              </div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; margin-bottom: 20px;">
+              <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--text-secondary);">
+                <input type="checkbox" style="accent-color: var(--primary-500);"> Ghi nhớ đăng nhập
+              </label>
+              <a href="#" id="rv-forgot-password" style="color: var(--primary-500); text-decoration: none; font-weight: 500;">Quên mật khẩu?</a>
+            </div>
+
+            <!-- Error message -->
+            <div class="rv-login-error" id="rv-login-error" style="display: none;">
+              <i class="fas fa-exclamation-circle"></i>
+              <span id="rv-login-error-text">Sai tên đăng nhập hoặc mật khẩu</span>
+            </div>
+
+            <!-- Submit -->
+            <button type="submit" class="rv-login-submit" id="rv-login-submit">
+              <span class="rv-login-submit-text">Đăng nhập</span>
+              <span class="rv-login-submit-loading" style="display: none;">
+                <i class="fas fa-spinner fa-spin"></i> Đang xử lý...
+              </span>
+            </button>
+          </form>
+          <!-- Register Form -->
+          <form class="rv-login-form" id="rv-register-form" autocomplete="off" style="display: none;">
+            <div class="rv-input-group">
+              <label>Họ và tên</label>
+              <div class="rv-input-wrapper">
+                <i class="fas fa-user-edit"></i>
+                <input type="text" id="rv-reg-name" placeholder="Họ và tên đầy đủ..." required>
+              </div>
+            </div>
+            
+            <div class="rv-input-group">
+              <label>Mã số (Sinh viên / Giáo viên)</label>
+              <div class="rv-input-wrapper">
+                <i class="fas fa-id-card"></i>
+                <input type="text" id="rv-reg-username" placeholder="Nhập mã số..." required>
+              </div>
+            </div>
+
+            <div class="rv-input-group">
+              <label>Mật khẩu</label>
+              <div class="rv-input-wrapper">
+                <i class="fas fa-lock"></i>
+                <input type="password" id="rv-reg-password" placeholder="Tạo mật khẩu..." required>
+                <i class="fas fa-eye rv-password-toggle" id="rv-reg-toggle"></i>
+              </div>
+            </div>
+
+            <div class="rv-login-error" id="rv-reg-error" style="display: none;">
+              <i class="fas fa-exclamation-triangle"></i>
+              <span id="rv-reg-error-text">Lỗi hệ thống</span>
+            </div>
+
+            <button type="submit" class="rv-login-submit" id="rv-reg-submit">
+              <span class="rv-login-submit-text">Đăng ký <i class="fas fa-user-plus" style="margin-left: 6px;"></i></span>
+              <div class="rv-login-submit-loading" style="display: none;"><i class="fas fa-circle-notch fa-spin"></i> Đang xử lý...</div>
+            </button>
+
+            <div class="rv-login-footer">
+              <span style="color: var(--text-secondary);">Đã có tài khoản?</span>
+              <a href="#" id="rv-back-to-login" style="color: var(--primary-500); font-weight: 600; text-decoration: none; margin-left: 4px;">Đăng nhập ngay</a>
+            </div>
+          </form>
+
+
+          <div class="rv-login-footer">
+            <span>Chưa có tài khoản?</span>
+            <a href="#" id="rv-register-link" style="color: var(--primary-500); font-weight: 600; text-decoration: none; margin-left: 4px;">Đăng ký ngay</a>
+          </div>
         </div>
       </div>
     </div>
@@ -96,16 +204,13 @@
       </div>
     </div>
 
-    <!-- ═══ BOTTOM WATERMARK ═══ -->
-    <div class="rv-watermark">
-      <span><i class="fas fa-eye" style="margin-right: 6px;"></i> <span data-i18n="preview_watermark">Bạn đang xem bản xem trước — Đăng nhập để trải nghiệm đầy đủ tính năng</span></span>
-      <button id="rv-watermark-login"><span data-i18n="login_now">Đăng nhập ngay</span> <i class="fas fa-arrow-right" style="margin-left: 4px;"></i></button>
-    </div>
+
 
   </div>
 
-  <script src="{% static 'js/database.js' %}"></script>
-  <script src="{% static 'js/review.js' %}?v=1.1"></script>
+  <script src="{% static 'js/views/review.js' %}?v=3.0.1"></script>
 </body>
 </html>
+
+
 

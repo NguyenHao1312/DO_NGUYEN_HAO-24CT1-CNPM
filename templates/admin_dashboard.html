@@ -1,0 +1,215 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UniMS — Admin Dashboard</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+    .admin-header { background: linear-gradient(135deg, #1e293b, #334155); padding: 20px 32px; border-bottom: 1px solid #475569; display: flex; justify-content: space-between; align-items: center; }
+    .admin-header h1 { font-size: 1.5rem; color: #38bdf8; }
+    .admin-header .badge { background: #ef4444; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; }
+    .admin-content { max-width: 1400px; margin: 24px auto; padding: 0 24px; }
+
+    /* Stats Cards */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 32px; }
+    .stat-card { background: #1e293b; border-radius: 12px; padding: 20px; border: 1px solid #334155; transition: transform 0.2s; }
+    .stat-card:hover { transform: translateY(-2px); border-color: #38bdf8; }
+    .stat-card .stat-value { font-size: 2rem; font-weight: 700; color: #38bdf8; }
+    .stat-card .stat-label { font-size: 0.85rem; color: #94a3b8; margin-top: 4px; }
+    .stat-card .stat-icon { float: right; font-size: 1.5rem; opacity: 0.5; }
+
+    /* Sections */
+    .section { background: #1e293b; border-radius: 12px; padding: 24px; margin-bottom: 24px; border: 1px solid #334155; }
+    .section h2 { font-size: 1.2rem; color: #f1f5f9; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+    .section h2 i { color: #38bdf8; }
+
+    /* Table */
+    .admin-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .admin-table th { text-align: left; padding: 10px 12px; background: #334155; color: #94a3b8; font-weight: 600; }
+    .admin-table td { padding: 10px 12px; border-bottom: 1px solid #334155; }
+    .admin-table tr:hover td { background: #334155; }
+
+    /* Status badges */
+    .status-badge { padding: 2px 8px; border-radius: 8px; font-size: 0.75rem; font-weight: 600; }
+    .status-200 { background: #064e3b; color: #34d399; }
+    .status-401 { background: #7f1d1d; color: #f87171; }
+    .status-403 { background: #78350f; color: #fbbf24; }
+    .status-429 { background: #581c87; color: #c084fc; }
+
+    /* Buttons */
+    .btn { padding: 6px 14px; border-radius: 8px; border: none; cursor: pointer; font-size: 0.8rem; font-weight: 600; }
+    .btn-danger { background: #ef4444; color: white; }
+    .btn-danger:hover { background: #dc2626; }
+    .btn-warning { background: #f59e0b; color: #1e293b; }
+    .btn-warning:hover { background: #d97706; }
+
+    /* Filters */
+    .filters { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+    .filters input, .filters select { background: #0f172a; border: 1px solid #475569; color: #e2e8f0; padding: 8px 12px; border-radius: 8px; font-size: 0.85rem; }
+    .filters input:focus, .filters select:focus { outline: none; border-color: #38bdf8; }
+
+    /* Pagination */
+    .pagination { display: flex; justify-content: center; gap: 8px; margin-top: 16px; }
+    .pagination button { background: #334155; color: #e2e8f0; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; }
+    .pagination button:hover { background: #475569; }
+    .pagination button.active { background: #38bdf8; color: #0f172a; }
+
+    /* Loading */
+    .loading { text-align: center; padding: 40px; color: #64748b; }
+  </style>
+</head>
+<body>
+  <div class="admin-header">
+    <h1><i class="fas fa-shield-halved"></i> UniMS Admin Dashboard</h1>
+    <div>
+      <span class="badge"><i class="fas fa-server"></i> Port {{ request.META.SERVER_PORT }}</span>
+    </div>
+  </div>
+
+  <div class="admin-content">
+    <!-- Stats -->
+    <div class="stats-grid" id="stats-grid">
+      <div class="loading">Đang tải thống kê...</div>
+    </div>
+
+    <!-- Users -->
+    <div class="section">
+      <h2><i class="fas fa-users-gear"></i> Quản lý người dùng</h2>
+      <div id="users-table"><div class="loading">Đang tải...</div></div>
+    </div>
+
+    <!-- Audit Log -->
+    <div class="section">
+      <h2><i class="fas fa-clipboard-list"></i> Audit Log</h2>
+      <div class="filters">
+        <input type="text" id="filter-endpoint" placeholder="Lọc theo endpoint..." />
+        <select id="filter-role">
+          <option value="">Tất cả role</option>
+          <option value="admin">Admin</option>
+          <option value="teacher">Teacher</option>
+          <option value="student">Student</option>
+        </select>
+        <select id="filter-status">
+          <option value="">Tất cả status</option>
+          <option value="200">200 OK</option>
+          <option value="401">401 Unauthorized</option>
+          <option value="403">403 Forbidden</option>
+          <option value="429">429 Rate Limited</option>
+        </select>
+        <button class="btn btn-warning" onclick="loadAuditLogs(1)"><i class="fas fa-search"></i> Lọc</button>
+      </div>
+      <div id="audit-table"><div class="loading">Đang tải...</div></div>
+      <div class="pagination" id="audit-pagination"></div>
+    </div>
+  </div>
+
+  <script>
+    const API_HEADERS = { 'Content-Type': 'application/json' };
+
+    // ========== Stats ==========
+    async function loadStats() {
+      try {
+        const res = await fetch('/admin/api/stats/', { credentials: 'include' });
+        const data = await res.json();
+        if (!data.success) throw new Error('Failed');
+        const s = data.stats;
+        document.getElementById('stats-grid').innerHTML = `
+          <div class="stat-card"><span class="stat-icon"><i class="fas fa-users"></i></span><div class="stat-value">${s.total_users}</div><div class="stat-label">Tổng người dùng</div></div>
+          <div class="stat-card"><span class="stat-icon"><i class="fas fa-user-graduate"></i></span><div class="stat-value">${s.total_students}</div><div class="stat-label">Sinh viên</div></div>
+          <div class="stat-card"><span class="stat-icon"><i class="fas fa-chalkboard-teacher"></i></span><div class="stat-value">${s.total_teachers}</div><div class="stat-label">Giảng viên</div></div>
+          <div class="stat-card"><span class="stat-icon"><i class="fas fa-university"></i></span><div class="stat-value">${s.total_universities}</div><div class="stat-label">Trường ĐH</div></div>
+          <div class="stat-card"><span class="stat-icon"><i class="fas fa-signal"></i></span><div class="stat-value">${s.active_sessions}</div><div class="stat-label">Phiên đang hoạt động</div></div>
+          <div class="stat-card"><span class="stat-icon"><i class="fas fa-clipboard-list"></i></span><div class="stat-value">${s.total_audit_logs}</div><div class="stat-label">Audit Logs</div></div>
+        `;
+      } catch (err) {
+        document.getElementById('stats-grid').innerHTML = '<div class="loading" style="color:#f87171;">Không thể tải thống kê. Hãy đăng nhập admin trước.</div>';
+      }
+    }
+
+    // ========== Users ==========
+    async function loadUsers() {
+      try {
+        const res = await fetch('/admin/api/users/', { credentials: 'include' });
+        const data = await res.json();
+        if (!data.success) throw new Error('Failed');
+        let html = '<table class="admin-table"><thead><tr><th>ID</th><th>Username</th><th>Tên</th><th>Role</th><th>IP</th><th>Đăng nhập cuối</th><th>Trạng thái</th><th>Hành động</th></tr></thead><tbody>';
+        data.users.forEach(u => {
+          const active = u.is_active ? '<span class="status-badge status-200">Active</span>' : '<span class="status-badge status-401">Locked</span>';
+          const lastLogin = u.last_login_at ? new Date(u.last_login_at).toLocaleString('vi') : '—';
+          html += `<tr>
+            <td>${u.id}</td><td>${u.username}</td><td>${u.first_name || '—'}</td><td>${u.role}</td>
+            <td>${u.session_ip || '—'}</td><td>${lastLogin}</td><td>${active}</td>
+            <td>
+              <button class="btn btn-danger" onclick="forceLogout(${u.id})"><i class="fas fa-sign-out-alt"></i></button>
+              <button class="btn btn-warning" onclick="toggleUser(${u.id})">${u.is_active ? '<i class="fas fa-lock"></i>' : '<i class="fas fa-unlock"></i>'}</button>
+            </td></tr>`;
+        });
+        html += '</tbody></table>';
+        document.getElementById('users-table').innerHTML = html;
+      } catch (err) {
+        document.getElementById('users-table').innerHTML = '<div class="loading" style="color:#f87171;">Không thể tải danh sách users.</div>';
+      }
+    }
+
+    // ========== Audit Logs ==========
+    async function loadAuditLogs(page = 1) {
+      const endpoint = document.getElementById('filter-endpoint')?.value || '';
+      const role = document.getElementById('filter-role')?.value || '';
+      const status = document.getElementById('filter-status')?.value || '';
+      try {
+        const params = new URLSearchParams({ page, endpoint, role, status });
+        const res = await fetch(`/admin/api/audit-logs/?${params}`, { credentials: 'include' });
+        const data = await res.json();
+        if (!data.success) throw new Error('Failed');
+        let html = '<table class="admin-table"><thead><tr><th>#</th><th>Role</th><th>Endpoint</th><th>Method</th><th>Status</th><th>IP</th><th>Thời gian</th></tr></thead><tbody>';
+        data.logs.forEach(l => {
+          const cls = `status-${l.status_code}`;
+          html += `<tr><td>${l.id}</td><td>${l.role || '—'}</td><td>${l.endpoint}</td><td>${l.method}</td><td><span class="status-badge ${cls}">${l.status_code}</span></td><td>${l.ip_address || '—'}</td><td>${new Date(l.timestamp).toLocaleString('vi')}</td></tr>`;
+        });
+        html += '</tbody></table>';
+        document.getElementById('audit-table').innerHTML = html;
+
+        // Pagination
+        let paginationHtml = '';
+        for (let i = 1; i <= data.total_pages; i++) {
+          paginationHtml += `<button class="${i === data.page ? 'active' : ''}" onclick="loadAuditLogs(${i})">${i}</button>`;
+        }
+        document.getElementById('audit-pagination').innerHTML = paginationHtml;
+      } catch (err) {
+        document.getElementById('audit-table').innerHTML = '<div class="loading" style="color:#f87171;">Không thể tải audit logs.</div>';
+      }
+    }
+
+    // ========== Actions ==========
+    async function forceLogout(userId) {
+      if (!confirm('Ép đăng xuất user này?')) return;
+      await fetch('/admin/api/force-logout/', {
+        method: 'POST', credentials: 'include', headers: API_HEADERS,
+        body: JSON.stringify({ user_id: userId }),
+      });
+      loadUsers();
+      loadStats();
+    }
+
+    async function toggleUser(userId) {
+      if (!confirm('Khoá/mở khoá user này?')) return;
+      await fetch('/admin/api/toggle-user/', {
+        method: 'POST', credentials: 'include', headers: API_HEADERS,
+        body: JSON.stringify({ user_id: userId }),
+      });
+      loadUsers();
+    }
+
+    // ========== Init ==========
+    loadStats();
+    loadUsers();
+    loadAuditLogs();
+    // Auto refresh mỗi 30 giây
+    setInterval(() => { loadStats(); loadAuditLogs(); }, 30000);
+  </script>
+</body>
+</html>
