@@ -43,3 +43,4 @@ env/
 
 # Database
 *.sqlite3
+exports/
