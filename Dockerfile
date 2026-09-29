@@ -1,7 +1,7 @@
 FROM python:3.13-slim
 
 # Hạ mức bảo mật OpenSSL xuống 1 để tương thích với chứng chỉ nội bộ của SQL Server
-RUN sed -i 's/DEFAULT@SECLEVEL=2/DEFAULT@SECLEVEL=1/g' /etc/ssl/openssl.cnf
+RUN sed -i 's/DEFAULT:@SECLEVEL=2/DEFAULT:@SECLEVEL=0/g' /etc/ssl/openssl.cnf
 
 # Cài đặt ODBC Driver 17 cho SQL Server
 RUN apt-get update && apt-get install -y \
