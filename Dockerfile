@@ -1,6 +1,9 @@
 FROM python:3.13-slim
 
-# Cài đặt các gói hệ thống và ODBC Driver 17 cho SQL Server (Cập nhật cho Debian 12)
+# Hạ mức bảo mật OpenSSL xuống 1 để tương thích với chứng chỉ nội bộ của SQL Server
+RUN sed -i 's/DEFAULT@SECLEVEL=2/DEFAULT@SECLEVEL=1/g' /etc/ssl/openssl.cnf
+
+# Cài đặt ODBC Driver 17 cho SQL Server
 RUN apt-get update && apt-get install -y \
     curl apt-transport-https gnupg2 unixodbc-dev \
     && curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /usr/share/keyrings/microsoft-prod.gpg \
@@ -9,7 +12,6 @@ RUN apt-get update && apt-get install -y \
     && ACCEPT_EULA=Y apt-get install -y msodbcsql17 \
     && apt-get clean
 
-# ... (giữ nguyên các đoạn trên)
 WORKDIR /app
 COPY requirements.txt /app/
 RUN pip install --no-cache-dir -r requirements.txt
