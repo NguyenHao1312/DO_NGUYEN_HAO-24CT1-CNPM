@@ -66,11 +66,12 @@ WSGI_APPLICATION = 'core.wsgi.application'
 # Database — SQL Server (MSSQL)
 _db_options = {
     'driver': os.environ.get('DB_DRIVER', 'ODBC Driver 17 for SQL Server'),
+    'extra_params': 'TrustServerCertificate=yes;Encrypt=no;',
 }
 # Local dev: dùng Windows Auth (Trusted_Connection)
 # Production: dùng DB_USER + DB_PASSWORD
-if not os.environ.get('DB_USER'):
-    _db_options['extra_params'] = 'TrustServerCertificate=yes;Trusted_Connection=yes;'
+#if not os.environ.get('DB_USER'):
+#    _db_options['extra_params'] = 'TrustServerCertificate=yes;Trusted_Connection=yes;'
 
 DATABASES = {
     'default': {
