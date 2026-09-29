@@ -17,7 +17,7 @@ DEBUG = os.environ.get('DJANGO_DEBUG', 'True').lower() in ('true', '1', 'yes')
 
 ALLOWED_HOSTS = os.environ.get(
     'DJANGO_ALLOWED_HOSTS',
-    'unims-ade3.onrender.com,localhost,127.0.0.1'
+    'unims-ssm.onrender.com,localhost,127.0.0.1'
 ).split(',')
 
 # Application definition
