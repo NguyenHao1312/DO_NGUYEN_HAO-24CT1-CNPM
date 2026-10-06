@@ -1185,9 +1185,9 @@ const ReviewApp = {
       if (e.target === infoModal) this.hideInfoModal();
     });
 
-    // Header buttons → show login modal (not redirect)
-    headerLogin?.addEventListener('click', () => this.showLoginModal());
-    headerSignup?.addEventListener('click', () => this.showLoginModal());
+    // Header buttons → show login modal
+    headerLogin?.addEventListener('click', () => this.showLoginModal('login'));
+    headerSignup?.addEventListener('click', () => this.showLoginModal('register'));
 
     // ── Login Form: Segmented Tab Switching ──
     const loginTabs = document.querySelectorAll('.rv-login-tab');
@@ -1384,24 +1384,59 @@ const ReviewApp = {
       });
     }
 
-    // Register Toggle Logic
+    // Register Toggle Logic — with animations
     const registerLink = document.getElementById('rv-register-link');
     const backToLoginLink = document.getElementById('rv-back-to-login');
     const loginFormEl = document.getElementById('rv-login-form');
     const registerFormEl = document.getElementById('rv-register-form');
-    
+    const formHeader = document.getElementById('rv-form-header');
+    const formTitle = document.getElementById('rv-form-title');
+    const formSubtitle = document.getElementById('rv-form-subtitle');
+
+    const switchForm = (showForm, hideForm, title, subtitle) => {
+      // Animate out the old form
+      hideForm.classList.add('rv-form-exit');
+      hideForm.classList.remove('rv-form-enter');
+      
+      // Update header with animation
+      if (formHeader) {
+        formHeader.classList.remove('rv-header-animate');
+        void formHeader.offsetWidth; // force reflow
+        formHeader.classList.add('rv-header-animate');
+      }
+      if (formTitle) formTitle.textContent = title;
+      if (formSubtitle) formSubtitle.textContent = subtitle;
+
+      setTimeout(() => {
+        hideForm.style.display = 'none';
+        hideForm.classList.remove('rv-form-exit');
+        
+        showForm.style.display = 'flex';
+        showForm.classList.add('rv-form-enter');
+        showForm.classList.remove('rv-form-exit');
+        
+        // Scroll form panel to top
+        const panel = document.querySelector('.rv-login-form-panel');
+        if (panel) panel.scrollTop = 0;
+        
+        // Focus first input after animation
+        setTimeout(() => {
+          const firstInput = showForm.querySelector('input');
+          if (firstInput) firstInput.focus();
+        }, 200);
+      }, 250);
+    };
+
     if (registerLink && loginFormEl && registerFormEl) {
       registerLink.addEventListener('click', (e) => {
         e.preventDefault();
-        loginFormEl.style.display = 'none';
-        registerFormEl.style.display = 'block';
+        switchForm(registerFormEl, loginFormEl, 'Đăng ký', 'Tạo tài khoản mới để truy cập hệ thống.');
       });
     }
     if (backToLoginLink && loginFormEl && registerFormEl) {
       backToLoginLink.addEventListener('click', (e) => {
         e.preventDefault();
-        registerFormEl.style.display = 'none';
-        loginFormEl.style.display = 'block';
+        switchForm(loginFormEl, registerFormEl, 'Đăng nhập', 'Chào mừng trở lại! Vui lòng chọn vai trò và đăng nhập.');
       });
     }
 
@@ -1458,9 +1493,10 @@ const ReviewApp = {
           if (resp.ok && result.success) {
             this.showToast('Đăng ký thành công! Vui lòng đăng nhập.', 'success');
             setTimeout(() => {
-              registerFormEl.style.display = 'none';
-              loginFormEl.style.display = 'block';
-              document.getElementById('rv-login-username').value = username;
+              switchForm(loginFormEl, registerFormEl, 'Đăng nhập', 'Chào mừng trở lại! Vui lòng chọn vai trò và đăng nhập.');
+              setTimeout(() => {
+                document.getElementById('rv-login-username').value = username;
+              }, 300);
             }, 1000);
           } else {
             if (errorEl) errorEl.style.display = 'flex';
@@ -1507,9 +1543,54 @@ const ReviewApp = {
     }
   },
 
-  showLoginModal() {
+  showLoginModal(mode = 'login') {
     const modal = document.getElementById('rv-login-modal');
-    if (modal) modal.classList.add('active');
+    const loginForm = document.getElementById('rv-login-form');
+    const registerForm = document.getElementById('rv-register-form');
+    const formTitle = document.getElementById('rv-form-title');
+    const formSubtitle = document.getElementById('rv-form-subtitle');
+    const formHeader = document.getElementById('rv-form-header');
+
+    if (!modal) return;
+
+    // Reset form animations
+    if (loginForm) {
+      loginForm.classList.remove('rv-form-enter', 'rv-form-exit');
+    }
+    if (registerForm) {
+      registerForm.classList.remove('rv-form-enter', 'rv-form-exit');
+    }
+
+    if (mode === 'register') {
+      if (loginForm) loginForm.style.display = 'none';
+      if (registerForm) {
+        registerForm.style.display = 'flex';
+        registerForm.classList.add('rv-form-enter');
+      }
+      if (formTitle) formTitle.textContent = 'Đăng ký';
+      if (formSubtitle) formSubtitle.textContent = 'Tạo tài khoản mới để truy cập hệ thống.';
+    } else {
+      if (registerForm) registerForm.style.display = 'none';
+      if (loginForm) {
+        loginForm.style.display = 'flex';
+        loginForm.classList.add('rv-form-enter');
+      }
+      if (formTitle) formTitle.textContent = 'Đăng nhập';
+      if (formSubtitle) formSubtitle.textContent = 'Chào mừng trở lại! Vui lòng chọn vai trò và đăng nhập.';
+    }
+
+    // Trigger header animation
+    if (formHeader) {
+      formHeader.classList.remove('rv-header-animate');
+      void formHeader.offsetWidth;
+      formHeader.classList.add('rv-header-animate');
+    }
+
+    modal.classList.add('active');
+
+    // Scroll form panel to top
+    const panel = modal.querySelector('.rv-login-form-panel');
+    if (panel) panel.scrollTop = 0;
   },
 
   hideLoginModal() {

@@ -687,7 +687,7 @@ body.dark-mode .rv-node-label {
   display: flex;
   max-width: 880px;
   width: 94%;
-  max-height: 92vh;
+  max-height: 94vh;
   border-radius: var(--radius-xl);
   overflow: hidden;
   box-shadow: 0 25px 80px rgba(0,0,0,0.35);
@@ -750,14 +750,27 @@ body.dark-mode .rv-node-label {
   margin-bottom: 0;
 }
 
-/* Right form panel */
+/* Right form panel — scrollable to prevent crop */
 .rv-login-form-panel {
   flex: 1;
   background: var(--bg-primary);
-  padding: 40px 36px;
+  padding: 36px 36px;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
+}
+.rv-login-form-panel::-webkit-scrollbar {
+  width: 5px;
+}
+.rv-login-form-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+.rv-login-form-panel::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 10px;
 }
 .rv-login-form-header h3 {
   font-size: 1.5rem;
@@ -869,6 +882,44 @@ body.dark-mode .rv-node-label {
   font-size: 0.88rem;
 }
 
+/* Register form input wrapper (icon + input) */
+.rv-input-wrapper {
+  position: relative;
+}
+.rv-input-wrapper > i:first-child {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-tertiary);
+  font-size: 0.9rem;
+  z-index: 1;
+  pointer-events: none;
+  transition: color 0.25s ease;
+}
+.rv-input-wrapper input {
+  padding-left: 40px !important;
+}
+.rv-input-wrapper input:focus ~ i:first-child,
+.rv-input-wrapper:focus-within > i:first-child {
+  color: var(--primary-500);
+}
+/* Password toggle inside rv-input-wrapper */
+.rv-input-wrapper .rv-password-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-tertiary);
+  cursor: pointer;
+  font-size: 0.9rem;
+  z-index: 1;
+  transition: color 0.2s;
+}
+.rv-input-wrapper .rv-password-toggle:hover {
+  color: var(--primary-500);
+}
+
 /* Password wrapper */
 .rv-input-password-wrap {
   position: relative;
@@ -905,6 +956,14 @@ body.dark-mode .rv-node-label {
   display: flex;
   align-items: center;
   gap: 8px;
+  animation: rvShakeIn 0.4s ease;
+}
+@keyframes rvShakeIn {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
 }
 
 /* ── Submit Button (with ripple) ── */
@@ -950,6 +1009,69 @@ body.dark-mode .rv-node-label {
   margin-top: 20px;
   font-size: 0.88rem;
   color: var(--text-secondary);
+}
+
+/* ── Form Switch Animations ── */
+.rv-login-form.rv-form-enter {
+  animation: rvFormSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.rv-login-form.rv-form-exit {
+  animation: rvFormSlideOut 0.25s ease forwards;
+}
+@keyframes rvFormSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes rvFormSlideOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+}
+
+/* Input focus animation */
+.rv-input-group input[type="text"],
+.rv-input-group input[type="password"] {
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, background 0.25s ease, transform 0.15s ease;
+}
+.rv-input-group input:focus {
+  transform: translateY(-1px);
+}
+
+/* Form header text animation */
+.rv-login-form-header.rv-header-animate h3 {
+  animation: rvTextFadeIn 0.5s ease forwards;
+}
+.rv-login-form-header.rv-header-animate p {
+  animation: rvTextFadeIn 0.5s 0.1s ease forwards;
+  opacity: 0;
+}
+@keyframes rvTextFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Submit button loading state */
+.rv-login-submit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none !important;
 }
 
 /* ── Mobile: stack layout ── */
