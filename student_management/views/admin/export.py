@@ -1,15 +1,17 @@
 """
-student_management/views/export.py
+student_management/views/admin/export.py
 API endpoint: Export dữ liệu ra Excel (.xlsx).
 Chỉ Admin mới được phép. Có Rate Limit và Audit Log.
+
+[Tách riêng từ views/export.py → views/admin/export.py]
 """
 from django.http import JsonResponse, HttpResponse
 from django.utils import timezone
-from ..models import (
+from ...models import (
     Student, Teacher, CourseClass,
     Grade, Registration, Attendance,
 )
-from ..decorators import require_session, require_role, audit_log, rate_limit
+from ...decorators import require_session, require_role, audit_log, rate_limit
 
 
 # ============================================================

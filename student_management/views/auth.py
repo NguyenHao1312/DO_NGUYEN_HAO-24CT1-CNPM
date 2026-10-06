@@ -32,6 +32,21 @@ def api_register(request):
         name = data.get('name', '').strip()
         password = data.get('password', '')
         role = data.get('role', 'student')
+
+        # ── Chặn đăng ký role admin qua API public ──
+        if role == 'admin':
+            return JsonResponse({
+                'success': False,
+                'message': 'Không thể tự đăng ký tài khoản quản trị viên. Vui lòng liên hệ admin hệ thống.'
+            }, status=403)
+
+        # Chỉ cho phép role hợp lệ
+        if role not in ('student', 'teacher'):
+            return JsonResponse({
+                'success': False,
+                'message': 'Role không hợp lệ. Chỉ chấp nhận: student, teacher.'
+            }, status=400)
+
         university_id = data.get('universityId')
 
         if not username or not password:

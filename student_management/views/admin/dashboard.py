@@ -1,14 +1,16 @@
 """
-student_management/views/admin_dashboard.py
+student_management/views/admin/dashboard.py
 Admin Management API — Dashboard, Audit Log viewer, User Manager.
 Chỉ admin có session_token hợp lệ mới được truy cập.
+
+[Tách riêng từ views/admin_dashboard.py → views/admin/dashboard.py]
 """
 import json
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
-from ..decorators import require_session, require_role, audit_log
-from ..models import CustomUser, AuditLog, Student, Teacher, University
+from ...decorators import require_session, require_role, audit_log
+from ...models import CustomUser, AuditLog, Student, Teacher, University
 
 
 # ============================================================
@@ -18,7 +20,7 @@ from ..models import CustomUser, AuditLog, Student, Teacher, University
 @require_role(['admin'])
 def admin_dashboard_page(request):
     """Trang dashboard admin — render HTML."""
-    return render(request, 'admin_dashboard.html')
+    return render(request, 'admin/dashboard.html')
 
 
 # ============================================================
