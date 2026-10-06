@@ -87,9 +87,9 @@
 
         <!-- Right: Login form -->
         <div class="rv-login-form-panel">
-          <div class="rv-login-form-header">
-            <h3>Đăng nhập</h3>
-            <p>Chào mừng trở lại! Vui lòng chọn vai trò và đăng nhập.</p>
+          <div class="rv-login-form-header" id="rv-form-header">
+            <h3 id="rv-form-title">Đăng nhập</h3>
+            <p id="rv-form-subtitle">Chào mừng trở lại! Vui lòng chọn vai trò và đăng nhập.</p>
           </div>
 
           <!-- Segmented Control Tabs -->
@@ -103,7 +103,7 @@
             </button>
           </div>
 
-          <!-- Form -->
+          <!-- Login Form -->
           <form class="rv-login-form" id="rv-login-form" autocomplete="off">
             <div class="rv-input-group">
               <label for="rv-login-username"><i class="fas fa-user"></i> Mã số / Username</label>
@@ -137,7 +137,13 @@
                 <i class="fas fa-spinner fa-spin"></i> Đang xử lý...
               </span>
             </button>
+
+            <div class="rv-login-footer" id="rv-login-footer">
+              <span>Chưa có tài khoản?</span>
+              <a href="#" id="rv-register-link" style="color: var(--primary-500); font-weight: 600; text-decoration: none; margin-left: 4px;">Đăng ký ngay</a>
+            </div>
           </form>
+
           <!-- Register Form -->
           <form class="rv-login-form" id="rv-register-form" autocomplete="off" style="display: none;">
             <div class="rv-input-group">
@@ -175,17 +181,12 @@
               <div class="rv-login-submit-loading" style="display: none;"><i class="fas fa-circle-notch fa-spin"></i> Đang xử lý...</div>
             </button>
 
-            <div class="rv-login-footer">
+            <div class="rv-login-footer" id="rv-register-footer">
               <span style="color: var(--text-secondary);">Đã có tài khoản?</span>
               <a href="#" id="rv-back-to-login" style="color: var(--primary-500); font-weight: 600; text-decoration: none; margin-left: 4px;">Đăng nhập ngay</a>
             </div>
           </form>
 
-
-          <div class="rv-login-footer">
-            <span>Chưa có tài khoản?</span>
-            <a href="#" id="rv-register-link" style="color: var(--primary-500); font-weight: 600; text-decoration: none; margin-left: 4px;">Đăng ký ngay</a>
-          </div>
         </div>
       </div>
     </div>
