@@ -82,7 +82,7 @@ python manage.py migrate
 ### Bước 4: Nạp Dữ Liệu Mẫu (Seeding)
 Do database của bạn mới được tạo và hoàn toàn trống, hệ thống sẽ từ chối mọi nỗ lực đăng nhập. Bạn **BẮT BUỘC** phải chạy script sau để nạp dữ liệu mẫu ban đầu và các tài khoản cần thiết:
 ```bash
-python seed_db.py
+python scripts/seed_db.py
 ```
 Sau khi nạp dữ liệu thành công, bạn có thể sử dụng các tài khoản sau (Mật khẩu chung cho tất cả là `123`):
 
@@ -98,17 +98,67 @@ Truy cập vào [http://127.0.0.1:8000/](http://127.0.0.1:8000/) để trải ng
 
 ---
 
+
 ## 🏗 Cấu Trúc Dự Án
 
-- `/student_management`: Vùng lõi Backend (Django), quản trị Models (MSSQL), REST API Views, Middleware bảo mật và Security Decorators.
-- `/static/js/core`: Trái tim xử lý phía Frontend.
-  - `database.js`: Trình quản lý LocalStorage & Engine Mã hoá AES-GCM.
-  - `sync-queue.js`: Xử lý hàng đợi đồng bộ Offline -> Online.
-  - `auth.js`: Phân hệ xác thực, cấp phát token và giám sát Single Session.
-  - `app.js`: Vòng đời ứng dụng, hệ thống định tuyến (Router).
-- `/static/js/views`: Các module logic nghiệp vụ chuyên biệt (Login, Dashboard, Grading, Registry).
-- `/templates`: Tệp giao diện HTML tối giản dùng để làm khung sườn cho ứng dụng trang đơn (SPA).
-- `seed_db.py`: Mã kịch bản (Script) tự động hoá nạp dữ liệu mẫu vào SQL Server.
+```
+📁 UniMS/
+├── 📁 core/                          ⚙️ Django Project Config
+│   ├── settings.py                   # Cấu hình chính (DB, Security, Ngrok)
+│   ├── urls.py                       # Root URL routing
+│   └── wsgi.py / asgi.py            # Web server entry points
+│
+├── 📁 student_management/            🗄️ Backend — App Django chính
+│   ├── models.py                     # 11 models (User, Grade, Attendance...)
+│   ├── middleware.py                 # SingleSession bảo mật
+│   ├── decorators.py                 # @require_session, @rate_limit, @audit_log
+│   ├── tests.py                      # Unit tests phân quyền
+│   ├── urls.py                       # 17 API endpoints
+│   └── 📁 views/                     # 6 view modules (auth, api, sync, export...)
+│
+├── 📁 static/                        🌐 Frontend — Vanilla JS SPA
+│   ├── 📁 css/                       # Styles (main, mobile, variables)
+│   ├── 📁 js/core/                   # Engine: app, auth, crypto, database, sync, translations
+│   ├── 📁 js/views/                  # 12 view modules (dashboard, grades, chatbot...)
+│   ├── 📁 js/vendor/                 # ApexCharts, SweetAlert2
+│   └── 📁 assets/                    # Logo, favicon, images
+│
+├── 📁 templates/                     📄 HTML Templates — Khung SPA
+│
+├── 📁 docs/                          📚 Tài liệu & Diagrams
+│
+├── 📁 scripts/                       🔧 Scripts tiện ích
+│   ├── seed_db.py                    # Nạp dữ liệu mẫu vào DB
+│   ├── deploy_ngrok.ps1              # Deploy nhanh qua Ngrok (1 lệnh)
+│   └── run_seed.ps1                  # Wrapper chạy seed_db
+│
+├── .env.example                      🔒 Template biến môi trường
+├── Dockerfile                        🐳 Docker config
+├── Procfile / render.yaml            ☁️ Render.com deploy
+├── requirements.txt                  📦 Python dependencies
+└── README.md                         📖 Hướng dẫn này
+```
+
+---
+
+## 🌐 Deploy qua Ngrok
+
+**Yêu cầu:** Ngrok đã cài (`choco install ngrok`) + xác thực (`ngrok config add-authtoken YOUR_TOKEN`)
+
+**Cách nhanh nhất (1 lệnh):**
+```powershell
+.\scripts\deploy_ngrok.ps1
+```
+
+**Cách thủ công:**
+```powershell
+# Terminal 1
+python manage.py runserver 127.0.0.1:8000
+# Terminal 2
+ngrok http 8000
+```
+
+Truy cập URL `https://xxxxx.ngrok-free.app` hiển thị trên Ngrok terminal.
 
 ---
 *UniMS — Thay đổi cách bạn quản lý giáo dục.*
