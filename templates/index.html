@@ -159,18 +159,26 @@
   <script src="{% static 'js/core/utils.js' %}?v=1789141934"></script>
   <script src="{% static 'js/components/LoginBackground.js' %}?v=1789141934"></script>
   
-  <script src="{% static 'js/views/dashboard.js' %}?v=1789141934"></script>
-  <script src="{% static 'js/views/students.js' %}?v=1789141934"></script>
-  <script src="{% static 'js/views/teachers.js' %}?v=1789141934"></script>
-  <script src="{% static 'js/views/classes.js' %}?v=1789141934"></script>
-  <script src="{% static 'js/views/grades.js' %}?v=1789141934"></script>
-  <script src="{% static 'js/views/chatbot.js' %}?v=1789141934"></script>
-  <script src="{% static 'js/views/helpdesk.js' %}?v=1789141934"></script>
-  <script src="{% static 'js/views/workshop.js' %}?v=1789141934"></script>
-  <script src="{% static 'js/views/profile.js' %}?v=1789141934"></script>
-  <script src="{% static 'js/views/forgot_password.js' %}?v=1789141934"></script>
-  <script src="{% static 'js/views/registration.js' %}?v=1789141934"></script>
-  <script src="{% static 'js/views/tuition.js' %}?v=1789141934"></script>
+  <!-- Views: Common (all roles) -->
+  <script src="{% static 'js/views/common/dashboard.js' %}?v=1789141934"></script>
+  <script src="{% static 'js/views/common/classes.js' %}?v=1789141934"></script>
+  <script src="{% static 'js/views/common/grades.js' %}?v=1789141934"></script>
+  <script src="{% static 'js/views/common/chatbot.js' %}?v=1789141934"></script>
+  <script src="{% static 'js/views/common/helpdesk.js' %}?v=1789141934"></script>
+  <script src="{% static 'js/views/common/profile.js' %}?v=1789141934"></script>
+
+  <!-- Views: Admin only -->
+  <script src="{% static 'js/views/admin/students.js' %}?v=1789141934"></script>
+  <script src="{% static 'js/views/admin/teachers.js' %}?v=1789141934"></script>
+  <script src="{% static 'js/views/admin/workshop.js' %}?v=1789141934"></script>
+
+  <!-- Views: Student only -->
+  <script src="{% static 'js/views/student/registration.js' %}?v=1789141934"></script>
+  <script src="{% static 'js/views/student/tuition.js' %}?v=1789141934"></script>
+
+  <!-- Views: Public -->
+  <script src="{% static 'js/views/public/forgot_password.js' %}?v=1789141934"></script>
+
   <script src="{% static 'js/core/translations.js' %}?v=1789141934"></script>
   <script src="{% static 'js/core/app.js' %}?v=1789141934"></script>
 </body>
