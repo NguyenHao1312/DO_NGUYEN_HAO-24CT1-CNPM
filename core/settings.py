@@ -17,8 +17,17 @@ DEBUG = os.environ.get('DJANGO_DEBUG', 'True').lower() in ('true', '1', 'yes')
 
 ALLOWED_HOSTS = os.environ.get(
     'DJANGO_ALLOWED_HOSTS',
-    'unims-ssm.onrender.com,localhost,127.0.0.1'
+    'unims-ssm.onrender.com,localhost,127.0.0.1,*.ngrok-free.app,*.ngrok.io'
 ).split(',')
+
+# CSRF Trusted Origins — bắt buộc cho Ngrok, Render và các proxy khác
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.environ.get(
+        'CSRF_TRUSTED_ORIGINS',
+        'https://*.ngrok-free.app,https://*.ngrok.io,https://*.onrender.com'
+    ).split(',')
+]
 
 # Application definition
 INSTALLED_APPS = [
@@ -133,8 +142,8 @@ CACHES = {
 #  PRODUCTION SECURITY — chỉ kích hoạt khi DEBUG=False
 # ============================================================
 if not DEBUG:
-    # HTTPS
-    SECURE_SSL_REDIRECT = True
+    # HTTPS — có thể tắt khi dùng Ngrok (Ngrok tự xử lý HTTPS)
+    SECURE_SSL_REDIRECT = os.environ.get('SECURE_SSL_REDIRECT', 'True').lower() in ('true', '1', 'yes')
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
     # HSTS — buộc trình duyệt chỉ truy cập HTTPS trong 1 năm
