@@ -342,6 +342,30 @@ class AdminAuthSecurityTest(SecurityTestBase):
         self.admin.refresh_from_db()
         self.assertIsNone(self.admin.session_token)
 
+    def test_admin_cannot_login_via_public_user_login_api(self):
+        """Tài khoản Admin tuyệt đối KHÔNG ĐƯỢC đăng nhập qua form public /api/login/ -> 403."""
+        response = self.client.post('/api/login/', data=json.dumps({
+            'username': 'test_admin',
+            'password': 'test123',
+            'role': 'teacher',
+        }), content_type='application/json')
+        self.assertEqual(response.status_code, 403)
+        data = json.loads(response.content)
+        self.assertFalse(data['success'])
+        self.assertIn('Cổng Quản trị Local', data['message'])
+
+    def test_student_login_via_public_user_login_api_success(self):
+        """Tài khoản Student đăng nhập qua form public /api/login/ -> 200 OK."""
+        response = self.client.post('/api/login/', data=json.dumps({
+            'username': 'test_student',
+            'password': 'test123',
+            'role': 'student',
+        }), content_type='application/json')
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertTrue(data['success'])
+        self.assertEqual(data['user']['role'], 'student')
+
 
 class AdminAcademicManagementTest(SecurityTestBase):
     """Test các API nghiệp vụ đào tạo cho Admin: Điểm, Học phí, Lịch học."""

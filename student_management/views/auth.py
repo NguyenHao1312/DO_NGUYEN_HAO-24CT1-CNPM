@@ -125,21 +125,27 @@ def api_login(request):
         if not user.check_password(password):
             return JsonResponse({'success': False, 'message': 'Mật khẩu không đúng'})
 
-        # ── Kiểm tra vai trò (Role Validation) ──
-        # Admin chỉ được phép đăng nhập qua tab "Giáo viên" (role=teacher)
-        requested_role = data.get('role', '')
-        if user.role == 'admin' and requested_role == 'student':
+        # ── Bảo mật phân quyền: Chặn tuyệt đối tài khoản Admin tại cổng đăng nhập công khai ──
+        if user.role == 'admin':
             return JsonResponse({
                 'success': False,
-                'message': 'Tài khoản quản trị viên không thể đăng nhập qua tab Sinh viên'
-            })
+                'message': 'Từ chối truy cập: Tài khoản Quản trị viên (Admin) không được phép đăng nhập tại cổng người dùng. Vui lòng sử dụng Cổng Quản trị Local (Admin Control Panel - Port 9000).'
+            }, status=403)
 
+        requested_role = data.get('role', '')
         # Sinh viên không được đăng nhập qua tab Giáo viên
         if user.role == 'student' and requested_role == 'teacher':
             return JsonResponse({
                 'success': False,
                 'message': 'Tài khoản sinh viên không thể đăng nhập qua tab Giáo viên'
-            })
+            }, status=403)
+
+        # Giáo viên không được đăng nhập qua tab Sinh viên
+        if user.role == 'teacher' and requested_role == 'student':
+            return JsonResponse({
+                'success': False,
+                'message': 'Tài khoản giáo viên không thể đăng nhập qua tab Sinh viên'
+            }, status=403)
 
         # Lấy thông tin client
         client_ip = _get_client_ip(request)

@@ -147,22 +147,24 @@ const Auth = {
 
   // === LOGIN (kết hợp client + server) ===
   async login(username, password, role, universityId) {
-    const users = Database.users.getAll();
-    let user;
-
-    if (role === 'admin') {
-      user = users.find(u => u.username === username && u.password === password && u.role === 'admin');
-    } else {
-      user = users.find(u =>
-        u.username === username &&
-        u.password === password &&
-        u.role === role &&
-        u.universityId == universityId
-      );
+    // ── Chặn tuyệt đối tài khoản Admin tại cổng Client ──
+    if (role === 'admin' || (username && username.toLowerCase() === 'admin')) {
+      return {
+        success: false,
+        message: 'Tài khoản Quản trị viên chỉ được phép đăng nhập tại Cổng Quản trị Local (Admin Control Panel - Port 9000).'
+      };
     }
 
+    const users = Database.users.getAll();
+    const user = users.find(u =>
+      u.username === username &&
+      u.password === password &&
+      u.role === role &&
+      u.universityId == universityId
+    );
+
     if (!user) {
-      return { success: false };
+      return { success: false, message: 'Sai tên đăng nhập hoặc mật khẩu' };
     }
 
     const sessionToken = this._generateSessionToken();

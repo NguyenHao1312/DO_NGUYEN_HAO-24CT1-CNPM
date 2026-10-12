@@ -941,13 +941,15 @@ const Database = {
     const settings = this.settings.get();
     if (settings.initialized) return;
 
-    // Seed Admin User
-    this.users.add({
-      username: 'admin',
-      password: '123',
-      name: 'Administrator',
-      role: 'admin'
-    });
+    // Lưu ý bảo mật: Tài khoản Admin chỉ chạy trên Local Admin Control Panel (Port 9000),
+    // hoàn toàn không seed vào client database của User Portal.
+    try {
+      const allUsers = this.users.getAll();
+      const nonAdminUsers = allUsers.filter(u => u.username !== 'admin' && u.role !== 'admin');
+      if (nonAdminUsers.length !== allUsers.length) {
+        localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(nonAdminUsers));
+      }
+    } catch(e) {}
 
     // Seed Teachers (All assigned to University 1 - DUT for default mock)
     const SEED_TEACHERS = [

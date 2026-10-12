@@ -1264,10 +1264,12 @@ const ReviewApp = {
         return;
       }
 
-      // ── Admin protection: admin chỉ được login qua tab "Giáo viên" ──
-      if (username.toLowerCase() === 'admin' && selectedRole !== 'teacher') {
+      // ── Admin Isolation: Chặn hoàn toàn tài khoản Admin tại cổng người dùng ──
+      if (username.toLowerCase() === 'admin') {
         if (errorEl) { errorEl.style.display = 'flex'; }
-        if (errorText) { errorText.textContent = 'Tài khoản quản trị viên phải đăng nhập qua tab "Giáo viên"'; }
+        if (errorText) {
+          errorText.textContent = 'Tài khoản Quản trị viên chỉ được phép đăng nhập tại Cổng Quản trị Local (Admin Control Panel - Port 9000).';
+        }
         return;
       }
 
