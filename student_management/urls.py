@@ -12,6 +12,9 @@ urlpatterns = [
     path('api/sync/down/', views.api_sync_down, name='api_sync_down'),
     path('api/sync/up/', views.api_sync_up, name='api_sync_up'),
 
+    # AI Assistant
+    path('api/ai/chat/', views.api_ai_chat, name='api_ai_chat'),
+
     # Attendance (Phase 2)
     path('api/attendance/', views.api_attendance, name='api_attendance'),
     path('api/attendance/summarize/', views.api_attendance_summarize, name='api_attendance_summarize'),

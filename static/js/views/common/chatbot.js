@@ -99,44 +99,13 @@ const ChatbotView = {
           <h1 class="page-title">${t('chatbot_title')}</h1>
           <p class="page-subtitle">${t('chatbot_subtitle')}</p>
         </div>
-        <div class="page-actions" style="display: flex; gap: 0.5rem;">
-          ${isAdmin ? `
-            <button class="btn btn-secondary" id="btn-ai-settings">
-              <i class="fas fa-cog"></i> Cài đặt AI
-            </button>
-          ` : ''}
+        <div class="page-actions" style="display: flex; gap: 0.5rem; align-items: center;">
+          <span style="font-size: 0.8rem; padding: 4px 10px; border-radius: 9999px; background: rgba(16, 185, 129, 0.1); color: var(--success); display: inline-flex; align-items: center; gap: 5px;">
+            <i class="fas fa-shield-alt"></i> Server-Side Protected
+          </span>
           <button class="btn btn-ghost text-danger border-danger" id="btn-clear-chat">
             <i class="fas fa-trash"></i> ${t('clear_history')}
           </button>
-        </div>
-      </div>
-
-      <!-- AI Settings Modal -->
-      <div class="modal-overlay" id="ai-settings-modal">
-        <div class="modal">
-          <div class="modal-header">
-            <h3 class="modal-title">Cài đặt API Trí tuệ Nhân tạo</h3>
-            <button class="btn-icon" id="btn-close-ai-settings"><i class="fas fa-times"></i></button>
-          </div>
-          <div class="modal-body">
-            <div class="form-group">
-              <label>Nhà cung cấp AI</label>
-              <select class="form-control" id="ai-provider">
-                <option value="simulated" ${settings.aiProvider === 'simulated' ? 'selected' : ''}>Mô phỏng (Offline)</option>
-                <option value="gemini" ${settings.aiProvider === 'gemini' ? 'selected' : ''}>Google Gemini</option>
-                <option value="gpt" ${settings.aiProvider === 'gpt' ? 'selected' : ''}>OpenAI GPT-4</option>
-              </select>
-            </div>
-            <div class="form-group" style="margin-top: 1rem;">
-              <label>API Key</label>
-              <input type="password" class="form-control" id="ai-api-key" value="${settings.aiApiKey || ''}" placeholder="Nhập API key của bạn...">
-              <small class="text-text-tertiary">API Key được lưu trữ an toàn trong LocalStorage của trình duyệt.</small>
-            </div>
-          </div>
-          <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
-            <button class="btn btn-ghost" id="btn-cancel-ai-settings">Hủy</button>
-            <button class="btn btn-primary" id="btn-save-ai-settings">Lưu cài đặt</button>
-          </div>
         </div>
       </div>
 
@@ -150,7 +119,7 @@ const ChatbotView = {
             <div>
               <h3 class="font-bold text-text-primary m-0" style="margin:0; font-weight: 600;">UniMS AI Assistant</h3>
               <span class="text-xs text-success flex items-center gap-1" style="font-size: 0.75rem; display: flex; align-items: center; gap: 4px; color: var(--success);">
-                <span style="display:inline-block; width:8px; height:8px; background:var(--success); border-radius:50%;"></span> Online (${settings.aiProvider === 'simulated' ? 'Offline KB' : settings.aiProvider.toUpperCase()})
+                <span style="display:inline-block; width:8px; height:8px; background:var(--success); border-radius:50%;"></span> Trợ lý học vụ thông minh
               </span>
             </div>
           </div>
@@ -230,27 +199,6 @@ const ChatbotView = {
         this.loadHistory(); // Reloads welcome msg
       }
     });
-
-    // AI Settings Events
-    const settingsBtn = document.getElementById('btn-ai-settings');
-    const modal = document.getElementById('ai-settings-modal');
-    
-    if (settingsBtn && modal) {
-      settingsBtn.addEventListener('click', () => modal.classList.add('show'));
-      document.getElementById('btn-close-ai-settings').addEventListener('click', () => modal.classList.remove('show'));
-      document.getElementById('btn-cancel-ai-settings').addEventListener('click', () => modal.classList.remove('show'));
-      
-      document.getElementById('btn-save-ai-settings').addEventListener('click', () => {
-        const provider = document.getElementById('ai-provider').value;
-        const key = document.getElementById('ai-api-key').value.trim();
-        
-        Database.settings.save({ aiProvider: provider, aiApiKey: key });
-        modal.classList.remove('show');
-        const isEn = typeof App !== 'undefined' && App.currentLang === 'en';
-        Utils.showToast(isEn ? 'AI settings saved' : 'Đã lưu cấu hình AI', 'success');
-        this.render(); // Re-render to update header
-      });
-    }
   },
 
   loadHistory() {
@@ -331,100 +279,46 @@ const ChatbotView = {
 
   async processBotResponse(userText) {
     const isEn = (typeof Database !== 'undefined' && Database.settings.get().language === 'en') || (localStorage.getItem('unims_settings') && JSON.parse(localStorage.getItem('unims_settings')).language === 'en');
-    
-    // Check 100 messages/day limit
-    const today = new Date().toISOString().split('T')[0];
-    let chatCount = parseInt(localStorage.getItem('unims_main_chat_count') || '0');
-    let chatDate = localStorage.getItem('unims_main_chat_date');
-    if (chatDate !== today) {
-        chatCount = 0;
-        localStorage.setItem('unims_main_chat_date', today);
-    }
-    if (chatCount >= 100) {
-        const errorMsg = isEn ? 'You have reached the limit of 100 chats per day.' : 'Bạn đã đạt giới hạn 100 lần chat trong 1 ngày.';
-        this.addMessage('bot', errorMsg);
-        return;
-    }
-    chatCount++;
-    localStorage.setItem('unims_main_chat_count', chatCount);
 
     this.isTyping = true;
-    document.getElementById('typing-indicator').style.display = 'flex';
+    const typingIndicator = document.getElementById('typing-indicator');
+    if (typingIndicator) typingIndicator.style.display = 'flex';
     this.scrollToBottom();
 
-    const settings = Database.settings.get();
     let responseText = '';
 
     try {
-      if (settings.aiProvider === 'gemini' && settings.aiApiKey) {
-        responseText = await this.callGeminiAPI(userText, settings.aiApiKey, isEn);
-      } else if (settings.aiProvider === 'gpt' && settings.aiApiKey) {
-        responseText = await this.callGPTAPI(userText, settings.aiApiKey, isEn);
+      const token = (typeof Auth !== 'undefined') ? Auth.getServerToken() : '';
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['X-Session-Token'] = token;
+
+      const res = await fetch('/api/ai/chat/', {
+        method: 'POST',
+        credentials: 'include',
+        headers: headers,
+        body: JSON.stringify({ message: userText }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        responseText = data.reply || (isEn ? "Sorry, no response received." : "Xin lỗi, không nhận được phản hồi.");
       } else {
-        // Fallback to simulated offline KB
-        responseText = await this.getSimulatedAnswer(userText, isEn);
+        const errData = await res.json().catch(() => ({}));
+        if (errData && errData.error) {
+          responseText = errData.error;
+        } else {
+          // Fallback sang kho tri thức offline cục bộ
+          responseText = await this.getSimulatedAnswer(userText, isEn);
+        }
       }
     } catch (e) {
-      console.error("AI API Error:", e);
-      responseText = isEn ? "Sorry, an error occurred while connecting to the AI server. Please check your API key or network connection." : "Xin lỗi, đã có lỗi xảy ra khi kết nối với máy chủ AI. Vui lòng kiểm tra lại API key hoặc kết nối mạng.";
+      console.warn("AI Backend unreachable, using offline fallback:", e);
+      responseText = await this.getSimulatedAnswer(userText, isEn);
     }
-    
-    document.getElementById('typing-indicator').style.display = 'none';
+
+    if (typingIndicator) typingIndicator.style.display = 'none';
     this.isTyping = false;
     this.addMessage('bot', responseText);
-  },
-
-  async callGeminiAPI(text, apiKey, isEn) {
-    const context = this.buildContext();
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-    
-    const langPrompt = isEn ? 'Answer in English.' : 'Trả lời bằng tiếng Việt.';
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{ text: `Bạn là trợ lý AI của hệ thống quản lý đại học UniMS. ${langPrompt} Hãy ngắn gọn, súc tích. Dữ liệu hệ thống:\n${context}\n\nCâu hỏi của người dùng: ${text}` }]
-        }]
-      })
-    });
-    
-    if (!response.ok) throw new Error('API Error');
-    const data = await response.json();
-    return data.candidates[0].content.parts[0].text;
-  },
-
-  async callGPTAPI(text, apiKey, isEn) {
-    const context = this.buildContext();
-    const langPrompt = isEn ? 'Answer shortly in English.' : 'Trả lời ngắn gọn bằng tiếng Việt.';
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: [
-          { role: "system", content: `Bạn là trợ lý AI của UniMS. ${langPrompt} Dữ liệu:\n${context}` },
-          { role: "user", content: text }
-        ]
-      })
-    });
-    
-    if (!response.ok) throw new Error('API Error');
-    const data = await response.json();
-    return data.choices[0].message.content;
-  },
-
-  buildContext() {
-    // Trích xuất 1 phần dữ liệu để AI có context thực tế (không quá nhiều để tránh vượt limit token)
-    const stats = {
-      students: Database.students.count(),
-      teachers: Database.teachers.count(),
-      classes: Database.classes.count()
-    };
-    return `Hệ thống có ${stats.students} sinh viên, ${stats.teachers} giáo viên, ${stats.classes} lớp học.`;
   },
 
   getSimulatedAnswer(input, isEn) {
@@ -443,7 +337,7 @@ const ChatbotView = {
         }
         
         resolve(reply);
-      }, 600); // Simulate network delay
+      }, 400);
     });
   }
 };

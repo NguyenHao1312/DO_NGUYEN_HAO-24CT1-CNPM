@@ -11,9 +11,10 @@ import json
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.db import transaction
+from django.utils import timezone
 from ..models import (
     Student, Teacher, CourseClass, Registration,
-    Grade, Semester,
+    Grade, Semester, GradeEditConfig,
 )
 from ..decorators import require_session, audit_log
 
@@ -131,6 +132,7 @@ def api_sync_down(request):
             'registrations': registrations,
             'grades': grades,
             'semesters': semesters,
+            'server_timestamp': timezone.now().isoformat(),
         })
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
@@ -193,6 +195,27 @@ def api_sync_up(request):
                             'error': 'Giáo viên chỉ được phép sửa điểm lớp mình phụ trách'
                         }, status=403)
 
+                    # Kiểm tra khung giờ sửa điểm của giáo viên
+                    if not GradeEditConfig.is_edit_allowed_now():
+                        return JsonResponse({
+                            'success': False,
+                            'error': 'Ngoài khung giờ cho phép sửa điểm. Vui lòng thử lại trong giờ hành chính.'
+                        }, status=423)
+
+                # Kiểm tra khóa bảng điểm của học kì
+                if course_class.semester:
+                    sem = course_class.semester
+                    if sem.temporary_lock:
+                        return JsonResponse({
+                            'success': False,
+                            'error': f'Bảng điểm đang bị khoá tạm thời: {sem.temporary_lock_reason or "Đang chấm thi"}'
+                        }, status=423)
+                    if sem.pre_registration_lock:
+                        return JsonResponse({
+                            'success': False,
+                            'error': 'Bảng điểm đã bị khoá toàn bộ để chuẩn bị đăng ký học phần'
+                        }, status=423)
+
                 Grade.objects.update_or_create(
                     student=student,
                     course_class=course_class,
@@ -222,6 +245,13 @@ def api_sync_up(request):
                             'success': False,
                             'error': 'Sinh viên chỉ được đăng ký học phần cho chính mình'
                         }, status=403)
+
+                # Kiểm tra nợ học phí của sinh viên
+                if student.tuition_debt:
+                    return JsonResponse({
+                        'success': False,
+                        'error': 'Sinh viên đang nợ học phí. Không thể đăng ký học phần.'
+                    }, status=403)
 
                 Registration.objects.update_or_create(
                     student=student,

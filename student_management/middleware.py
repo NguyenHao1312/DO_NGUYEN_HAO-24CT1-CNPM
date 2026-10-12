@@ -7,7 +7,8 @@ Quy tắc:
 - Khác IP hoặc khác User-Agent (thiết bị/trình duyệt/tab ẩn danh): 
   FORCE LOGOUT session cũ, trả HTTP 401 + thông báo cụ thể.
 """
-from django.http import JsonResponse
+import os
+from django.http import JsonResponse, HttpResponseNotFound
 
 
 class SingleSessionMiddleware:
@@ -133,3 +134,35 @@ class SingleSessionMiddleware:
             return 'safari'
         # Fallback: dùng 50 ký tự đầu
         return ua[:50]
+
+
+class LocalOnlyAdminMiddleware:
+    """
+    Middleware cô lập Admin:
+    Chỉ cho phép truy cập các URL quản trị (/admin/*) từ localhost / 127.0.0.1.
+    Nếu truy cập từ domain ngoài (Ngrok, Render, public IP...) -> Trả về 404 Not Found,
+    hoàn toàn ẩn giấu trang Admin khỏi internet và tránh nghẽn băng thông Tunnel.
+    """
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        if request.path.startswith('/admin/'):
+            # Kiểm tra cờ cấu hình (mặc định bật)
+            admin_local_only = os.environ.get('ADMIN_LOCAL_ONLY', 'True').lower() in ('true', '1', 'yes')
+            if admin_local_only:
+                host = request.get_host().split(':')[0].lower()
+                forwarded_host = request.META.get('HTTP_X_FORWARDED_HOST', '').split(':')[0].lower()
+
+                # Danh sách host nội bộ hợp lệ
+                allowed_local_hosts = ('localhost', '127.0.0.1', 'testserver')
+
+                is_local = (host in allowed_local_hosts) and (not forwarded_host or forwarded_host in allowed_local_hosts)
+
+                if not is_local:
+                    return HttpResponseNotFound(
+                        "<h1>404 Not Found</h1>"
+                        "<p>The requested URL was not found on this server.</p>"
+                    )
+
+        return self.get_response(request)

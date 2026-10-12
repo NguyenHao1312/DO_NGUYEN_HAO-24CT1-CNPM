@@ -37,3 +37,6 @@ from .admin import (
     api_admin_users, api_admin_force_logout, api_admin_toggle_user,
     api_export_excel, api_copy_classes_semester,
 )
+
+# ── AI Assistant (Shared — mọi role đã login) ──
+from .ai import api_ai_chat

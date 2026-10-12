@@ -74,29 +74,44 @@ const Database = {
     }
   },
 
-  // Sync data lên server (có fallback offline queue)
+  // Sync data lên server (có debounce 400ms chống nghẽn kết nối và hiển thị lỗi server)
+  _syncTimers: {},
   _syncUp(action, data) {
-    // Nếu offline → enqueue ngay
     if (!navigator.onLine && typeof SyncQueue !== 'undefined') {
       SyncQueue.enqueue(action, data);
       return;
     }
 
-    const token = (typeof Auth !== 'undefined') ? Auth.getServerToken() : '';
-    const headers = { 'Content-Type': 'application/json' };
-    if (token) headers['X-Session-Token'] = token;
-    fetch('/api/sync/up/', {
-      method: 'POST',
-      credentials: 'include',
-      headers: headers,
-      body: JSON.stringify({ action, data }),
-    }).catch(err => {
-      console.log('Sync up failed:', err.message);
-      // Fetch thất bại → enqueue để retry sau
-      if (typeof SyncQueue !== 'undefined') {
-        SyncQueue.enqueue(action, data);
-      }
-    });
+    const key = `${action}_${data.studentId || ''}_${data.classId || ''}_${data.classCode || ''}`;
+    if (this._syncTimers[key]) {
+      clearTimeout(this._syncTimers[key]);
+    }
+
+    this._syncTimers[key] = setTimeout(() => {
+      delete this._syncTimers[key];
+      const token = (typeof Auth !== 'undefined') ? Auth.getServerToken() : '';
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['X-Session-Token'] = token;
+      fetch('/api/sync/up/', {
+        method: 'POST',
+        credentials: 'include',
+        headers: headers,
+        body: JSON.stringify({ action, data }),
+      }).then(res => {
+        if (!res.ok) {
+          return res.json().then(errData => {
+            if (errData && errData.error && typeof Utils !== 'undefined' && Utils.showToast) {
+              Utils.showToast(errData.error, 'warning');
+            }
+          }).catch(() => {});
+        }
+      }).catch(err => {
+        console.log('Sync up failed:', err.message);
+        if (typeof SyncQueue !== 'undefined') {
+          SyncQueue.enqueue(action, data);
+        }
+      });
+    }, 400);
   },
 
   UNIVERSITIES, // Expose globally

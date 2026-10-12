@@ -1,0 +1,20 @@
+services:
+  web:
+    build: .
+    container_name: unims_web
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - DJANGO_DEBUG=False
+      - DJANGO_SECRET_KEY=change-me-in-production-random-secret-key-32chars
+      - DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,.ngrok-free.app,.ngrok.io
+      - DB_NAME=unims_db
+      - DB_HOST=host.docker.internal
+      - DB_USER=
+      - DB_PASSWORD=
+      - DB_PORT=1433
+      - DB_DRIVER=ODBC Driver 17 for SQL Server
+      - ADMIN_LOCAL_ONLY=True
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

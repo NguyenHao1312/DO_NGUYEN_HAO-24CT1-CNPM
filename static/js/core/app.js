@@ -96,14 +96,20 @@ const App = {
       const res = await Auth.apiFetch('/api/sync/down/');
       if (res && res.ok) {
         const data = await res.json();
-        if (data.classes && data.classes.length > 0) {
+        if (Array.isArray(data.classes)) {
           localStorage.setItem('unims_classes', JSON.stringify(data.classes));
         }
-        if (data.registrations && data.registrations.length > 0) {
+        if (Array.isArray(data.registrations)) {
           localStorage.setItem('unims_registrations', JSON.stringify(data.registrations));
         }
-        if (data.grades && data.grades.length > 0) {
+        if (Array.isArray(data.grades)) {
           localStorage.setItem('unims_grades', JSON.stringify(data.grades));
+        }
+        if (Array.isArray(data.semesters)) {
+          localStorage.setItem('unims_semesters', JSON.stringify(data.semesters));
+        }
+        if (data.server_timestamp) {
+          localStorage.setItem('unims_last_sync_timestamp', data.server_timestamp);
         }
       }
     } catch(err) {

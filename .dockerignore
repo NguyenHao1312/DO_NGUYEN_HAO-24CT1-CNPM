@@ -1,0 +1,37 @@
+# ==========================================
+# .dockerignore for UniMS
+# ==========================================
+
+# Environment & Secrets (TUYỆT ĐỐI KHÔNG COPY VÀO IMAGE)
+.env
+.env.*
+
+# Python virtual environment & cache
+venv/
+.venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Database backups & raw local data
+backups/
+*.bak
+*.sqlite3
+exports/
+
+# Build artifacts & temp files
+staticfiles/
+*.tmp
+*.temp
+*.log
+
+# Git & IDE configs
+.git/
+.gitignore
+.vscode/
+.idea/
+
+# Docs & non-runtime files
+docs/
+README.md

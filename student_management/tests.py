@@ -205,3 +205,71 @@ class RateLimitTest(SecurityTestBase):
         self.assertEqual(response.status_code, 429)
         data = json.loads(response.content)
         self.assertIn('Too Many Requests', data['error'])
+
+
+class LocalOnlyAdminMiddlewareTest(SecurityTestBase):
+    """Test LocalOnlyAdminMiddleware: Chặn cổng Admin khi truy cập từ ngoài qua Tunnel."""
+
+    def test_localhost_access_allowed(self):
+        """Truy cập /admin/dashboard/ từ localhost (đúng session) -> 200."""
+        response = self.client.get(
+            '/admin/dashboard/',
+            SERVER_NAME='127.0.0.1',
+            **self._headers(self.admin.session_token)
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_ngrok_tunnel_access_blocked_with_404(self):
+        """Truy cập /admin/dashboard/ từ domain ngrok -> BỊ CHẶN 404."""
+        response = self.client.get(
+            '/admin/dashboard/',
+            HTTP_HOST='unims-test.ngrok-free.app',
+            **self._headers(self.admin.session_token)
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_ngrok_tunnel_admin_api_blocked_with_404(self):
+        """Truy cập /admin/api/stats/ từ domain ngrok -> BỊ CHẶN 404."""
+        response = self.client.get(
+            '/admin/api/stats/',
+            HTTP_HOST='unims-test.ngrok-free.app',
+            **self._headers(self.admin.session_token)
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_ngrok_tunnel_public_api_allowed(self):
+        """Truy cập public API (/api/sync/down/) từ domain ngrok -> KHÔNG bị chặn bởi middleware."""
+        response = self.client.get(
+            '/api/sync/down/',
+            HTTP_HOST='unims-test.ngrok-free.app',
+            **self._headers(self.student.session_token)
+        )
+        self.assertEqual(response.status_code, 200)
+
+
+class AIChatSecurityTest(SecurityTestBase):
+    """Test /api/ai/chat/ — Xác thực phiên & Phản hồi an toàn."""
+
+    url = '/api/ai/chat/'
+
+    def test_guest_gets_401(self):
+        """Guest (không token) -> 401 Unauthorized."""
+        response = self.client.post(
+            self.url,
+            data=json.dumps({'message': 'Xin chào'}),
+            content_type='application/json'
+        )
+        self.assertEqual(response.status_code, 401)
+
+    def test_student_gets_200_with_offline_kb(self):
+        """Student có session -> 200 OK và trả về reply từ AI Gateway."""
+        response = self.client.post(
+            self.url,
+            data=json.dumps({'message': 'Thông tin học phí năm nay'}),
+            content_type='application/json',
+            **self._headers(self.student.session_token)
+        )
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertTrue(data['success'])
+        self.assertIn('reply', data)

@@ -15,10 +15,11 @@ SECRET_KEY = os.environ.get(
 
 DEBUG = os.environ.get('DJANGO_DEBUG', 'True').lower() in ('true', '1', 'yes')
 
-ALLOWED_HOSTS = os.environ.get(
+_raw_hosts = os.environ.get(
     'DJANGO_ALLOWED_HOSTS',
-    'unims-ssm.onrender.com,localhost,127.0.0.1,*.ngrok-free.app,*.ngrok.io'
+    'unims-ssm.onrender.com,localhost,127.0.0.1,.ngrok-free.app,.ngrok.io'
 ).split(',')
+ALLOWED_HOSTS = [h.strip().lstrip('*') for h in _raw_hosts if h.strip()]
 
 # CSRF Trusted Origins — bắt buộc cho Ngrok, Render và các proxy khác
 CSRF_TRUSTED_ORIGINS = [
@@ -42,6 +43,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # --- UniMS: Cô lập Admin chỉ cho phép truy cập qua Localhost (404 trên Tunnel) ---
+    'student_management.middleware.LocalOnlyAdminMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
