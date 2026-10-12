@@ -12,6 +12,10 @@ from django.contrib.auth.models import AbstractUser
 #  1. CUSTOM USER — Mở rộng Django User với session enforcement
 # ============================================================
 class CustomUser(AbstractUser):
+    id: int
+    student_profile: 'Student'
+    teacher_profile: 'Teacher'
+
     ROLE_CHOICES = (
         ('admin', 'Admin'),
         ('teacher', 'Teacher'),
@@ -49,6 +53,7 @@ class CustomUser(AbstractUser):
 #  2. UNIVERSITY
 # ============================================================
 class University(models.Model):
+    id: int
     name = models.CharField(max_length=255)
     short_name = models.CharField(max_length=50, blank=True, null=True)
     code = models.CharField(max_length=20, unique=True, blank=True, null=True)
@@ -66,6 +71,7 @@ class University(models.Model):
 #  3. SEMESTER — Quản lý học kì + Lock flags đa mốc
 # ============================================================
 class Semester(models.Model):
+    id: int
     STATUS_CHOICES = (
         ('active', 'Đang diễn ra'),
         ('upcoming', 'Sắp tới'),
@@ -107,6 +113,8 @@ class Semester(models.Model):
 #  4. STUDENT
 # ============================================================
 class Student(models.Model):
+    id: int
+    total_classes: int
     GENDER_CHOICES = (('male', 'Nam'), ('female', 'Nữ'), ('other', 'Khác'))
     STATUS_CHOICES = (
         ('active', 'Đang học'),
@@ -145,11 +153,18 @@ class Student(models.Model):
     def __str__(self):
         return f"{self.student_id} - {self.full_name}"
 
+    def get_gender_display(self) -> str:
+        return dict(self.GENDER_CHOICES).get(self.gender or '', self.gender or '')
+
+    def get_status_display(self) -> str:
+        return dict(self.STATUS_CHOICES).get(self.status, self.status)
+
 
 # ============================================================
 #  5. TEACHER
 # ============================================================
 class Teacher(models.Model):
+    id: int
     STATUS_CHOICES = (
         ('active', 'Đang giảng dạy'),
         ('inactive', 'Nghỉ'),
@@ -179,11 +194,15 @@ class Teacher(models.Model):
     def __str__(self):
         return f"{self.teacher_id} - {self.full_name}"
 
+    def get_status_display(self) -> str:
+        return dict(self.STATUS_CHOICES).get(self.status, self.status)
+
 
 # ============================================================
 #  6. COURSE CLASS — Lớp học phần (gắn Semester)
 # ============================================================
 class CourseClass(models.Model):
+    id: int
     class_code = models.CharField(max_length=50, unique=True)
     name = models.CharField(max_length=255)
     teacher = models.ForeignKey(Teacher, on_delete=models.SET_NULL, null=True, blank=True)
@@ -208,6 +227,7 @@ class CourseClass(models.Model):
 #  7. REGISTRATION — Đăng ký học phần
 # ============================================================
 class Registration(models.Model):
+    id: int
     STATUS_CHOICES = (
         ('registered', 'Đã đăng ký'),
         ('cancelled', 'Đã huỷ'),
@@ -227,11 +247,15 @@ class Registration(models.Model):
     def __str__(self):
         return f"{self.student} → {self.course_class}"
 
+    def get_status_display(self) -> str:
+        return dict(self.STATUS_CHOICES).get(self.status, self.status)
+
 
 # ============================================================
 #  8. GRADE — Bảng điểm (với lock per-record)
 # ============================================================
 class Grade(models.Model):
+    id: int
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
     course_class = models.ForeignKey(CourseClass, on_delete=models.CASCADE)
     semester = models.ForeignKey(Semester, on_delete=models.SET_NULL, null=True, blank=True)
@@ -300,6 +324,7 @@ class Grade(models.Model):
 #  9. ATTENDANCE — Điểm danh theo từng buổi/ngày
 # ============================================================
 class Attendance(models.Model):
+    id: int
     STATUS_CHOICES = (
         ('present', 'Có mặt'),
         ('absent', 'Vắng mặt'),
@@ -328,6 +353,9 @@ class Attendance(models.Model):
 
     def __str__(self):
         return f"{self.student} | {self.course_class} | {self.date} Buổi {self.session_number}: {self.status}"
+
+    def get_status_display(self) -> str:
+        return dict(self.STATUS_CHOICES).get(self.status, self.status)
 
     @staticmethod
     def summarize_for_grade(student, course_class):

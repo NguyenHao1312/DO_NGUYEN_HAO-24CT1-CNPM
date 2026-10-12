@@ -34,6 +34,8 @@ def api_export_excel(request):
 
     wb = Workbook()
     ws = wb.active
+    if ws is None:
+        ws = wb.create_sheet(title='Data')
 
     if export_type == 'students':
         ws.title = 'Sinh viên'

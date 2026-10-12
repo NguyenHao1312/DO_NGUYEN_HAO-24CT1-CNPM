@@ -161,7 +161,7 @@ def api_login(request):
 
         # Xây dựng user info trả về client
         user_info = {
-            'id': user.id,
+            'id': getattr(user, 'id', user.pk),
             'username': user.username,
             'name': user.first_name or user.username,
             'role': user.role,
@@ -169,18 +169,20 @@ def api_login(request):
         }
 
         # Lấy linkedId (student_id hoặc teacher_id)
-        if user.role == 'student' and hasattr(user, 'student_profile'):
-            try:
-                student = user.student_profile
-                user_info['linkedId'] = student.student_id
-            except Student.DoesNotExist:
-                pass
-        elif user.role == 'teacher' and hasattr(user, 'teacher_profile'):
-            try:
-                teacher = user.teacher_profile
-                user_info['linkedId'] = teacher.teacher_id
-            except Teacher.DoesNotExist:
-                pass
+        if user.role == 'student':
+            student = getattr(user, 'student_profile', None)
+            if student is not None:
+                try:
+                    user_info['linkedId'] = student.student_id
+                except (Student.DoesNotExist, AttributeError):
+                    pass
+        elif user.role == 'teacher':
+            teacher = getattr(user, 'teacher_profile', None)
+            if teacher is not None:
+                try:
+                    user_info['linkedId'] = teacher.teacher_id
+                except (Teacher.DoesNotExist, AttributeError):
+                    pass
 
         response_data = {
             'success': True,
@@ -263,7 +265,7 @@ def api_session_check(request):
         return JsonResponse({
             'valid': True,
             'user': {
-                'id': user.id,
+                'id': getattr(user, 'id', user.pk),
                 'username': user.username,
                 'role': user.role,
                 'name': user.first_name or user.username,
