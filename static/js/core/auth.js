@@ -151,7 +151,7 @@ const Auth = {
     if (role === 'admin' || (username && username.toLowerCase() === 'admin')) {
       return {
         success: false,
-        message: 'Tài khoản Quản trị viên chỉ được phép đăng nhập tại Cổng Quản trị Local (Admin Control Panel - Port 9000).'
+        message: 'Tài khoản Quản trị viên chỉ được phép đăng nhập tại Cổng Quản trị Local!!.'
       };
     }
 
