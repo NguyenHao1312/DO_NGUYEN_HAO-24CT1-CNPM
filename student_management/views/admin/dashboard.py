@@ -7,7 +7,7 @@ Chỉ admin có session_token hợp lệ mới được truy cập.
 """
 import json
 from django.http import JsonResponse
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.views.decorators.csrf import csrf_exempt
 from ...decorators import require_session, require_role, audit_log
 from ...models import CustomUser, AuditLog, Student, Teacher, University
@@ -16,11 +16,23 @@ from ...models import CustomUser, AuditLog, Student, Teacher, University
 # ============================================================
 #  ADMIN DASHBOARD PAGE
 # ============================================================
-@require_session
-@require_role(['admin'])
 def admin_dashboard_page(request):
-    """Trang dashboard admin — render HTML."""
-    return render(request, 'admin/dashboard.html')
+    """
+    Trang dashboard admin — render HTML.
+    Nếu chưa đăng nhập hoặc không phải admin, chuyển hướng sang /admin/login/.
+    """
+    token = request.COOKIES.get('session_token', '').strip() or request.META.get('HTTP_X_SESSION_TOKEN', '').strip()
+    if not token:
+        return redirect('/admin/login/?next=/admin/dashboard/')
+    try:
+        user = CustomUser.objects.get(session_token=token)
+        if user.role != 'admin':
+            return redirect('/admin/login/?error=role')
+    except CustomUser.DoesNotExist:
+        return redirect('/admin/login/?next=/admin/dashboard/')
+
+    request.session_user = user
+    return render(request, 'admin/dashboard.html', {'admin_user': user})
 
 
 # ============================================================

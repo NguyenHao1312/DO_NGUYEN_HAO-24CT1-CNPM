@@ -33,6 +33,7 @@ from .teacher import api_attendance, api_attendance_summarize
 
 # ── Admin APIs (admin only) ──
 from .admin import (
+    admin_login_page, admin_logout_page,
     admin_dashboard_page, api_admin_stats, api_admin_audit_logs,
     api_admin_users, api_admin_force_logout, api_admin_toggle_user,
     api_export_excel, api_copy_classes_semester,

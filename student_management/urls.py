@@ -31,7 +31,10 @@ urlpatterns = [
     # Export Excel (Phase 2)
     path('api/export/excel/', views.api_export_excel, name='api_export_excel'),
 
-    # Admin Dashboard (Phase 3)
+    # Admin Portal & Dashboard
+    path('admin/', views.admin_dashboard_page, name='admin_root'),
+    path('admin/login/', views.admin_login_page, name='admin_login'),
+    path('admin/logout/', views.admin_logout_page, name='admin_logout'),
     path('admin/dashboard/', views.admin_dashboard_page, name='admin_dashboard'),
     path('admin/api/stats/', views.api_admin_stats, name='api_admin_stats'),
     path('admin/api/audit-logs/', views.api_admin_audit_logs, name='api_admin_audit_logs'),

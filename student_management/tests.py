@@ -273,3 +273,72 @@ class AIChatSecurityTest(SecurityTestBase):
         data = json.loads(response.content)
         self.assertTrue(data['success'])
         self.assertIn('reply', data)
+
+
+class AdminAuthSecurityTest(SecurityTestBase):
+    """Test trang xác thực Admin (/admin/login/, /admin/logout/, /admin/dashboard/)."""
+
+    def test_guest_access_admin_dashboard_redirects_to_login(self):
+        """Khách truy cập /admin/dashboard/ -> Tự động chuyển hướng về /admin/login/."""
+        response = self.client.get('/admin/dashboard/')
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/admin/login/', response.url)
+
+    def test_student_access_admin_dashboard_redirects_with_error(self):
+        """Student truy cập /admin/dashboard/ -> Bị chuyển hướng với mã lỗi role."""
+        response = self.client.get('/admin/dashboard/', **self._headers(self.student.session_token))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('error=role', response.url)
+
+    def test_admin_access_admin_dashboard_with_cookie_success(self):
+        """Admin có cookie session_token hợp lệ -> 200 OK vào Dashboard."""
+        self.client.cookies['session_token'] = self.admin.session_token
+        response = self.client.get('/admin/dashboard/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'UniMS Admin Dashboard')
+
+    def test_guest_get_admin_login_page_renders_html(self):
+        """Khách truy cập GET /admin/login/ -> 200 OK trang login."""
+        response = self.client.get('/admin/login/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'UniMS Admin Portal')
+
+    def test_admin_login_post_valid_credentials(self):
+        """Đăng nhập Admin đúng thông tin -> 302 chuyển hướng vào dashboard và có cookie."""
+        response = self.client.post('/admin/login/', {
+            'username': 'test_admin',
+            'password': 'test123',
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/admin/dashboard/', response.url)
+        self.assertIn('session_token', response.cookies)
+        self.assertTrue(response.cookies['session_token']['httponly'])
+
+    def test_admin_login_post_wrong_password(self):
+        """Đăng nhập sai mật khẩu -> render trang login với thông báo lỗi."""
+        response = self.client.post('/admin/login/', {
+            'username': 'test_admin',
+            'password': 'wrongpassword',
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'không chính xác')
+
+    def test_student_cannot_login_via_admin_portal(self):
+        """Tài khoản student đăng nhập cổng Admin -> Bị từ chối quyền truy cập."""
+        response = self.client.post('/admin/login/', {
+            'username': 'test_student',
+            'password': 'test123',
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'không phải là Quản trị viên')
+
+    def test_admin_logout_clears_cookie_and_token(self):
+        """Đăng xuất Admin -> Xoá token trong DB và xoá cookie, chuyển về login."""
+        self.client.cookies['session_token'] = self.admin.session_token
+        response = self.client.get('/admin/logout/')
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/admin/login/', response.url)
+        # Kiểm tra token trong DB đã được clear
+        self.admin.refresh_from_db()
+        self.assertIsNone(self.admin.session_token)
+

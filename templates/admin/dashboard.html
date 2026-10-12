@@ -64,9 +64,15 @@
 </head>
 <body>
   <div class="admin-header">
-    <h1><i class="fas fa-shield-halved"></i> UniMS Admin Dashboard</h1>
-    <div>
+    <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+      <h1><i class="fas fa-shield-halved"></i> UniMS Admin Dashboard</h1>
+      <span class="badge" style="background: #10b981;"><i class="fas fa-database"></i> SSMS: unims_db</span>
       <span class="badge"><i class="fas fa-server"></i> Port {{ request.META.SERVER_PORT }}</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+      <span style="font-size: 0.9rem; color: #cbd5e1;"><i class="fas fa-user-shield" style="color: #38bdf8;"></i> {{ admin_user.username|default:"admin" }}</span>
+      <a href="/review/" target="_blank" class="btn" style="background:#0284c7; color:#fff; text-decoration:none;"><i class="fas fa-arrow-up-right-from-square"></i> Cổng Người dùng (Tab mới)</a>
+      <a href="/admin/logout/" class="btn btn-danger" style="text-decoration:none;"><i class="fas fa-sign-out-alt"></i> Đăng xuất</a>
     </div>
   </div>
 
@@ -110,10 +116,20 @@
   <script>
     const API_HEADERS = { 'Content-Type': 'application/json' };
 
+    async function adminFetch(url, options = {}) {
+      const opts = { ...options, credentials: 'include' };
+      const res = await fetch(url, opts);
+      if (res.status === 401) {
+        window.location.href = '/admin/login/?error=session_expired';
+        throw new Error('Unauthorized');
+      }
+      return res;
+    }
+
     // ========== Stats ==========
     async function loadStats() {
       try {
-        const res = await fetch('/admin/api/stats/', { credentials: 'include' });
+        const res = await adminFetch('/admin/api/stats/');
         const data = await res.json();
         if (!data.success) throw new Error('Failed');
         const s = data.stats;
@@ -133,7 +149,7 @@
     // ========== Users ==========
     async function loadUsers() {
       try {
-        const res = await fetch('/admin/api/users/', { credentials: 'include' });
+        const res = await adminFetch('/admin/api/users/');
         const data = await res.json();
         if (!data.success) throw new Error('Failed');
         let html = '<table class="admin-table"><thead><tr><th>ID</th><th>Username</th><th>Tên</th><th>Role</th><th>IP</th><th>Đăng nhập cuối</th><th>Trạng thái</th><th>Hành động</th></tr></thead><tbody>';
@@ -162,7 +178,7 @@
       const status = document.getElementById('filter-status')?.value || '';
       try {
         const params = new URLSearchParams({ page, endpoint, role, status });
-        const res = await fetch(`/admin/api/audit-logs/?${params}`, { credentials: 'include' });
+        const res = await adminFetch(`/admin/api/audit-logs/?${params}`);
         const data = await res.json();
         if (!data.success) throw new Error('Failed');
         let html = '<table class="admin-table"><thead><tr><th>#</th><th>Role</th><th>Endpoint</th><th>Method</th><th>Status</th><th>IP</th><th>Thời gian</th></tr></thead><tbody>';
@@ -187,8 +203,8 @@
     // ========== Actions ==========
     async function forceLogout(userId) {
       if (!confirm('Ép đăng xuất user này?')) return;
-      await fetch('/admin/api/force-logout/', {
-        method: 'POST', credentials: 'include', headers: API_HEADERS,
+      await adminFetch('/admin/api/force-logout/', {
+        method: 'POST', headers: API_HEADERS,
         body: JSON.stringify({ user_id: userId }),
       });
       loadUsers();
@@ -197,8 +213,8 @@
 
     async function toggleUser(userId) {
       if (!confirm('Khoá/mở khoá user này?')) return;
-      await fetch('/admin/api/toggle-user/', {
-        method: 'POST', credentials: 'include', headers: API_HEADERS,
+      await adminFetch('/admin/api/toggle-user/', {
+        method: 'POST', headers: API_HEADERS,
         body: JSON.stringify({ user_id: userId }),
       });
       loadUsers();

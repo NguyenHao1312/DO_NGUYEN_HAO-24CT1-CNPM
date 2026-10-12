@@ -1,0 +1,292 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UniMS — Đăng nhập Quản trị viên</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+      background: radial-gradient(circle at top right, #1e293b, #0f172a 70%);
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .login-container {
+      width: 100%;
+      max-width: 440px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 16px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05);
+      overflow: hidden;
+    }
+    .login-header {
+      padding: 32px 32px 24px;
+      text-align: center;
+      background: linear-gradient(180deg, rgba(56, 189, 248, 0.08) 0%, transparent 100%);
+      border-bottom: 1px solid #334155;
+    }
+    .brand-icon {
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, #0284c7, #38bdf8);
+      border-radius: 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      color: #0f172a;
+      box-shadow: 0 8px 16px rgba(56, 189, 248, 0.25);
+      margin-bottom: 16px;
+    }
+    .brand-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #f8fafc;
+      letter-spacing: -0.5px;
+    }
+    .brand-subtitle {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      margin-top: 4px;
+    }
+    .badge-container {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+    }
+    .badge-local {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .badge-secure {
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+    .login-body {
+      padding: 28px 32px 32px;
+    }
+    .alert-error {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #fca5a5;
+      padding: 12px 14px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    .form-label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #cbd5e1;
+      margin-bottom: 8px;
+    }
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .input-icon {
+      position: absolute;
+      left: 14px;
+      color: #64748b;
+      font-size: 1rem;
+      pointer-events: none;
+    }
+    .form-input {
+      width: 100%;
+      background: #0f172a;
+      border: 1px solid #475569;
+      color: #f8fafc;
+      padding: 12px 14px 12px 42px;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      transition: all 0.2s;
+    }
+    .form-input:focus {
+      outline: none;
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+      background: #111827;
+    }
+    .toggle-pwd {
+      position: absolute;
+      right: 14px;
+      color: #64748b;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: color 0.2s;
+    }
+    .toggle-pwd:hover {
+      color: #38bdf8;
+    }
+    .btn-submit {
+      width: 100%;
+      background: linear-gradient(135deg, #0284c7, #0ea5e9);
+      color: #ffffff;
+      border: none;
+      padding: 13px 20px;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+      transition: all 0.2s;
+    }
+    .btn-submit:hover {
+      background: linear-gradient(135deg, #0369a1, #0284c7);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(14, 165, 233, 0.4);
+    }
+    .btn-submit:active {
+      transform: translateY(0);
+    }
+    .info-box {
+      margin-top: 24px;
+      padding: 14px;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px dashed #334155;
+      border-radius: 10px;
+      font-size: 0.8rem;
+      color: #94a3b8;
+    }
+    .info-box strong {
+      color: #38bdf8;
+    }
+    .footer-links {
+      margin-top: 20px;
+      text-align: center;
+      font-size: 0.82rem;
+    }
+    .footer-links a {
+      color: #38bdf8;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .footer-links a:hover {
+      text-decoration: underline;
+      color: #7dd3fc;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-header">
+      <div class="brand-icon">
+        <i class="fas fa-shield-halved"></i>
+      </div>
+      <h1 class="brand-title">UniMS Admin Portal</h1>
+      <p class="brand-subtitle">Hệ thống Quản trị Cục bộ & Giám sát SSMS</p>
+      <div class="badge-container">
+        <span class="badge badge-local"><i class="fas fa-network-wired"></i> Local Server (127.0.0.1)</span>
+        <span class="badge badge-secure"><i class="fas fa-lock"></i> Isolated from Tunnel</span>
+      </div>
+    </div>
+
+    <div class="login-body">
+      {% if error %}
+      <div class="alert-error">
+        <i class="fas fa-circle-exclamation" style="margin-top: 2px;"></i>
+        <div>{{ error }}</div>
+      </div>
+      {% endif %}
+
+      <form method="POST" action="/admin/login/{% if next %}?next={{ next }}{% endif %}">
+        {% csrf_token %}
+        <div class="form-group">
+          <label class="form-label" for="username">Tên đăng nhập Admin</label>
+          <div class="input-wrapper">
+            <i class="fas fa-user-shield input-icon"></i>
+            <input
+              type="text"
+              id="username"
+              name="username"
+              class="form-input"
+              placeholder="Nhập username quản trị viên..."
+              value="{{ username|default:'admin' }}"
+              required
+              autofocus
+              autocomplete="username"
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="password">Mật khẩu</label>
+          <div class="input-wrapper">
+            <i class="fas fa-key input-icon"></i>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              class="form-input"
+              placeholder="Nhập mật khẩu..."
+              required
+              autocomplete="current-password"
+            />
+            <i class="fas fa-eye toggle-pwd" id="toggle-pwd" title="Hiện mật khẩu"></i>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-submit">
+          <i class="fas fa-arrow-right-to-bracket"></i> Đăng nhập Quản trị viên
+        </button>
+      </form>
+
+      <div class="info-box">
+        <i class="fas fa-info-circle"></i> <strong>Lưu ý nội bộ:</strong><br>
+        Tài khoản quản trị mặc định: <code>admin</code> | Mật khẩu: <code>123</code><br>
+        Dữ liệu được đồng bộ trực tiếp với SQL Server database <code>unims_db</code>.
+      </div>
+
+      <div class="footer-links">
+        <a href="/review/"><i class="fas fa-arrow-left"></i> Chuyển sang Cổng Người dùng (User Portal)</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const togglePwd = document.getElementById('toggle-pwd');
+    const pwdInput = document.getElementById('password');
+    if (togglePwd && pwdInput) {
+      togglePwd.addEventListener('click', () => {
+        const isPassword = pwdInput.type === 'password';
+        pwdInput.type = isPassword ? 'text' : 'password';
+        togglePwd.classList.toggle('fa-eye', !isPassword);
+        togglePwd.classList.toggle('fa-eye-slash', isPassword);
+      });
+    }
+  </script>
+</body>
+</html>
