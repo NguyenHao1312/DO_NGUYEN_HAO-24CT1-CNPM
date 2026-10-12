@@ -750,14 +750,14 @@ body.dark-mode .rv-node-label {
   margin-bottom: 0;
 }
 
-/* Right form panel — scrollable to prevent crop */
+/* Right form panel — anchored cleanly with no scroll crop */
 .rv-login-form-panel {
   flex: 1;
   background: var(--bg-primary);
-  padding: 36px 36px;
+  padding: 26px 32px;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
+  justify-content: center;
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--border-color) transparent;
@@ -773,18 +773,18 @@ body.dark-mode .rv-node-label {
   border-radius: 10px;
 }
 .rv-login-form-header h3 {
-  font-size: 1.5rem;
+  font-size: 1.45rem;
   font-weight: 800;
   color: var(--text-primary);
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   text-align: left;
 }
 .rv-login-form-header p {
-  font-size: 0.9rem;
+  font-size: 0.86rem;
   color: var(--text-secondary);
-  margin-bottom: 24px;
+  margin-bottom: 16px;
   text-align: left;
-  line-height: 1.5;
+  line-height: 1.45;
 }
 
 /* ── Segmented Control Tabs ── */
@@ -794,7 +794,7 @@ body.dark-mode .rv-node-label {
   background: var(--bg-tertiary);
   border-radius: var(--radius-md);
   padding: 4px;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
   gap: 4px;
 }
 .rv-login-tab-indicator {
@@ -844,14 +844,14 @@ body.dark-mode .rv-node-label {
   flex-direction: column;
 }
 .rv-input-group {
-  margin-bottom: 18px;
+  margin-bottom: 13px;
 }
 .rv-input-group label {
   display: block;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 600;
   color: var(--text-primary);
-  margin-bottom: 6px;
+  margin-bottom: 5px;
 }
 .rv-input-group label i {
   color: var(--primary-400);
@@ -862,8 +862,8 @@ body.dark-mode .rv-node-label {
 .rv-input-group input[type="text"],
 .rv-input-group input[type="password"] {
   width: 100%;
-  padding: 12px 14px;
-  font-size: 0.95rem;
+  padding: 10px 12px;
+  font-size: 0.92rem;
   font-family: var(--font-family);
   border: 1.5px solid var(--border-color);
   border-radius: var(--radius-md);
@@ -871,6 +871,22 @@ body.dark-mode .rv-node-label {
   color: var(--text-primary);
   outline: none;
   transition: border-color 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+}
+
+/* ── Register Form Compact Grid (Anchored Layout) ── */
+.rv-register-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.rv-register-grid .rv-input-group {
+  margin-bottom: 12px;
+}
+@media (max-width: 580px) {
+  .rv-register-grid {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
 }
 .rv-input-group input:focus {
   border-color: var(--primary-500);
@@ -999,8 +1015,8 @@ body.dark-mode .rv-node-label {
 /* ── Submit Button (with ripple) ── */
 .rv-login-submit {
   width: 100%;
-  padding: 14px;
-  font-size: 1.05rem;
+  padding: 12px 18px;
+  font-size: 0.98rem;
   font-weight: 700;
   font-family: var(--font-family);
   color: #fff;
@@ -1033,13 +1049,32 @@ body.dark-mode .rv-node-label {
   to { transform: scale(4); opacity: 0; }
 }
 
-/* Footer */
+/* Footer & Anchored Switch Link */
 .rv-login-footer {
   text-align: center;
-  margin-top: 20px;
-  padding-bottom: 8px;
+  margin-top: 14px;
+  padding-bottom: 2px;
   font-size: 0.88rem;
   color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.rv-switch-link {
+  color: var(--primary-600);
+  font-weight: 700;
+  text-decoration: none;
+  padding: 3px 6px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  display: inline-block;
+}
+.rv-switch-link:hover {
+  color: var(--primary-700);
+  background: rgba(37, 99, 235, 0.08);
+  text-decoration: underline;
 }
 
 /* ── Form Switch Animations ── */

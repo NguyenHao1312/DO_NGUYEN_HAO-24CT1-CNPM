@@ -1,13 +1,13 @@
 """
 student_management/views/pages.py
-Render HTML pages — không có logic API.
+Forwarder sang student_management/views/user/pages.py (Backward compatibility).
 """
-from django.shortcuts import render
+from student_management.views.user.pages import (
+    index,
+    review,
+)
 
-
-def index(request):
-    return render(request, 'index.html')
-
-
-def review(request):
-    return render(request, 'review.html')
+__all__ = [
+    'index',
+    'review',
+]

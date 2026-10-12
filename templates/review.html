@@ -145,28 +145,27 @@
           </form>
 
           <!-- Register Form -->
-          <form class="rv-login-form" id="rv-register-form" autocomplete="off" style="display: none;">
-            <div class="rv-input-group">
-              <label>Họ và tên</label>
-              <div class="rv-input-wrapper">
-                <i class="fas fa-user-edit"></i>
-                <input type="text" id="rv-reg-name" placeholder="Họ và tên đầy đủ..." required>
+          <form class="rv-login-form rv-register-form-compact" id="rv-register-form" autocomplete="off" style="display: none;">
+            <div class="rv-register-grid">
+              <div class="rv-input-group">
+                <label for="rv-reg-name"><i class="fas fa-user-edit"></i> Họ và tên</label>
+                <div class="rv-input-wrapper">
+                  <input type="text" id="rv-reg-name" placeholder="Họ và tên đầy đủ..." autocomplete="name" required>
+                </div>
               </div>
-            </div>
-            
-            <div class="rv-input-group">
-              <label>Mã số (Sinh viên / Giáo viên)</label>
-              <div class="rv-input-wrapper">
-                <i class="fas fa-id-card"></i>
-                <input type="text" id="rv-reg-username" placeholder="Nhập mã số..." required>
+              
+              <div class="rv-input-group">
+                <label for="rv-reg-username"><i class="fas fa-id-card"></i> Mã số (SV / GV)</label>
+                <div class="rv-input-wrapper">
+                  <input type="text" id="rv-reg-username" placeholder="Mã số SV / GV..." autocomplete="username" required>
+                </div>
               </div>
             </div>
 
             <div class="rv-input-group">
-              <label>Mật khẩu</label>
+              <label for="rv-reg-password"><i class="fas fa-lock"></i> Mật khẩu</label>
               <div class="rv-input-wrapper">
-                <i class="fas fa-lock"></i>
-                <input type="password" id="rv-reg-password" placeholder="Tạo mật khẩu..." required>
+                <input type="password" id="rv-reg-password" placeholder="Tạo mật khẩu..." autocomplete="new-password" required>
                 <i class="fas fa-eye rv-password-toggle" id="rv-reg-toggle"></i>
               </div>
             </div>
@@ -177,13 +176,13 @@
             </div>
 
             <button type="submit" class="rv-login-submit" id="rv-reg-submit">
-              <span class="rv-login-submit-text">Đăng ký <i class="fas fa-user-plus" style="margin-left: 6px;"></i></span>
+              <span class="rv-login-submit-text">Đăng ký tài khoản <i class="fas fa-user-plus" style="margin-left: 6px;"></i></span>
               <div class="rv-login-submit-loading" style="display: none;"><i class="fas fa-circle-notch fa-spin"></i> Đang xử lý...</div>
             </button>
 
             <div class="rv-login-footer" id="rv-register-footer">
               <span style="color: var(--text-secondary);">Đã có tài khoản?</span>
-              <a href="#" id="rv-back-to-login" style="color: var(--primary-500); font-weight: 600; text-decoration: none; margin-left: 4px;">Đăng nhập ngay</a>
+              <a href="#" id="rv-back-to-login" class="rv-switch-link">Đăng nhập ngay</a>
             </div>
           </form>
 
