@@ -30,11 +30,11 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS(
             f'\n'
-            f'╔══════════════════════════════════════════╗\n'
-            f'║    UniMS Admin Management Server         ║\n'
-            f'║    http://{host}:{port}/admin/           ║\n'
-            f'║    http://{host}:{port}/admin/dashboard/ ║\n'
-            f'╚══════════════════════════════════════════╝\n'
+            f'╔════════════════════════════════════════════════════╗\n'
+            f'║       UniMS Admin Management Server                ║\n'
+            f'║  Đăng nhập: http://{host}:{port}/admin/login/      ║\n'
+            f'║  Dashboard: http://{host}:{port}/admin/dashboard/  ║\n'
+            f'╚════════════════════════════════════════════════════╝\n'
         ))
         self.stdout.write(self.style.WARNING(
             '⚠ Server này CHỈ dành cho Admin. Không expose ra internet!\n'
