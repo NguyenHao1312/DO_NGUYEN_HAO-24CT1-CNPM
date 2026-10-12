@@ -9,11 +9,11 @@ Các endpoint riêng theo role đã được tách sang:
 - views/teacher/ → attendance, attendance_summarize
 """
 from django.http import JsonResponse
-from ..models import (
+from student_management.models import (
     Student, CourseClass, Semester,
     GradeEditConfig,
 )
-from ..decorators import require_session, audit_log
+from student_management.decorators import require_session, audit_log
 
 
 # ============================================================

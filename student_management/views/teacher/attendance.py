@@ -7,8 +7,8 @@ API endpoints: Attendance (Điểm danh) — Chỉ Admin + Teacher.
 import json
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from ...models import Student, CourseClass, Attendance
-from ...decorators import require_session, require_role, audit_log
+from student_management.models import Student, CourseClass, Attendance
+from student_management.decorators import require_session, require_role, audit_log
 
 
 # ============================================================

@@ -7,7 +7,7 @@ import uuid
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
-from ..models import CustomUser, University, Student, Teacher
+from student_management.models import CustomUser, University, Student, Teacher
 
 
 def _get_client_ip(request):

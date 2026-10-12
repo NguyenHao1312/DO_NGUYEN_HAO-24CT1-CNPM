@@ -8,7 +8,7 @@ import json
 from django.shortcuts import render, redirect
 from django.http import HttpResponseRedirect, JsonResponse
 from django.utils import timezone
-from ...models import CustomUser
+from student_management.models import CustomUser
 
 
 def _get_client_ip(request):

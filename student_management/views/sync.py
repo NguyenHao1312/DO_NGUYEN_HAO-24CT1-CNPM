@@ -12,11 +12,11 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.db import transaction
 from django.utils import timezone
-from ..models import (
+from student_management.models import (
     Student, Teacher, CourseClass, Registration,
     Grade, Semester, GradeEditConfig,
 )
-from ..decorators import require_session, audit_log
+from student_management.decorators import require_session, audit_log
 
 
 # ============================================================

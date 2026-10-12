@@ -8,8 +8,8 @@ Chỉ Admin mới được phép.
 import json
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from ...models import CourseClass, Semester
-from ...decorators import require_session, require_role, audit_log
+from student_management.models import CourseClass, Semester
+from student_management.decorators import require_session, require_role, audit_log
 
 
 # ============================================================

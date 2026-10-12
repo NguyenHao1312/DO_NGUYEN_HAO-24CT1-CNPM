@@ -9,8 +9,8 @@ import json
 from django.http import JsonResponse
 from django.shortcuts import render, redirect
 from django.views.decorators.csrf import csrf_exempt
-from ...decorators import require_session, require_role, audit_log
-from ...models import CustomUser, AuditLog, Student, Teacher, University
+from student_management.decorators import require_session, require_role, audit_log
+from student_management.models import CustomUser, AuditLog, Student, Teacher, University
 
 
 # ============================================================

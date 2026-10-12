@@ -11,7 +11,7 @@ import json
 import uuid
 from django.test import TestCase, Client
 from django.contrib.auth.hashers import make_password
-from .models import CustomUser, Semester
+from student_management.models import CustomUser, Semester
 
 
 class SecurityTestBase(TestCase):
@@ -166,7 +166,7 @@ class AuditLogTest(SecurityTestBase):
 
     def test_audit_log_created_on_success(self):
         """Khi admin gọi /api/sync/down/ → AuditLog có 1 record."""
-        from .models import AuditLog
+        from student_management.models import AuditLog
         initial_count = AuditLog.objects.count()
         self.client.get('/api/sync/down/', **self._headers(self.admin.session_token))
         self.assertEqual(AuditLog.objects.count(), initial_count + 1)
@@ -178,7 +178,7 @@ class AuditLogTest(SecurityTestBase):
 
     def test_audit_log_created_on_403(self):
         """Khi student gọi /api/export/excel/ → AuditLog ghi 403."""
-        from .models import AuditLog
+        from student_management.models import AuditLog
         # Note: 403 happens AFTER require_session passes, so audit_log still fires
         # BUT require_role returns 403 BEFORE audit_log in our decorator chain
         # So for export: @require_session → @require_role → @rate_limit → @audit_log
@@ -348,7 +348,7 @@ class AdminAcademicManagementTest(SecurityTestBase):
 
     def setUp(self):
         super().setUp()
-        from .models import CourseClass, Student, Teacher, Grade
+        from student_management.models import CourseClass, Student, Teacher, Grade
         self.teacher_profile, _ = Teacher.objects.get_or_create(
             user=self.teacher,
             teacher_id='GV_TEST_ACADEMIC',
@@ -397,7 +397,7 @@ class AdminAcademicManagementTest(SecurityTestBase):
 
     def test_admin_update_grade_and_recalculates_gpa(self):
         """Admin sửa điểm thành phần -> tự động tính lại avg10, avg4, và GPA sinh viên."""
-        from .models import Grade
+        from student_management.models import Grade
         grade, _ = Grade.objects.get_or_create(
             student=self.student_profile,
             course_class=self.course_class,

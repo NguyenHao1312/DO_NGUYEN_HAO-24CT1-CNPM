@@ -10,8 +10,8 @@ import json
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Count, Q
-from ...decorators import require_session, require_role, audit_log
-from ...models import (
+from student_management.decorators import require_session, require_role, audit_log
+from student_management.models import (
     Student, Teacher, CourseClass, Registration, Grade,
     Semester, CustomUser
 )

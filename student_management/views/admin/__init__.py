@@ -2,8 +2,8 @@
 student_management/views/admin/__init__.py
 Package chứa các views dành riêng cho Admin.
 """
-from .auth import admin_login_page, admin_logout_page
-from .dashboard import (
+from student_management.views.admin.auth import admin_login_page, admin_logout_page
+from student_management.views.admin.dashboard import (
     admin_dashboard_page,
     api_admin_stats,
     api_admin_audit_logs,
@@ -11,9 +11,9 @@ from .dashboard import (
     api_admin_force_logout,
     api_admin_toggle_user,
 )
-from .export import api_export_excel
-from .management import api_copy_classes_semester
-from .academic import (
+from student_management.views.admin.export import api_export_excel
+from student_management.views.admin.management import api_copy_classes_semester
+from student_management.views.admin.academic import (
     api_admin_students,
     api_admin_toggle_tuition,
     api_admin_grades,

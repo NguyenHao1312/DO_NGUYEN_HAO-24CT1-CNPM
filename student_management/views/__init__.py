@@ -17,22 +17,22 @@ Cấu trúc mới:
 """
 
 # ── Pages (Shared) ──
-from .pages import index, review
+from student_management.views.pages import index, review
 
 # ── Auth (Shared — public endpoints) ──
-from .auth import api_register, api_login, api_logout, api_session_check
+from student_management.views.auth import api_register, api_login, api_logout, api_session_check
 
 # ── Sync (Shared — filtered by role) ──
-from .sync import api_sync_down, api_sync_up
+from student_management.views.sync import api_sync_down, api_sync_up
 
 # ── Shared API (mọi role đã login) ──
-from .api import api_grade_lock_status, api_semesters
+from student_management.views.api import api_grade_lock_status, api_semesters
 
 # ── Teacher APIs (admin + teacher) ──
-from .teacher import api_attendance, api_attendance_summarize
+from student_management.views.teacher import api_attendance, api_attendance_summarize
 
 # ── Admin APIs (admin only) ──
-from .admin import (
+from student_management.views.admin import (
     admin_login_page, admin_logout_page,
     admin_dashboard_page, api_admin_stats, api_admin_audit_logs,
     api_admin_users, api_admin_force_logout, api_admin_toggle_user,
@@ -43,4 +43,4 @@ from .admin import (
 )
 
 # ── AI Assistant (Shared — mọi role đã login) ──
-from .ai import api_ai_chat
+from student_management.views.ai import api_ai_chat

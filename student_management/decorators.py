@@ -9,7 +9,7 @@ Bộ decorator bảo mật cho API endpoints.
 from functools import wraps
 from django.http import JsonResponse
 from django.core.cache import cache
-from .models import CustomUser
+from student_management.models import CustomUser
 
 
 def _get_client_ip(request):
@@ -86,7 +86,7 @@ def audit_log(view_func):
     def wrapper(request, *args, **kwargs):
         response = view_func(request, *args, **kwargs)
         try:
-            from .models import AuditLog
+            from student_management.models import AuditLog
             user = getattr(request, 'session_user', None)
             AuditLog.objects.create(
                 user=user,

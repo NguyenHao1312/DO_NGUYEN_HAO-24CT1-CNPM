@@ -7,11 +7,11 @@ Chỉ Admin mới được phép. Có Rate Limit và Audit Log.
 """
 from django.http import JsonResponse, HttpResponse
 from django.utils import timezone
-from ...models import (
+from student_management.models import (
     Student, Teacher, CourseClass,
     Grade, Registration, Attendance,
 )
-from ...decorators import require_session, require_role, audit_log, rate_limit
+from student_management.decorators import require_session, require_role, audit_log, rate_limit
 
 
 # ============================================================

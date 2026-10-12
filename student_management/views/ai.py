@@ -13,8 +13,8 @@ import urllib.request
 import urllib.error
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from ..decorators import require_session, rate_limit, audit_log
-from ..models import Student, Teacher, CourseClass, Registration, Grade
+from student_management.decorators import require_session, rate_limit, audit_log
+from student_management.models import Student, Teacher, CourseClass, Registration, Grade
 
 
 # Bộ quy tắc tri thức học vụ dự phòng (Offline Knowledge Base)
