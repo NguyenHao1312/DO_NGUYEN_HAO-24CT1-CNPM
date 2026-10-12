@@ -41,4 +41,13 @@ urlpatterns = [
     path('admin/api/users/', views.api_admin_users, name='api_admin_users'),
     path('admin/api/force-logout/', views.api_admin_force_logout, name='api_admin_force_logout'),
     path('admin/api/toggle-user/', views.api_admin_toggle_user, name='api_admin_toggle_user'),
+
+    # Admin Academic Management APIs
+    path('admin/api/students/', views.api_admin_students, name='api_admin_students'),
+    path('admin/api/students/toggle-tuition/', views.api_admin_toggle_tuition, name='api_admin_toggle_tuition'),
+    path('admin/api/grades/', views.api_admin_grades, name='api_admin_grades'),
+    path('admin/api/teachers/', views.api_admin_teachers, name='api_admin_teachers'),
+    path('admin/api/classes/', views.api_admin_classes, name='api_admin_classes'),
+    path('admin/api/classes/update-schedule/', views.api_admin_update_schedule, name='api_admin_update_schedule'),
+    path('admin/api/semesters/', views.api_admin_semesters, name='api_admin_semesters'),
 ]

@@ -37,6 +37,9 @@ from .admin import (
     admin_dashboard_page, api_admin_stats, api_admin_audit_logs,
     api_admin_users, api_admin_force_logout, api_admin_toggle_user,
     api_export_excel, api_copy_classes_semester,
+    api_admin_students, api_admin_toggle_tuition, api_admin_grades,
+    api_admin_teachers, api_admin_classes, api_admin_update_schedule,
+    api_admin_semesters,
 )
 
 # ── AI Assistant (Shared — mọi role đã login) ──

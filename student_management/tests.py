@@ -342,3 +342,100 @@ class AdminAuthSecurityTest(SecurityTestBase):
         self.admin.refresh_from_db()
         self.assertIsNone(self.admin.session_token)
 
+
+class AdminAcademicManagementTest(SecurityTestBase):
+    """Test các API nghiệp vụ đào tạo cho Admin: Điểm, Học phí, Lịch học."""
+
+    def setUp(self):
+        super().setUp()
+        from .models import CourseClass, Student, Teacher, Grade
+        self.teacher_profile, _ = Teacher.objects.get_or_create(
+            user=self.teacher,
+            teacher_id='GV_TEST_ACADEMIC',
+            defaults={'full_name': 'Thầy Test Academic', 'department': 'CNTT'}
+        )
+        self.student_profile, _ = Student.objects.get_or_create(
+            user=self.student,
+            student_id='SV_TEST_ACADEMIC',
+            defaults={'full_name': 'Sinh Viên Test Academic', 'department': 'CNTT'}
+        )
+        self.course_class, _ = CourseClass.objects.get_or_create(
+            class_code='CS101_TEST_ACAD',
+            defaults={
+                'name': 'Lập trình Python',
+                'teacher': self.teacher_profile,
+                'schedule': 'Thứ 2 (7:00 - 9:30)',
+                'room': 'A101',
+                'credits': 3,
+            }
+        )
+
+    def test_student_cannot_access_admin_students_api(self):
+        """Sinh viên gọi /admin/api/students/ -> 403 Forbidden."""
+        response = self.client.get('/admin/api/students/', **self._headers(self.student.session_token))
+        self.assertEqual(response.status_code, 403)
+
+    def test_admin_get_students_list(self):
+        """Admin gọi /admin/api/students/ -> 200 OK và có danh sách sinh viên."""
+        response = self.client.get('/admin/api/students/', **self._headers(self.admin.session_token))
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertTrue(data['success'])
+        self.assertGreaterEqual(len(data['students']), 1)
+
+    def test_admin_toggle_tuition_debt(self):
+        """Admin bật/tắt nợ học phí cho sinh viên."""
+        response = self.client.post(
+            '/admin/api/students/toggle-tuition/',
+            data=json.dumps({'id': self.student_profile.id, 'tuition_debt': True}),
+            content_type='application/json',
+            **self._headers(self.admin.session_token)
+        )
+        self.assertEqual(response.status_code, 200)
+        self.student_profile.refresh_from_db()
+        self.assertTrue(self.student_profile.tuition_debt)
+
+    def test_admin_update_grade_and_recalculates_gpa(self):
+        """Admin sửa điểm thành phần -> tự động tính lại avg10, avg4, và GPA sinh viên."""
+        from .models import Grade
+        grade, _ = Grade.objects.get_or_create(
+            student=self.student_profile,
+            course_class=self.course_class,
+        )
+        response = self.client.post(
+            '/admin/api/grades/',
+            data=json.dumps({
+                'grade_id': grade.id,
+                'assignment': 9.0,
+                'midterm': 8.0,
+                'final': 9.0,
+            }),
+            content_type='application/json',
+            **self._headers(self.admin.session_token)
+        )
+        self.assertEqual(response.status_code, 200)
+        grade.refresh_from_db()
+        self.assertAlmostEqual(grade.average10, 8.7, places=1)
+        self.assertEqual(grade.letter_grade, 'A')
+        self.student_profile.refresh_from_db()
+        self.assertGreater(self.student_profile.gpa, 0.0)
+
+    def test_admin_update_class_schedule_and_room(self):
+        """Admin đổi lịch học và phòng học của lớp học phần."""
+        response = self.client.post(
+            '/admin/api/classes/update-schedule/',
+            data=json.dumps({
+                'class_id': self.course_class.id,
+                'schedule': 'Thứ 4 (13:00 - 15:30)',
+                'room': 'B202',
+                'note': 'Chuyển ca học theo yêu cầu giảng viên',
+            }),
+            content_type='application/json',
+            **self._headers(self.admin.session_token)
+        )
+        self.assertEqual(response.status_code, 200)
+        self.course_class.refresh_from_db()
+        self.assertEqual(self.course_class.schedule, 'Thứ 4 (13:00 - 15:30)')
+        self.assertEqual(self.course_class.room, 'B202')
+
+

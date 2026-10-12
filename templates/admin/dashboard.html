@@ -4,118 +4,476 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>UniMS — Admin Dashboard</title>
+  <title>UniMS — Hệ thống Quản trị Doanh nghiệp (Admin Portal)</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
-    .admin-header { background: linear-gradient(135deg, #1e293b, #334155); padding: 20px 32px; border-bottom: 1px solid #475569; display: flex; justify-content: space-between; align-items: center; }
-    .admin-header h1 { font-size: 1.5rem; color: #38bdf8; }
-    .admin-header .badge { background: #ef4444; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; }
-    .admin-content { max-width: 1400px; margin: 24px auto; padding: 0 24px; }
+    body { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+    
+    /* Header */
+    .admin-header {
+      background: linear-gradient(135deg, #1e293b, #334155);
+      padding: 16px 32px;
+      border-bottom: 1px solid #475569;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .admin-header h1 { font-size: 1.35rem; color: #38bdf8; display: flex; align-items: center; gap: 10px; }
+    .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; }
+    .badge-port { background: #334155; color: #94a3b8; border: 1px solid #475569; }
+    .badge-db { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }
+
+    /* Layout & Tabs */
+    .admin-content { max-width: 1440px; margin: 24px auto; padding: 0 24px 60px; }
+    .tab-bar {
+      display: flex;
+      gap: 8px;
+      border-bottom: 2px solid #334155;
+      margin-bottom: 24px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      padding: 12px 18px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 8px 8px 0 0;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .tab-btn:hover { color: #f8fafc; background: rgba(51, 65, 85, 0.4); }
+    .tab-btn.active { color: #38bdf8; border-bottom: 3px solid #38bdf8; background: #1e293b; }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; animation: fadeIn 0.2s ease-in-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
     /* Stats Cards */
-    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 32px; }
-    .stat-card { background: #1e293b; border-radius: 12px; padding: 20px; border: 1px solid #334155; transition: transform 0.2s; }
-    .stat-card:hover { transform: translateY(-2px); border-color: #38bdf8; }
-    .stat-card .stat-value { font-size: 2rem; font-weight: 700; color: #38bdf8; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin-bottom: 28px; }
+    .stat-card { background: #1e293b; border-radius: 12px; padding: 20px; border: 1px solid #334155; transition: all 0.2s; position: relative; overflow: hidden; }
+    .stat-card:hover { transform: translateY(-3px); border-color: #38bdf8; box-shadow: 0 8px 20px rgba(0,0,0,0.3); }
+    .stat-card .stat-value { font-size: 2.1rem; font-weight: 700; color: #38bdf8; }
     .stat-card .stat-label { font-size: 0.85rem; color: #94a3b8; margin-top: 4px; }
-    .stat-card .stat-icon { float: right; font-size: 1.5rem; opacity: 0.5; }
+    .stat-card .stat-icon { position: absolute; right: 20px; top: 22px; font-size: 2rem; opacity: 0.15; color: #38bdf8; }
 
-    /* Sections */
-    .section { background: #1e293b; border-radius: 12px; padding: 24px; margin-bottom: 24px; border: 1px solid #334155; }
-    .section h2 { font-size: 1.2rem; color: #f1f5f9; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
-    .section h2 i { color: #38bdf8; }
+    /* Cards & Sections */
+    .card { background: #1e293b; border-radius: 12px; padding: 24px; margin-bottom: 24px; border: 1px solid #334155; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+    .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 12px; }
+    .card-title { font-size: 1.15rem; color: #f1f5f9; display: flex; align-items: center; gap: 10px; font-weight: 600; }
+    .card-title i { color: #38bdf8; }
 
     /* Table */
-    .admin-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-    .admin-table th { text-align: left; padding: 10px 12px; background: #334155; color: #94a3b8; font-weight: 600; }
-    .admin-table td { padding: 10px 12px; border-bottom: 1px solid #334155; }
-    .admin-table tr:hover td { background: #334155; }
+    .table-responsive { width: 100%; overflow-x: auto; border-radius: 8px; border: 1px solid #334155; }
+    .admin-table { width: 100%; border-collapse: collapse; font-size: 0.86rem; text-align: left; }
+    .admin-table th { padding: 12px 14px; background: #334155; color: #cbd5e1; font-weight: 600; white-space: nowrap; }
+    .admin-table td { padding: 12px 14px; border-bottom: 1px solid #273549; vertical-align: middle; }
+    .admin-table tr:hover td { background: #263346; }
 
-    /* Status badges */
-    .status-badge { padding: 2px 8px; border-radius: 8px; font-size: 0.75rem; font-weight: 600; }
-    .status-200 { background: #064e3b; color: #34d399; }
-    .status-401 { background: #7f1d1d; color: #f87171; }
-    .status-403 { background: #78350f; color: #fbbf24; }
-    .status-429 { background: #581c87; color: #c084fc; }
+    /* Badges */
+    .status-badge { padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
+    .status-success { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .status-danger { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+    .status-warning { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .status-info { background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
 
     /* Buttons */
-    .btn { padding: 6px 14px; border-radius: 8px; border: none; cursor: pointer; font-size: 0.8rem; font-weight: 600; }
+    .btn { padding: 7px 14px; border-radius: 8px; border: none; cursor: pointer; font-size: 0.82rem; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s; text-decoration: none; }
+    .btn:hover { transform: translateY(-1px); }
+    .btn-primary { background: #0284c7; color: white; }
+    .btn-primary:hover { background: #0369a1; }
+    .btn-success { background: #059669; color: white; }
+    .btn-success:hover { background: #047857; }
     .btn-danger { background: #ef4444; color: white; }
     .btn-danger:hover { background: #dc2626; }
     .btn-warning { background: #f59e0b; color: #1e293b; }
     .btn-warning:hover { background: #d97706; }
+    .btn-sm { padding: 4px 10px; font-size: 0.76rem; border-radius: 6px; }
 
-    /* Filters */
-    .filters { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
-    .filters input, .filters select { background: #0f172a; border: 1px solid #475569; color: #e2e8f0; padding: 8px 12px; border-radius: 8px; font-size: 0.85rem; }
-    .filters input:focus, .filters select:focus { outline: none; border-color: #38bdf8; }
+    /* Filters & Search */
+    .filter-bar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+    .input-ctrl { background: #0f172a; border: 1px solid #475569; color: #f8fafc; padding: 8px 12px; border-radius: 8px; font-size: 0.85rem; outline: none; }
+    .input-ctrl:focus { border-color: #38bdf8; box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2); }
+    .search-input { min-width: 260px; }
 
     /* Pagination */
-    .pagination { display: flex; justify-content: center; gap: 8px; margin-top: 16px; }
-    .pagination button { background: #334155; color: #e2e8f0; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; }
+    .pagination { display: flex; justify-content: center; gap: 6px; margin-top: 18px; }
+    .pagination button { background: #334155; color: #e2e8f0; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.82rem; }
     .pagination button:hover { background: #475569; }
-    .pagination button.active { background: #38bdf8; color: #0f172a; }
+    .pagination button.active { background: #38bdf8; color: #0f172a; font-weight: 700; }
 
-    /* Loading */
-    .loading { text-align: center; padding: 40px; color: #64748b; }
+    /* Modals */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+    .modal-overlay.active { display: flex; }
+    .modal-dialog { background: #1e293b; border: 1px solid #475569; border-radius: 14px; width: 100%; max-width: 580px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); overflow: hidden; animation: popIn 0.2s ease-out; }
+    @keyframes popIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .modal-header { padding: 18px 24px; background: #273549; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; }
+    .modal-header h3 { font-size: 1.1rem; color: #38bdf8; display: flex; align-items: center; gap: 8px; }
+    .modal-close { background: none; border: none; color: #94a3b8; font-size: 1.2rem; cursor: pointer; }
+    .modal-close:hover { color: #f8fafc; }
+    .modal-body { padding: 24px; max-height: 75vh; overflow-y: auto; }
+    .modal-footer { padding: 16px 24px; background: #273549; border-top: 1px solid #334155; display: flex; justify-content: flex-end; gap: 10px; }
+    .form-group { margin-bottom: 16px; }
+    .form-label { display: block; font-size: 0.82rem; font-weight: 600; color: #cbd5e1; margin-bottom: 6px; }
+    .form-control { width: 100%; background: #0f172a; border: 1px solid #475569; color: #f8fafc; padding: 10px 12px; border-radius: 8px; font-size: 0.88rem; outline: none; }
+    .form-control:focus { border-color: #38bdf8; box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2); }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+    /* Toast */
+    #toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 2000; display: flex; flex-direction: column; gap: 10px; }
+    .toast { background: #1e293b; border-left: 4px solid #38bdf8; padding: 12px 18px; border-radius: 8px; color: #f8fafc; font-size: 0.85rem; box-shadow: 0 6px 16px rgba(0,0,0,0.4); display: flex; align-items: center; gap: 10px; min-width: 280px; animation: slideLeft 0.2s ease-out; }
+    .toast.success { border-color: #10b981; }
+    .toast.error { border-color: #ef4444; }
+    @keyframes slideLeft { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+    .loading { text-align: center; padding: 36px; color: #64748b; font-size: 0.9rem; }
   </style>
 </head>
 <body>
-  <div class="admin-header">
-    <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+  <!-- HEADER -->
+  <header class="admin-header">
+    <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
       <h1><i class="fas fa-shield-halved"></i> UniMS Admin Dashboard</h1>
-      <span class="badge" style="background: #10b981;"><i class="fas fa-database"></i> SSMS: unims_db</span>
-      <span class="badge"><i class="fas fa-server"></i> Port {{ request.META.SERVER_PORT }}</span>
+      <span class="badge badge-db"><i class="fas fa-database"></i> SSMS: unims_db</span>
+      <span class="badge badge-port"><i class="fas fa-server"></i> Port {{ request.META.SERVER_PORT }}</span>
     </div>
     <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-      <span style="font-size: 0.9rem; color: #cbd5e1;"><i class="fas fa-user-shield" style="color: #38bdf8;"></i> {{ admin_user.username|default:"admin" }}</span>
-      <a href="/review/" target="_blank" class="btn" style="background:#0284c7; color:#fff; text-decoration:none;"><i class="fas fa-arrow-up-right-from-square"></i> Cổng Người dùng (Tab mới)</a>
-      <a href="/admin/logout/" class="btn btn-danger" style="text-decoration:none;"><i class="fas fa-sign-out-alt"></i> Đăng xuất</a>
+      <span style="font-size: 0.88rem; color: #cbd5e1;"><i class="fas fa-user-shield" style="color:#38bdf8;"></i> {{ admin_user.username|default:"admin" }}</span>
+      <a href="/review/" target="_blank" class="btn btn-primary btn-sm"><i class="fas fa-external-link-alt"></i> Cổng Người dùng (Tab mới)</a>
+      <a href="/admin/logout/" class="btn btn-danger btn-sm"><i class="fas fa-sign-out-alt"></i> Đăng xuất</a>
     </div>
-  </div>
+  </header>
 
-  <div class="admin-content">
-    <!-- Stats -->
-    <div class="stats-grid" id="stats-grid">
-      <div class="loading">Đang tải thống kê...</div>
-    </div>
+  <!-- MAIN WRAPPER -->
+  <main class="admin-content">
+    <!-- NAVIGATION TABS -->
+    <nav class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('overview')"><i class="fas fa-chart-line"></i> Tổng quan</button>
+      <button class="tab-btn" onclick="switchTab('students')"><i class="fas fa-user-graduate"></i> Sinh viên & Học phí</button>
+      <button class="tab-btn" onclick="switchTab('grades')"><i class="fas fa-clipboard-check"></i> Bảng điểm & GPA</button>
+      <button class="tab-btn" onclick="switchTab('classes')"><i class="fas fa-calendar-days"></i> Lịch học & Lớp học phần</button>
+      <button class="tab-btn" onclick="switchTab('teachers')"><i class="fas fa-chalkboard-teacher"></i> Giảng viên</button>
+      <button class="tab-btn" onclick="switchTab('users')"><i class="fas fa-users-gear"></i> Tài khoản Users</button>
+      <button class="tab-btn" onclick="switchTab('audit')"><i class="fas fa-clock-rotate-left"></i> Audit Logs</button>
+    </nav>
 
-    <!-- Users -->
-    <div class="section">
-      <h2><i class="fas fa-users-gear"></i> Quản lý người dùng</h2>
-      <div id="users-table"><div class="loading">Đang tải...</div></div>
-    </div>
-
-    <!-- Audit Log -->
-    <div class="section">
-      <h2><i class="fas fa-clipboard-list"></i> Audit Log</h2>
-      <div class="filters">
-        <input type="text" id="filter-endpoint" placeholder="Lọc theo endpoint..." />
-        <select id="filter-role">
-          <option value="">Tất cả role</option>
-          <option value="admin">Admin</option>
-          <option value="teacher">Teacher</option>
-          <option value="student">Student</option>
-        </select>
-        <select id="filter-status">
-          <option value="">Tất cả status</option>
-          <option value="200">200 OK</option>
-          <option value="401">401 Unauthorized</option>
-          <option value="403">403 Forbidden</option>
-          <option value="429">429 Rate Limited</option>
-        </select>
-        <button class="btn btn-warning" onclick="loadAuditLogs(1)"><i class="fas fa-search"></i> Lọc</button>
+    <!-- TAB 1: OVERVIEW -->
+    <div id="tab-overview" class="tab-panel active">
+      <div class="stats-grid" id="stats-grid">
+        <div class="loading">Đang tải số liệu thời gian thực...</div>
       </div>
-      <div id="audit-table"><div class="loading">Đang tải...</div></div>
-      <div class="pagination" id="audit-pagination"></div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><i class="fas fa-bolt"></i> Thao tác Quản trị Nhanh (Quick Actions)</div>
+        </div>
+        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+          <button class="btn btn-primary" onclick="switchTab('students')"><i class="fas fa-money-check-dollar"></i> Cập nhật Học phí Sinh viên</button>
+          <button class="btn btn-warning" onclick="switchTab('classes')"><i class="fas fa-clock"></i> Đổi Lịch học / Phòng học</button>
+          <button class="btn btn-success" onclick="switchTab('grades')"><i class="fas fa-pen-to-square"></i> Xem & Chỉnh sửa Bảng điểm</button>
+          <a href="/api/export/excel/?type=students" target="_blank" class="btn btn-primary" style="background:#059669;"><i class="fas fa-file-excel"></i> Xuất Danh sách Sinh viên (.xlsx)</a>
+          <a href="/api/export/excel/?type=grades" target="_blank" class="btn btn-primary" style="background:#059669;"><i class="fas fa-file-excel"></i> Xuất Bảng điểm Toàn trường (.xlsx)</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: STUDENTS & TUITION -->
+    <div id="tab-students" class="tab-panel">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><i class="fas fa-user-graduate"></i> Danh sách Sinh viên & Quản lý Học phí</div>
+          <button class="btn btn-primary btn-sm" onclick="loadStudents(1)"><i class="fas fa-arrows-rotate"></i> Làm mới</button>
+        </div>
+        <div class="filter-bar">
+          <input type="text" id="filter-student-q" class="input-ctrl search-input" placeholder="Tìm theo Mã SV, Họ tên, Email..." onkeyup="if(event.key==='Enter') loadStudents(1)">
+          <select id="filter-student-status" class="input-ctrl" onchange="loadStudents(1)">
+            <option value="">Tất cả trạng thái</option>
+            <option value="active">Đang học</option>
+            <option value="inactive">Nghỉ học</option>
+            <option value="suspended">Đình chỉ</option>
+            <option value="graduated">Đã tốt nghiệp</option>
+          </select>
+          <select id="filter-student-tuition" class="input-ctrl" onchange="loadStudents(1)">
+            <option value="">Tất cả học phí</option>
+            <option value="false">Đã hoàn thành</option>
+            <option value="true">Còn nợ học phí</option>
+          </select>
+          <button class="btn btn-primary" onclick="loadStudents(1)"><i class="fas fa-search"></i> Lọc</button>
+        </div>
+        <div class="table-responsive" id="students-table-wrapper">
+          <div class="loading">Đang tải danh sách sinh viên...</div>
+        </div>
+        <div class="pagination" id="students-pagination"></div>
+      </div>
+    </div>
+
+    <!-- TAB 3: GRADES MANAGEMENT -->
+    <div id="tab-grades" class="tab-panel">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><i class="fas fa-clipboard-check"></i> Quản lý Bảng điểm & Điều chỉnh GPA</div>
+          <button class="btn btn-primary btn-sm" onclick="loadGrades(1)"><i class="fas fa-arrows-rotate"></i> Làm mới</button>
+        </div>
+        <div class="filter-bar">
+          <input type="text" id="filter-grade-q" class="input-ctrl search-input" placeholder="Tìm theo Mã SV, Tên SV, Tên lớp..." onkeyup="if(event.key==='Enter') loadGrades(1)">
+          <button class="btn btn-primary" onclick="loadGrades(1)"><i class="fas fa-search"></i> Lọc bảng điểm</button>
+        </div>
+        <div class="table-responsive" id="grades-table-wrapper">
+          <div class="loading">Đang tải danh sách điểm thi...</div>
+        </div>
+        <div class="pagination" id="grades-pagination"></div>
+      </div>
+    </div>
+
+    <!-- TAB 4: CLASSES & SCHEDULES -->
+    <div id="tab-classes" class="tab-panel">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><i class="fas fa-calendar-days"></i> Quản lý Lớp học phần, Lịch học & Báo off / Đổi phòng</div>
+          <button class="btn btn-primary btn-sm" onclick="loadClasses()"><i class="fas fa-arrows-rotate"></i> Làm mới</button>
+        </div>
+        <div class="filter-bar">
+          <input type="text" id="filter-class-q" class="input-ctrl search-input" placeholder="Tìm theo Mã lớp, Tên môn, Phòng học..." onkeyup="if(event.key==='Enter') loadClasses()">
+          <button class="btn btn-primary" onclick="loadClasses()"><i class="fas fa-search"></i> Tìm kiếm</button>
+        </div>
+        <div class="table-responsive" id="classes-table-wrapper">
+          <div class="loading">Đang tải danh sách lớp học...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: TEACHERS -->
+    <div id="tab-teachers" class="tab-panel">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><i class="fas fa-chalkboard-teacher"></i> Danh sách Giảng viên & Công tác đào tạo</div>
+          <button class="btn btn-primary btn-sm" onclick="loadTeachers()"><i class="fas fa-arrows-rotate"></i> Làm mới</button>
+        </div>
+        <div class="filter-bar">
+          <input type="text" id="filter-teacher-q" class="input-ctrl search-input" placeholder="Tìm Mã GV, Tên giảng viên..." onkeyup="if(event.key==='Enter') loadTeachers()">
+          <button class="btn btn-primary" onclick="loadTeachers()"><i class="fas fa-search"></i> Tìm kiếm</button>
+        </div>
+        <div class="table-responsive" id="teachers-table-wrapper">
+          <div class="loading">Đang tải danh sách giảng viên...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 6: USERS -->
+    <div id="tab-users" class="tab-panel">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><i class="fas fa-users-gear"></i> Quản lý Tài khoản & Phân quyền Hệ thống</div>
+          <button class="btn btn-primary btn-sm" onclick="loadUsers()"><i class="fas fa-arrows-rotate"></i> Làm mới</button>
+        </div>
+        <div class="table-responsive" id="users-table-wrapper">
+          <div class="loading">Đang tải danh sách users...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 7: AUDIT LOGS -->
+    <div id="tab-audit" class="tab-panel">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><i class="fas fa-clock-rotate-left"></i> Nhật ký Kiểm toán (Audit Logs)</div>
+          <button class="btn btn-primary btn-sm" onclick="loadAuditLogs(1)"><i class="fas fa-arrows-rotate"></i> Làm mới</button>
+        </div>
+        <div class="filter-bar">
+          <input type="text" id="filter-endpoint" class="input-ctrl search-input" placeholder="Lọc theo endpoint...">
+          <select id="filter-role" class="input-ctrl">
+            <option value="">Tất cả role</option>
+            <option value="admin">Admin</option>
+            <option value="teacher">Teacher</option>
+            <option value="student">Student</option>
+          </select>
+          <select id="filter-status" class="input-ctrl">
+            <option value="">Tất cả status</option>
+            <option value="200">200 OK</option>
+            <option value="401">401 Unauthorized</option>
+            <option value="403">403 Forbidden</option>
+            <option value="429">429 Rate Limited</option>
+          </select>
+          <button class="btn btn-primary" onclick="loadAuditLogs(1)"><i class="fas fa-filter"></i> Lọc logs</button>
+        </div>
+        <div class="table-responsive" id="audit-table-wrapper">
+          <div class="loading">Đang tải audit logs...</div>
+        </div>
+        <div class="pagination" id="audit-pagination"></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- MODAL: SỬA THÔNG TIN & HỌC PHÍ SINH VIÊN -->
+  <div class="modal-overlay" id="modal-student">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3><i class="fas fa-user-pen"></i> Chỉnh sửa Sinh viên & Học phí</h3>
+        <button class="modal-close" onclick="closeModal('modal-student')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="edit-student-id">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Mã sinh viên (MSSV)</label>
+            <input type="text" id="edit-student-code" class="form-control" readonly style="opacity:0.7;">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Họ và tên</label>
+            <input type="text" id="edit-student-name" class="form-control" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Khoa / Ngành</label>
+            <input type="text" id="edit-student-dept" class="form-control">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Niên khoá</label>
+            <input type="text" id="edit-student-year" class="form-control" placeholder="2024-2028">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input type="email" id="edit-student-email" class="form-control">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Số điện thoại</label>
+            <input type="text" id="edit-student-phone" class="form-control">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Trạng thái học tập</label>
+            <select id="edit-student-status" class="form-control">
+              <option value="active">Đang học</option>
+              <option value="inactive">Nghỉ học</option>
+              <option value="suspended">Đình chỉ</option>
+              <option value="graduated">Đã tốt nghiệp</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tình trạng Học phí</label>
+            <select id="edit-student-tuition" class="form-control">
+              <option value="false">Đã hoàn thành học phí (Mở khoá)</option>
+              <option value="true">Còn nợ học phí (Khoá ĐKHP & Xem điểm)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" style="background:#475569; color:#fff;" onclick="closeModal('modal-student')">Huỷ</button>
+        <button class="btn btn-primary" onclick="saveStudent()"><i class="fas fa-floppy-disk"></i> Lưu thay đổi</button>
+      </div>
     </div>
   </div>
 
+  <!-- MODAL: SỬA ĐIỂM THI & TÍNH GPA -->
+  <div class="modal-overlay" id="modal-grade">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3><i class="fas fa-pen-nib"></i> Điều chỉnh Điểm thi & Tính GPA</h3>
+        <button class="modal-close" onclick="closeModal('modal-grade')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="edit-grade-id">
+        <div class="form-group">
+          <label class="form-label">Sinh viên</label>
+          <input type="text" id="edit-grade-student" class="form-control" readonly style="opacity:0.8;">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Lớp học phần</label>
+          <input type="text" id="edit-grade-class" class="form-control" readonly style="opacity:0.8;">
+        </div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label">Chuyên cần (20%)</label>
+            <input type="number" step="0.1" min="0" max="10" id="edit-grade-assignment" class="form-control" oninput="calculatePreviewGrade()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Giữa kỳ (30%)</label>
+            <input type="number" step="0.1" min="0" max="10" id="edit-grade-midterm" class="form-control" oninput="calculatePreviewGrade()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Cuối kỳ (50%)</label>
+            <input type="number" step="0.1" min="0" max="10" id="edit-grade-final" class="form-control" oninput="calculatePreviewGrade()">
+          </div>
+        </div>
+        <div style="background:#0f172a; padding:12px; border-radius:8px; border:1px dashed #475569; margin-top:8px;">
+          <div style="font-size:0.82rem; color:#94a3b8;">Dự kiến tổng kết:</div>
+          <div style="font-size:1.1rem; font-weight:700; color:#38bdf8; margin-top:4px;" id="preview-grade-text">
+            Thang 10: -- | Thang 4: -- | Điểm chữ: --
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" style="background:#475569; color:#fff;" onclick="closeModal('modal-grade')">Huỷ</button>
+        <button class="btn btn-success" onclick="saveGrade()"><i class="fas fa-check"></i> Cập nhật Điểm & GPA</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ĐIỀU CHỈNH LỊCH HỌC / ĐỔI PHÒNG / BÁO OFF -->
+  <div class="modal-overlay" id="modal-schedule">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3><i class="fas fa-clock-rotate-left"></i> Điều chỉnh Lịch học / Phòng học / Báo off</h3>
+        <button class="modal-close" onclick="closeModal('modal-schedule')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="edit-schedule-class-id">
+        <div class="form-group">
+          <label class="form-label">Lớp học phần</label>
+          <input type="text" id="edit-schedule-classname" class="form-control" readonly style="opacity:0.8;">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Lịch học (Thứ, Ca học)</label>
+            <input type="text" id="edit-schedule-time" class="form-control" placeholder="VD: Thứ 2 (7:00 - 9:30)">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Phòng học</label>
+            <input type="text" id="edit-schedule-room" class="form-control" placeholder="VD: A101, B202, Zoom Online">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Giảng viên giảng dạy</label>
+          <select id="edit-schedule-teacher" class="form-control">
+            <option value="">-- Chưa phân công --</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Ghi chú điều chỉnh / Báo nghỉ bù</label>
+          <input type="text" id="edit-schedule-note" class="form-control" placeholder="VD: GV bận hội thảo, chuyển học bù sang Chủ nhật...">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" style="background:#475569; color:#fff;" onclick="closeModal('modal-schedule')">Huỷ</button>
+        <button class="btn btn-warning" onclick="saveSchedule()"><i class="fas fa-paper-plane"></i> Áp dụng Điều chỉnh</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div id="toast-container"></div>
+
+  <!-- JAVASCRIPT LOGIC -->
   <script>
     const API_HEADERS = { 'Content-Type': 'application/json' };
+    let TEACHERS_CACHE = [];
 
+    // Helper fetch có xử lý 401 tự động chuyển sang trang login
     async function adminFetch(url, options = {}) {
       const opts = { ...options, credentials: 'include' };
       const res = await fetch(url, opts);
@@ -126,106 +484,624 @@
       return res;
     }
 
-    // ========== Stats ==========
+    // Toast message
+    function showToast(msg, type = 'success') {
+      const c = document.getElementById('toast-container');
+      const t = document.createElement('div');
+      t.className = `toast ${type}`;
+      t.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'}"></i> <span>${msg}</span>`;
+      c.appendChild(t);
+      setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 3500);
+    }
+
+    // Tabs
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      const activeBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick')?.includes(tabName));
+      if (activeBtn) activeBtn.classList.add('active');
+      const panel = document.getElementById(`tab-${tabName}`);
+      if (panel) panel.classList.add('active');
+
+      if (tabName === 'overview') loadStats();
+      if (tabName === 'students') loadStudents(1);
+      if (tabName === 'grades') loadGrades(1);
+      if (tabName === 'classes') loadClasses();
+      if (tabName === 'teachers') loadTeachers();
+      if (tabName === 'users') loadUsers();
+      if (tabName === 'audit') loadAuditLogs(1);
+    }
+
+    function openModal(id) { document.getElementById(id).classList.add('active'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+    // ==========================================
+    // 1. STATS (TỔNG QUAN)
+    // ==========================================
     async function loadStats() {
       try {
         const res = await adminFetch('/admin/api/stats/');
         const data = await res.json();
-        if (!data.success) throw new Error('Failed');
+        if (!data.success) throw new Error();
         const s = data.stats;
         document.getElementById('stats-grid').innerHTML = `
           <div class="stat-card"><span class="stat-icon"><i class="fas fa-users"></i></span><div class="stat-value">${s.total_users}</div><div class="stat-label">Tổng người dùng</div></div>
-          <div class="stat-card"><span class="stat-icon"><i class="fas fa-user-graduate"></i></span><div class="stat-value">${s.total_students}</div><div class="stat-label">Sinh viên</div></div>
+          <div class="stat-card"><span class="stat-icon"><i class="fas fa-user-graduate"></i></span><div class="stat-value">${s.total_students}</div><div class="stat-label">Sinh viên quản lý</div></div>
           <div class="stat-card"><span class="stat-icon"><i class="fas fa-chalkboard-teacher"></i></span><div class="stat-value">${s.total_teachers}</div><div class="stat-label">Giảng viên</div></div>
-          <div class="stat-card"><span class="stat-icon"><i class="fas fa-university"></i></span><div class="stat-value">${s.total_universities}</div><div class="stat-label">Trường ĐH</div></div>
-          <div class="stat-card"><span class="stat-icon"><i class="fas fa-signal"></i></span><div class="stat-value">${s.active_sessions}</div><div class="stat-label">Phiên đang hoạt động</div></div>
-          <div class="stat-card"><span class="stat-icon"><i class="fas fa-clipboard-list"></i></span><div class="stat-value">${s.total_audit_logs}</div><div class="stat-label">Audit Logs</div></div>
+          <div class="stat-card"><span class="stat-icon"><i class="fas fa-signal"></i></span><div class="stat-value">${s.active_sessions}</div><div class="stat-label">Phiên trực tuyến</div></div>
+          <div class="stat-card"><span class="stat-icon"><i class="fas fa-clipboard-list"></i></span><div class="stat-value">${s.total_audit_logs}</div><div class="stat-label">Nhật ký Audit</div></div>
         `;
-      } catch (err) {
-        document.getElementById('stats-grid').innerHTML = '<div class="loading" style="color:#f87171;">Không thể tải thống kê. Hãy đăng nhập admin trước.</div>';
+      } catch (e) {
+        document.getElementById('stats-grid').innerHTML = '<div class="loading" style="color:#f87171;">Lỗi tải số liệu thống kê.</div>';
       }
     }
 
-    // ========== Users ==========
+    // ==========================================
+    // 2. SINH VIÊN & HỌC PHÍ
+    // ==========================================
+    let studentCurrentPage = 1;
+    async function loadStudents(page = 1) {
+      studentCurrentPage = page;
+      const q = document.getElementById('filter-student-q')?.value || '';
+      const status = document.getElementById('filter-student-status')?.value || '';
+      const tuition = document.getElementById('filter-student-tuition')?.value || '';
+
+      try {
+        const params = new URLSearchParams({ page, per_page: 15, q, status, tuition_debt: tuition });
+        const res = await adminFetch(`/admin/api/students/?${params}`);
+        const data = await res.json();
+        if (!data.success) throw new Error();
+
+        let html = `
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>MSSV</th>
+                <th>Họ và tên</th>
+                <th>Khoa</th>
+                <th>GPA</th>
+                <th>Tình trạng Học phí</th>
+                <th>Trạng thái</th>
+                <th>Lớp ĐK</th>
+                <th>Hành động</th>
+              </tr>
+            </thead>
+            <tbody>
+        `;
+
+        if (data.students.length === 0) {
+          html += '<tr><td colspan="8" style="text-align:center; padding:24px; color:#94a3b8;">Không tìm thấy sinh viên nào.</td></tr>';
+        }
+
+        data.students.forEach(s => {
+          const tuitionBadge = s.tuition_debt 
+            ? '<span class="status-badge status-danger"><i class="fas fa-circle-exclamation"></i> Nợ học phí</span>'
+            : '<span class="status-badge status-success"><i class="fas fa-circle-check"></i> Đã hoàn thành</span>';
+          
+          const statusBadge = s.status === 'active' 
+            ? '<span class="status-badge status-success">Đang học</span>'
+            : (s.status === 'suspended' ? '<span class="status-badge status-danger">Đình chỉ</span>' : `<span class="status-badge status-warning">${s.status}</span>`);
+
+          html += `
+            <tr>
+              <td><strong style="color:#38bdf8;">${s.student_id}</strong></td>
+              <td>${s.full_name}</td>
+              <td>${s.department || '—'}</td>
+              <td><span style="font-weight:700; color:#34d399;">${s.gpa.toFixed(2)}</span> / 4.0</td>
+              <td>${tuitionBadge}</td>
+              <td>${statusBadge}</td>
+              <td><span class="badge badge-port">${s.total_classes}</span></td>
+              <td>
+                <button class="btn btn-primary btn-sm" onclick='openEditStudent(${JSON.stringify(s)})'><i class="fas fa-pen"></i> Sửa</button>
+                <button class="btn ${s.tuition_debt ? 'btn-success' : 'btn-warning'} btn-sm" onclick="toggleTuition(${s.id}, ${!s.tuition_debt})">
+                  <i class="fas fa-money-bill-transfer"></i> ${s.tuition_debt ? 'Gỡ nợ' : 'Báo nợ'}
+                </button>
+              </td>
+            </tr>
+          `;
+        });
+
+        html += '</tbody></table>';
+        document.getElementById('students-table-wrapper').innerHTML = html;
+
+        // Phân trang
+        let phtml = '';
+        for (let i = 1; i <= data.total_pages; i++) {
+          phtml += `<button class="${i === data.page ? 'active' : ''}" onclick="loadStudents(${i})">${i}</button>`;
+        }
+        document.getElementById('students-pagination').innerHTML = phtml;
+      } catch (e) {
+        document.getElementById('students-table-wrapper').innerHTML = '<div class="loading" style="color:#f87171;">Không thể tải danh sách sinh viên.</div>';
+      }
+    }
+
+    async function toggleTuition(id, newDebtStatus) {
+      try {
+        const res = await adminFetch('/admin/api/students/toggle-tuition/', {
+          method: 'POST', headers: API_HEADERS,
+          body: JSON.stringify({ id, tuition_debt: newDebtStatus }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(data.message, 'success');
+          loadStudents(studentCurrentPage);
+        } else {
+          showToast(data.error || 'Có lỗi xảy ra', 'error');
+        }
+      } catch (e) {
+        showToast('Lỗi cập nhật học phí', 'error');
+      }
+    }
+
+    function openEditStudent(s) {
+      document.getElementById('edit-student-id').value = s.id;
+      document.getElementById('edit-student-code').value = s.student_id;
+      document.getElementById('edit-student-name').value = s.full_name;
+      document.getElementById('edit-student-dept').value = s.department || '';
+      document.getElementById('edit-student-year').value = s.academic_year || '';
+      document.getElementById('edit-student-email').value = s.email || '';
+      document.getElementById('edit-student-phone').value = s.phone || '';
+      document.getElementById('edit-student-status').value = s.status || 'active';
+      document.getElementById('edit-student-tuition').value = s.tuition_debt ? 'true' : 'false';
+      openModal('modal-student');
+    }
+
+    async function saveStudent() {
+      const payload = {
+        id: document.getElementById('edit-student-id').value,
+        full_name: document.getElementById('edit-student-name').value,
+        department: document.getElementById('edit-student-dept').value,
+        academic_year: document.getElementById('edit-student-year').value,
+        email: document.getElementById('edit-student-email').value,
+        phone: document.getElementById('edit-student-phone').value,
+        status: document.getElementById('edit-student-status').value,
+        tuition_debt: document.getElementById('edit-student-tuition').value === 'true',
+      };
+      try {
+        const res = await adminFetch('/admin/api/students/', {
+          method: 'POST', headers: API_HEADERS, body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(data.message, 'success');
+          closeModal('modal-student');
+          loadStudents(studentCurrentPage);
+        } else {
+          showToast(data.error || 'Lỗi cập nhật', 'error');
+        }
+      } catch (e) {
+        showToast('Lỗi kết nối máy chủ', 'error');
+      }
+    }
+
+    // ==========================================
+    // 3. QUẢN LÝ BẢNG ĐIỂM & GPA
+    // ==========================================
+    let gradeCurrentPage = 1;
+    async function loadGrades(page = 1) {
+      gradeCurrentPage = page;
+      const q = document.getElementById('filter-grade-q')?.value || '';
+      try {
+        const params = new URLSearchParams({ page, per_page: 20, q });
+        const res = await adminFetch(`/admin/api/grades/?${params}`);
+        const data = await res.json();
+        if (!data.success) throw new Error();
+
+        let html = `
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Sinh viên</th>
+                <th>Lớp học phần</th>
+                <th>Chuyên cần (20%)</th>
+                <th>Giữa kỳ (30%)</th>
+                <th>Cuối kỳ (50%)</th>
+                <th>Điểm TB 10</th>
+                <th>Thang 4 / Chữ</th>
+                <th>Hành động</th>
+              </tr>
+            </thead>
+            <tbody>
+        `;
+
+        if (data.grades.length === 0) {
+          html += '<tr><td colspan="8" style="text-align:center; padding:24px; color:#94a3b8;">Không có dữ liệu điểm thi nào.</td></tr>';
+        }
+
+        data.grades.forEach(g => {
+          const letter = g.letter_grade ? `<span class="badge" style="background:#0284c7;">${g.letter_grade}</span>` : '—';
+          html += `
+            <tr>
+              <td><strong>${g.student_name}</strong><br><small style="color:#94a3b8;">${g.student_id}</small></td>
+              <td><span style="color:#38bdf8;">${g.class_code}</span><br><small>${g.class_name}</small></td>
+              <td>${g.assignment ?? '—'}</td>
+              <td>${g.midterm ?? '—'}</td>
+              <td>${g.final ?? '—'}</td>
+              <td><strong style="color:#34d399;">${g.average10 !== null ? g.average10.toFixed(1) : '—'}</strong></td>
+              <td>${g.average4 !== null ? g.average4.toFixed(1) : '—'} ${letter}</td>
+              <td>
+                <button class="btn btn-success btn-sm" onclick='openEditGrade(${JSON.stringify(g)})'>
+                  <i class="fas fa-pen-to-square"></i> Sửa điểm
+                </button>
+              </td>
+            </tr>
+          `;
+        });
+
+        html += '</tbody></table>';
+        document.getElementById('grades-table-wrapper').innerHTML = html;
+
+        let phtml = '';
+        for (let i = 1; i <= data.total_pages; i++) {
+          phtml += `<button class="${i === data.page ? 'active' : ''}" onclick="loadGrades(${i})">${i}</button>`;
+        }
+        document.getElementById('grades-pagination').innerHTML = phtml;
+      } catch (e) {
+        document.getElementById('grades-table-wrapper').innerHTML = '<div class="loading" style="color:#f87171;">Không thể tải bảng điểm.</div>';
+      }
+    }
+
+    function openEditGrade(g) {
+      document.getElementById('edit-grade-id').value = g.id;
+      document.getElementById('edit-grade-student').value = `${g.student_name} (${g.student_id})`;
+      document.getElementById('edit-grade-class').value = `${g.class_code} - ${g.class_name}`;
+      document.getElementById('edit-grade-assignment').value = g.assignment ?? '';
+      document.getElementById('edit-grade-midterm').value = g.midterm ?? '';
+      document.getElementById('edit-grade-final').value = g.final ?? '';
+      calculatePreviewGrade();
+      openModal('modal-grade');
+    }
+
+    function calculatePreviewGrade() {
+      const a = parseFloat(document.getElementById('edit-grade-assignment').value) || 0;
+      const m = parseFloat(document.getElementById('edit-grade-midterm').value) || 0;
+      const f = parseFloat(document.getElementById('edit-grade-final').value) || 0;
+      const avg10 = Math.round((a * 0.2 + m * 0.3 + f * 0.5) * 10) / 10;
+      let avg4 = 0, letter = 'F';
+      if (avg10 >= 8.5) { avg4 = 4.0; letter = 'A'; }
+      else if (avg10 >= 8.0) { avg4 = 3.5; letter = 'B+'; }
+      else if (avg10 >= 7.0) { avg4 = 3.0; letter = 'B'; }
+      else if (avg10 >= 6.5) { avg4 = 2.5; letter = 'C+'; }
+      else if (avg10 >= 5.5) { avg4 = 2.0; letter = 'C'; }
+      else if (avg10 >= 5.0) { avg4 = 1.5; letter = 'D+'; }
+      else if (avg10 >= 4.0) { avg4 = 1.0; letter = 'D'; }
+
+      document.getElementById('preview-grade-text').innerText = `Thang 10: ${avg10.toFixed(1)} | Thang 4: ${avg4.toFixed(1)} | Điểm chữ: ${letter}`;
+    }
+
+    async function saveGrade() {
+      const payload = {
+        grade_id: document.getElementById('edit-grade-id').value,
+        assignment: document.getElementById('edit-grade-assignment').value || null,
+        midterm: document.getElementById('edit-grade-midterm').value || null,
+        final: document.getElementById('edit-grade-final').value || null,
+      };
+      try {
+        const res = await adminFetch('/admin/api/grades/', {
+          method: 'POST', headers: API_HEADERS, body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(data.message, 'success');
+          closeModal('modal-grade');
+          loadGrades(gradeCurrentPage);
+        } else {
+          showToast(data.error || 'Lỗi cập nhật điểm', 'error');
+        }
+      } catch (e) {
+        showToast('Lỗi kết nối máy chủ', 'error');
+      }
+    }
+
+    // ==========================================
+    // 4. LỚP HỌC PHẦN & LỊCH HỌC / OFF / ĐỔI PHÒNG
+    // ==========================================
+    async function loadClasses() {
+      const q = document.getElementById('filter-class-q')?.value || '';
+      try {
+        const params = new URLSearchParams({ q });
+        const res = await adminFetch(`/admin/api/classes/?${params}`);
+        const data = await res.json();
+        if (!data.success) throw new Error();
+
+        let html = `
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Mã lớp</th>
+                <th>Tên môn học</th>
+                <th>Tín chỉ</th>
+                <th>Giảng viên</th>
+                <th>Lịch học hiện tại</th>
+                <th>Phòng học</th>
+                <th>Sĩ số</th>
+                <th>Hành động</th>
+              </tr>
+            </thead>
+            <tbody>
+        `;
+
+        if (data.classes.length === 0) {
+          html += '<tr><td colspan="8" style="text-align:center; padding:24px; color:#94a3b8;">Không có lớp học phần nào.</td></tr>';
+        }
+
+        data.classes.forEach(c => {
+          html += `
+            <tr>
+              <td><strong style="color:#38bdf8;">${c.class_code}</strong></td>
+              <td>${c.name}</td>
+              <td><span class="badge badge-port">${c.credits} TC</span></td>
+              <td><i class="fas fa-chalkboard-user"></i> ${c.teacher_name}</td>
+              <td><span style="color:#fbbf24;"><i class="fas fa-clock"></i> ${c.schedule || 'Chưa xếp lịch'}</span></td>
+              <td><span class="badge" style="background:#334155;"><i class="fas fa-door-open"></i> ${c.room || 'TBA'}</span></td>
+              <td>${c.registered_count} / ${c.max_students}</td>
+              <td>
+                <button class="btn btn-warning btn-sm" onclick='openEditSchedule(${JSON.stringify(c)})'>
+                  <i class="fas fa-clock-rotate-left"></i> Đổi Lịch / Phòng
+                </button>
+              </td>
+            </tr>
+          `;
+        });
+
+        html += '</tbody></table>';
+        document.getElementById('classes-table-wrapper').innerHTML = html;
+      } catch (e) {
+        document.getElementById('classes-table-wrapper').innerHTML = '<div class="loading" style="color:#f87171;">Không thể tải danh sách lớp học.</div>';
+      }
+    }
+
+    async function ensureTeachersLoaded() {
+      if (TEACHERS_CACHE.length > 0) return;
+      try {
+        const res = await adminFetch('/admin/api/teachers/');
+        const data = await res.json();
+        if (data.success) TEACHERS_CACHE = data.teachers;
+      } catch (e) {}
+    }
+
+    async function openEditSchedule(c) {
+      await ensureTeachersLoaded();
+      document.getElementById('edit-schedule-class-id').value = c.id;
+      document.getElementById('edit-schedule-classname').value = `${c.class_code} - ${c.name}`;
+      document.getElementById('edit-schedule-time').value = c.schedule || '';
+      document.getElementById('edit-schedule-room').value = c.room || '';
+      document.getElementById('edit-schedule-note').value = '';
+
+      const tSelect = document.getElementById('edit-schedule-teacher');
+      tSelect.innerHTML = '<option value="">-- Chưa phân công --</option>';
+      TEACHERS_CACHE.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t.id;
+        opt.innerText = `${t.full_name} (${t.teacher_id} - ${t.degree || 'GV'})`;
+        if (t.id === c.teacher_id) opt.selected = true;
+        tSelect.appendChild(opt);
+      });
+
+      openModal('modal-schedule');
+    }
+
+    async function saveSchedule() {
+      const payload = {
+        class_id: document.getElementById('edit-schedule-class-id').value,
+        schedule: document.getElementById('edit-schedule-time').value,
+        room: document.getElementById('edit-schedule-room').value,
+        teacher_id: document.getElementById('edit-schedule-teacher').value || null,
+        note: document.getElementById('edit-schedule-note').value,
+      };
+      try {
+        const res = await adminFetch('/admin/api/classes/update-schedule/', {
+          method: 'POST', headers: API_HEADERS, body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(data.message, 'success');
+          closeModal('modal-schedule');
+          loadClasses();
+        } else {
+          showToast(data.error || 'Lỗi cập nhật lịch học', 'error');
+        }
+      } catch (e) {
+        showToast('Lỗi kết nối máy chủ', 'error');
+      }
+    }
+
+    // ==========================================
+    // 5. GIẢNG VIÊN
+    // ==========================================
+    async function loadTeachers() {
+      const q = document.getElementById('filter-teacher-q')?.value || '';
+      try {
+        const params = new URLSearchParams({ q });
+        const res = await adminFetch(`/admin/api/teachers/?${params}`);
+        const data = await res.json();
+        if (!data.success) throw new Error();
+
+        TEACHERS_CACHE = data.teachers;
+        let html = `
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Mã GV</th>
+                <th>Họ và tên</th>
+                <th>Khoa</th>
+                <th>Học vị & Chức vụ</th>
+                <th>Email / SĐT</th>
+                <th>Số lớp dạy</th>
+                <th>Trạng thái</th>
+              </tr>
+            </thead>
+            <tbody>
+        `;
+
+        if (data.teachers.length === 0) {
+          html += '<tr><td colspan="7" style="text-align:center; padding:24px; color:#94a3b8;">Không tìm thấy giảng viên nào.</td></tr>';
+        }
+
+        data.teachers.forEach(t => {
+          const statusBadge = t.status === 'active' 
+            ? '<span class="status-badge status-success">Đang giảng dạy</span>'
+            : '<span class="status-badge status-warning">Nghỉ</span>';
+
+          html += `
+            <tr>
+              <td><strong style="color:#38bdf8;">${t.teacher_id}</strong></td>
+              <td><strong>${t.full_name}</strong></td>
+              <td>${t.department || '—'}</td>
+              <td><span class="badge badge-port">${t.degree || 'ThS'}</span> ${t.position || ''}</td>
+              <td>${t.email || t.phone || '—'}</td>
+              <td><span class="badge" style="background:#0284c7;">${t.total_classes} lớp</span></td>
+              <td>${statusBadge}</td>
+            </tr>
+          `;
+        });
+
+        html += '</tbody></table>';
+        document.getElementById('teachers-table-wrapper').innerHTML = html;
+      } catch (e) {
+        document.getElementById('teachers-table-wrapper').innerHTML = '<div class="loading" style="color:#f87171;">Không thể tải danh sách giảng viên.</div>';
+      }
+    }
+
+    // ==========================================
+    // 6. USERS
+    // ==========================================
     async function loadUsers() {
       try {
         const res = await adminFetch('/admin/api/users/');
         const data = await res.json();
-        if (!data.success) throw new Error('Failed');
-        let html = '<table class="admin-table"><thead><tr><th>ID</th><th>Username</th><th>Tên</th><th>Role</th><th>IP</th><th>Đăng nhập cuối</th><th>Trạng thái</th><th>Hành động</th></tr></thead><tbody>';
+        if (!data.success) throw new Error();
+
+        let html = `
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Tên đăng nhập</th>
+                <th>Họ tên</th>
+                <th>Vai trò</th>
+                <th>IP Phiên</th>
+                <th>Đăng nhập gần nhất</th>
+                <th>Trạng thái</th>
+                <th>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+        `;
+
         data.users.forEach(u => {
-          const active = u.is_active ? '<span class="status-badge status-200">Active</span>' : '<span class="status-badge status-401">Locked</span>';
+          const active = u.is_active ? '<span class="status-badge status-success">Active</span>' : '<span class="status-badge status-danger">Locked</span>';
           const lastLogin = u.last_login_at ? new Date(u.last_login_at).toLocaleString('vi') : '—';
-          html += `<tr>
-            <td>${u.id}</td><td>${u.username}</td><td>${u.first_name || '—'}</td><td>${u.role}</td>
-            <td>${u.session_ip || '—'}</td><td>${lastLogin}</td><td>${active}</td>
-            <td>
-              <button class="btn btn-danger" onclick="forceLogout(${u.id})"><i class="fas fa-sign-out-alt"></i></button>
-              <button class="btn btn-warning" onclick="toggleUser(${u.id})">${u.is_active ? '<i class="fas fa-lock"></i>' : '<i class="fas fa-unlock"></i>'}</button>
-            </td></tr>`;
+          html += `
+            <tr>
+              <td>${u.id}</td>
+              <td><strong style="color:#38bdf8;">${u.username}</strong></td>
+              <td>${u.first_name || '—'}</td>
+              <td><span class="badge badge-port">${u.role.toUpperCase()}</span></td>
+              <td>${u.session_ip || '—'}</td>
+              <td>${lastLogin}</td>
+              <td>${active}</td>
+              <td>
+                <button class="btn btn-danger btn-sm" onclick="forceLogout(${u.id})"><i class="fas fa-sign-out-alt"></i> Kick</button>
+                <button class="btn btn-warning btn-sm" onclick="toggleUser(${u.id})"><i class="fas fa-${u.is_active ? 'lock' : 'unlock'}"></i></button>
+              </td>
+            </tr>
+          `;
         });
+
         html += '</tbody></table>';
-        document.getElementById('users-table').innerHTML = html;
-      } catch (err) {
-        document.getElementById('users-table').innerHTML = '<div class="loading" style="color:#f87171;">Không thể tải danh sách users.</div>';
+        document.getElementById('users-table-wrapper').innerHTML = html;
+      } catch (e) {
+        document.getElementById('users-table-wrapper').innerHTML = '<div class="loading" style="color:#f87171;">Không thể tải danh sách người dùng.</div>';
       }
     }
 
-    // ========== Audit Logs ==========
+    async function forceLogout(userId) {
+      if (!confirm('Ép đăng xuất tài khoản này ngay lập tức?')) return;
+      try {
+        const res = await adminFetch('/admin/api/force-logout/', {
+          method: 'POST', headers: API_HEADERS, body: JSON.stringify({ user_id: userId })
+        });
+        const d = await res.json();
+        showToast(d.message || 'Đã ép đăng xuất', 'success');
+        loadUsers();
+        loadStats();
+      } catch (e) { showToast('Lỗi khi ép đăng xuất', 'error'); }
+    }
+
+    async function toggleUser(userId) {
+      if (!confirm('Bạn có chắc muốn khoá hoặc mở khoá tài khoản này?')) return;
+      try {
+        const res = await adminFetch('/admin/api/toggle-user/', {
+          method: 'POST', headers: API_HEADERS, body: JSON.stringify({ user_id: userId })
+        });
+        const d = await res.json();
+        showToast(d.message || 'Đã cập nhật trạng thái', 'success');
+        loadUsers();
+      } catch (e) { showToast('Lỗi cập nhật user', 'error'); }
+    }
+
+    // ==========================================
+    // 7. AUDIT LOGS
+    // ==========================================
     async function loadAuditLogs(page = 1) {
       const endpoint = document.getElementById('filter-endpoint')?.value || '';
       const role = document.getElementById('filter-role')?.value || '';
       const status = document.getElementById('filter-status')?.value || '';
       try {
-        const params = new URLSearchParams({ page, endpoint, role, status });
+        const params = new URLSearchParams({ page, per_page: 30, endpoint, role, status });
         const res = await adminFetch(`/admin/api/audit-logs/?${params}`);
         const data = await res.json();
-        if (!data.success) throw new Error('Failed');
-        let html = '<table class="admin-table"><thead><tr><th>#</th><th>Role</th><th>Endpoint</th><th>Method</th><th>Status</th><th>IP</th><th>Thời gian</th></tr></thead><tbody>';
-        data.logs.forEach(l => {
-          const cls = `status-${l.status_code}`;
-          html += `<tr><td>${l.id}</td><td>${l.role || '—'}</td><td>${l.endpoint}</td><td>${l.method}</td><td><span class="status-badge ${cls}">${l.status_code}</span></td><td>${l.ip_address || '—'}</td><td>${new Date(l.timestamp).toLocaleString('vi')}</td></tr>`;
-        });
-        html += '</tbody></table>';
-        document.getElementById('audit-table').innerHTML = html;
+        if (!data.success) throw new Error();
 
-        // Pagination
-        let paginationHtml = '';
+        let html = `
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Role</th>
+                <th>Endpoint</th>
+                <th>Method</th>
+                <th>Status</th>
+                <th>IP Client</th>
+                <th>Thời gian</th>
+              </tr>
+            </thead>
+            <tbody>
+        `;
+
+        data.logs.forEach(l => {
+          const cls = l.status_code === 200 ? 'status-success' : (l.status_code >= 400 ? 'status-danger' : 'status-warning');
+          html += `
+            <tr>
+              <td>${l.id}</td>
+              <td><span class="badge badge-port">${l.role || 'guest'}</span></td>
+              <td><code>${l.endpoint}</code></td>
+              <td><strong>${l.method}</strong></td>
+              <td><span class="status-badge ${cls}">${l.status_code}</span></td>
+              <td>${l.ip_address || '—'}</td>
+              <td>${new Date(l.timestamp).toLocaleString('vi')}</td>
+            </tr>
+          `;
+        });
+
+        html += '</tbody></table>';
+        document.getElementById('audit-table-wrapper').innerHTML = html;
+
+        let phtml = '';
         for (let i = 1; i <= data.total_pages; i++) {
-          paginationHtml += `<button class="${i === data.page ? 'active' : ''}" onclick="loadAuditLogs(${i})">${i}</button>`;
+          phtml += `<button class="${i === data.page ? 'active' : ''}" onclick="loadAuditLogs(${i})">${i}</button>`;
         }
-        document.getElementById('audit-pagination').innerHTML = paginationHtml;
-      } catch (err) {
-        document.getElementById('audit-table').innerHTML = '<div class="loading" style="color:#f87171;">Không thể tải audit logs.</div>';
+        document.getElementById('audit-pagination').innerHTML = phtml;
+      } catch (e) {
+        document.getElementById('audit-table-wrapper').innerHTML = '<div class="loading" style="color:#f87171;">Không thể tải audit logs.</div>';
       }
     }
 
-    // ========== Actions ==========
-    async function forceLogout(userId) {
-      if (!confirm('Ép đăng xuất user này?')) return;
-      await adminFetch('/admin/api/force-logout/', {
-        method: 'POST', headers: API_HEADERS,
-        body: JSON.stringify({ user_id: userId }),
-      });
-      loadUsers();
+    // Khởi chạy khi tải trang
+    document.addEventListener('DOMContentLoaded', () => {
       loadStats();
-    }
-
-    async function toggleUser(userId) {
-      if (!confirm('Khoá/mở khoá user này?')) return;
-      await adminFetch('/admin/api/toggle-user/', {
-        method: 'POST', headers: API_HEADERS,
-        body: JSON.stringify({ user_id: userId }),
-      });
-      loadUsers();
-    }
-
-    // ========== Init ==========
-    loadStats();
-    loadUsers();
-    loadAuditLogs();
-    // Auto refresh mỗi 30 giây
-    setInterval(() => { loadStats(); loadAuditLogs(); }, 30000);
+    });
   </script>
 </body>
 </html>

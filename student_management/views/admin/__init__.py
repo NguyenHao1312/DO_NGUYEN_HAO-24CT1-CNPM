@@ -13,4 +13,12 @@ from .dashboard import (
 )
 from .export import api_export_excel
 from .management import api_copy_classes_semester
-
+from .academic import (
+    api_admin_students,
+    api_admin_toggle_tuition,
+    api_admin_grades,
+    api_admin_teachers,
+    api_admin_classes,
+    api_admin_update_schedule,
+    api_admin_semesters,
+)
