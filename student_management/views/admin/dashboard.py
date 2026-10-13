@@ -61,20 +61,30 @@ def api_admin_stats(request):
 
 
 # ============================================================
-#  API: AUDIT LOG VIEWER
+#  API: AUDIT LOG VIEWER (FORENSICS & TIMELINE FILTER)
 # ============================================================
 @require_session
 @require_role(['admin'])
 def api_admin_audit_logs(request):
-    """Xem lịch sử audit log (phân trang)."""
+    """
+    Xem lịch sử audit log phục vụ điều tra số (Forensics):
+    - Hỗ trợ lọc mốc thời gian chính xác: from_time, to_time (ISO format)
+    - Lọc cờ is_suspicious (True/False)
+    - Lọc IP address, endpoint, role, status_code
+    - Trả về execution_time_ms và user_agent
+    """
     page = int(request.GET.get('page', 1))
     per_page = int(request.GET.get('per_page', 50))
     offset = (page - 1) * per_page
 
     # Filters
-    endpoint_filter = request.GET.get('endpoint', '')
-    role_filter = request.GET.get('role', '')
-    status_filter = request.GET.get('status', '')
+    endpoint_filter = request.GET.get('endpoint', '').strip()
+    role_filter = request.GET.get('role', '').strip()
+    status_filter = request.GET.get('status', '').strip()
+    ip_filter = request.GET.get('ip', '').strip()
+    suspicious_filter = request.GET.get('suspicious', '').strip().lower()
+    from_time = request.GET.get('from_time', '').strip()
+    to_time = request.GET.get('to_time', '').strip()
 
     logs = AuditLog.objects.all().order_by('-timestamp')
 
@@ -82,18 +92,32 @@ def api_admin_audit_logs(request):
         logs = logs.filter(endpoint__icontains=endpoint_filter)
     if role_filter:
         logs = logs.filter(role=role_filter)
-    if status_filter:
+    if status_filter and status_filter.isdigit():
         logs = logs.filter(status_code=int(status_filter))
+    if ip_filter:
+        logs = logs.filter(ip_address__icontains=ip_filter)
+    if suspicious_filter in ('1', 'true', 'yes'):
+        logs = logs.filter(is_suspicious=True)
+    elif suspicious_filter in ('0', 'false', 'no'):
+        logs = logs.filter(is_suspicious=False)
+
+    # Lọc theo mốc thời gian tấn công (Timestamp Range)
+    if from_time:
+        logs = logs.filter(timestamp__gte=from_time)
+    if to_time:
+        logs = logs.filter(timestamp__lte=to_time)
 
     total = logs.count()
     log_list = list(logs[offset:offset + per_page].values(
         'id', 'role', 'endpoint', 'method', 'status_code',
-        'ip_address', 'timestamp'
+        'ip_address', 'timestamp', 'user_agent', 'execution_time_ms',
+        'is_suspicious', 'request_data'
     ))
 
-    # Thêm username cho mỗi log entry
+    # Định dạng ISO timestamp
     for log in log_list:
-        log['timestamp'] = log['timestamp'].isoformat()
+        if log['timestamp']:
+            log['timestamp'] = log['timestamp'].isoformat()
 
     return JsonResponse({
         'success': True,
@@ -101,7 +125,77 @@ def api_admin_audit_logs(request):
         'total': total,
         'page': page,
         'per_page': per_page,
-        'total_pages': (total + per_page - 1) // per_page,
+        'total_pages': (total + per_page - 1) // per_page if per_page > 0 else 1,
+    })
+
+
+# ============================================================
+#  API: SECURITY & INCIDENT ANALYTICS (REALTIME ATTACK MONITOR)
+# ============================================================
+@require_session
+@require_role(['admin'])
+def api_admin_security_analytics(request):
+    """
+    Phân tích an ninh hệ thống trong 24 giờ qua:
+    - Phát hiện bất thường & dấu hiệu tấn công / DDoS
+    - Top IP vi phạm và tỷ lệ lỗi (Error Rate)
+    - Gom nhóm mốc thời gian (Attack Timeline)
+    """
+    from datetime import timedelta
+    from django.utils import timezone
+    from django.db.models import Count, Avg, Q
+
+    now = timezone.now()
+    since_24h = now - timedelta(hours=24)
+
+    recent_logs = AuditLog.objects.filter(timestamp__gte=since_24h)
+    total_24h = recent_logs.count()
+
+    suspicious_count = recent_logs.filter(
+        Q(is_suspicious=True) | Q(status_code__in=[401, 403, 404, 429, 500])
+    ).count()
+
+    rate_limited_count = recent_logs.filter(status_code=429).count()
+    unauthorized_count = recent_logs.filter(status_code=401).count()
+    server_error_count = recent_logs.filter(status_code__gte=500).count()
+
+    error_rate = round((suspicious_count / total_24h * 100), 1) if total_24h > 0 else 0.0
+
+    # Top 5 IP có số request lỗi cao nhất
+    top_offending_ips = list(
+        recent_logs.filter(Q(is_suspicious=True) | Q(status_code__gte=400))
+        .values('ip_address')
+        .annotate(
+            error_count=Count('id'),
+            avg_latency=Avg('execution_time_ms')
+        )
+        .order_by('-error_count')[:5]
+    )
+
+    # Đánh giá trạng thái an ninh (Security Threat Level)
+    threat_level = 'HEALTHY'
+    threat_message = 'Hệ thống an toàn, không có dấu hiệu bất thường.'
+
+    if error_rate > 35 or rate_limited_count > 50 or total_24h > 10000:
+        threat_level = 'CRITICAL'
+        threat_message = 'CẢNH BÁO: Phát hiện dấu hiệu DDoS hoặc Brute-Force mật độ cao! Tỷ lệ lỗi vượt ngưỡng an toàn.'
+    elif error_rate > 15 or suspicious_count > 30:
+        threat_level = 'WARNING'
+        threat_message = 'CHÚ Ý: Phát hiện nhiều yêu cầu bất thường (401/403/404 dò quét). Cần theo dõi IP vi phạm.'
+
+    return JsonResponse({
+        'success': True,
+        'analytics': {
+            'threat_level': threat_level,
+            'threat_message': threat_message,
+            'total_requests_24h': total_24h,
+            'suspicious_count': suspicious_count,
+            'error_rate_pct': error_rate,
+            'rate_limited_429': rate_limited_count,
+            'unauthorized_401': unauthorized_count,
+            'server_error_500': server_error_count,
+            'top_offending_ips': top_offending_ips,
+        }
     })
 
 

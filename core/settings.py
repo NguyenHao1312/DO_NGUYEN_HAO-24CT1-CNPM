@@ -43,6 +43,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # --- UniMS: Global Audit Logging & Anomaly Tracking (Ghi nhận toàn bộ tấn công/lỗi) ---
+    'student_management.middleware.GlobalAuditMiddleware',
     # --- UniMS: Cô lập Admin chỉ cho phép truy cập qua Localhost (404 trên Tunnel) ---
     'student_management.middleware.LocalOnlyAdminMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
@@ -133,13 +135,27 @@ STORAGES = {
     },
 }
 
-# Cache backend — dùng cho rate limiting
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'unims-rate-limit',
+# Reverse Proxy tin cậy (Nginx / Docker Gateway / Localhost)
+_raw_proxies = os.environ.get('TRUSTED_PROXIES', '127.0.0.1,::1,172.16.0.0/12,192.168.0.0/16,10.0.0.0/8').split(',')
+TRUSTED_PROXIES = [p.strip() for p in _raw_proxies if p.strip()]
+
+# Cache backend — hỗ trợ Redis phân tán cho Rate Limiting & Session Blacklist
+# Tự động fallback về LocMemCache nếu chưa cấu hình REDIS_URL
+REDIS_URL = os.environ.get('REDIS_URL', '')
+if REDIS_URL:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+            'LOCATION': REDIS_URL,
+        }
     }
-}
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'unims-rate-limit',
+        }
+    }
 
 # ============================================================
 #  PRODUCTION SECURITY — chỉ kích hoạt khi DEBUG=False

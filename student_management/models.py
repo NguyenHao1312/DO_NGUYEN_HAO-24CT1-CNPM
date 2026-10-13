@@ -434,7 +434,7 @@ class GradeEditConfig(models.Model):
 #  11. AUDIT LOG — Ghi log truy cập API nhạy cảm
 # ============================================================
 class AuditLog(models.Model):
-    """Ghi log mọi hành động gọi vào các API nhạy cảm."""
+    """Ghi log mọi hành động gọi vào các API nhạy cảm và phát hiện tấn công."""
     user = models.ForeignKey(
         CustomUser, on_delete=models.SET_NULL,
         null=True, blank=True, related_name='audit_logs'
@@ -444,11 +444,20 @@ class AuditLog(models.Model):
     method = models.CharField(max_length=10)
     status_code = models.IntegerField()
     ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True, null=True)
+    execution_time_ms = models.FloatField(default=0.0)
+    is_suspicious = models.BooleanField(default=False, db_index=True)
+    request_data = models.TextField(blank=True, null=True)
     timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
 
     class Meta:
         db_table = 'student_management_auditlog'
         ordering = ['-timestamp']
+        indexes = [
+            models.Index(fields=['timestamp', 'status_code'], name='idx_audit_time_status'),
+            models.Index(fields=['ip_address', 'timestamp'], name='idx_audit_ip_time'),
+            models.Index(fields=['is_suspicious', 'timestamp'], name='idx_audit_susp_time'),
+        ]
 
     def __str__(self):
         return f"[{self.timestamp}] {self.role}:{self.user_id} → {self.method} {self.endpoint} ({self.status_code})"

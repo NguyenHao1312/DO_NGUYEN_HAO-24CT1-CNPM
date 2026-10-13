@@ -12,12 +12,12 @@ from django.core.cache import cache
 from student_management.models import CustomUser
 
 
+from student_management.security_utils import get_client_ip, is_suspicious_request
+
+
 def _get_client_ip(request):
-    """Lấy IP client từ header."""
-    x_forwarded = request.META.get('HTTP_X_FORWARDED_FOR')
-    if x_forwarded:
-        return x_forwarded.split(',')[0].strip()
-    return request.META.get('REMOTE_ADDR', '')
+    """Lấy IP client an toàn chống giả mạo header."""
+    return get_client_ip(request)
 
 
 def require_session(view_func):
@@ -84,18 +84,26 @@ def audit_log(view_func):
     """
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
+        import time
+        start_time = time.time()
         response = view_func(request, *args, **kwargs)
+        execution_time_ms = round((time.time() - start_time) * 1000, 2)
         try:
             from student_management.models import AuditLog
             user = getattr(request, 'session_user', None)
             AuditLog.objects.create(
                 user=user,
                 role=user.role if user else 'anonymous',
-                endpoint=request.path,
-                method=request.method,
+                endpoint=request.path[:255],
+                method=request.method[:10],
                 status_code=response.status_code,
-                ip_address=_get_client_ip(request),
+                ip_address=get_client_ip(request),
+                user_agent=request.META.get('HTTP_USER_AGENT', '')[:500],
+                execution_time_ms=execution_time_ms,
+                is_suspicious=is_suspicious_request(request.path, request.method, response.status_code),
             )
+            # Đánh dấu để GlobalAuditMiddleware không ghi trùng lặp
+            request._audit_log_recorded = True
         except Exception:
             pass  # Không để audit log crash API
         return response

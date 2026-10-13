@@ -3,12 +3,12 @@ services:
     build: .
     container_name: unims_web
     restart: unless-stopped
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
     environment:
       - DJANGO_DEBUG=False
       - DJANGO_SECRET_KEY=change-me-in-production-random-secret-key-32chars
-      - DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,.ngrok-free.app,.ngrok.io
+      - DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,.ngrok-free.app,.ngrok.io,web,nginx
       - DB_NAME=unims_db
       - DB_HOST=host.docker.internal
       - DB_USER=
@@ -16,5 +16,34 @@ services:
       - DB_PORT=1433
       - DB_DRIVER=ODBC Driver 17 for SQL Server
       - ADMIN_LOCAL_ONLY=True
+      - REDIS_URL=redis://redis:6379/1
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    depends_on:
+      - redis
+    volumes:
+      - static_volume:/app/staticfiles
+
+  redis:
+    image: redis:7-alpine
+    container_name: unims_redis
+    restart: unless-stopped
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+
+  nginx:
+    image: nginx:alpine
+    container_name: unims_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "8000:80"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - static_volume:/app/staticfiles:ro
+    depends_on:
+      - web
+
+volumes:
+  static_volume:

@@ -685,29 +685,81 @@
       </div>
     </div>
 
-    <!-- TAB 7: AUDIT LOGS -->
+    <!-- TAB 7: AUDIT LOGS & SECURITY MONITOR -->
     <div id="tab-audit" class="tab-panel">
+      <!-- SECURITY INCIDENT & THREAT MONITOR BANNER -->
+      <div id="security-threat-banner" class="card" style="margin-bottom: 20px; border-left: 4px solid var(--accent);">
+        <div class="card-header" style="padding-bottom: 8px;">
+          <div class="card-title" style="display:flex; align-items:center; gap:10px;">
+            <i class="fas fa-shield-halved" style="color:var(--accent);"></i>
+            <span>Trung tâm Giám sát An ninh & Cảnh báo Tấn công (24h)</span>
+            <span id="threat-level-badge" class="badge badge-port" style="margin-left: 10px;">Đang phân tích...</span>
+          </div>
+          <button class="btn btn-sm" onclick="loadSecurityAnalytics()" style="background: rgba(255,255,255,0.08);"><i class="fas fa-arrows-rotate"></i> Cập nhật chỉ số</button>
+        </div>
+        <div class="card-body" style="padding: 16px 20px;">
+          <div id="threat-message-box" style="margin-bottom: 14px; font-size: 0.9rem; padding: 10px 14px; border-radius: 8px; background: rgba(30,41,59,0.5);">Đang kiểm tra dấu hiệu bất thường...</div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px;" id="security-metrics-grid">
+            <div style="background: rgba(15, 23, 42, 0.6); padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border-subtle);">
+              <div style="color: var(--text-muted); font-size: 0.8rem;">Yêu cầu Khả nghi (4xx/5xx)</div>
+              <div id="stat-suspicious-count" style="font-size: 1.4rem; font-weight: 700; color: #f87171; margin-top: 4px;">0</div>
+            </div>
+            <div style="background: rgba(15, 23, 42, 0.6); padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border-subtle);">
+              <div style="color: var(--text-muted); font-size: 0.8rem;">Tỷ lệ Lỗi (Dấu hiệu Flood/DDoS)</div>
+              <div id="stat-error-rate" style="font-size: 1.4rem; font-weight: 700; color: #fbbf24; margin-top: 4px;">0%</div>
+            </div>
+            <div style="background: rgba(15, 23, 42, 0.6); padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border-subtle);">
+              <div style="color: var(--text-muted); font-size: 0.8rem;">Rate Limit Chặn (429)</div>
+              <div id="stat-rate-limited" style="font-size: 1.4rem; font-weight: 700; color: #a78bfa; margin-top: 4px;">0</div>
+            </div>
+            <div style="background: rgba(15, 23, 42, 0.6); padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border-subtle);">
+              <div style="color: var(--text-muted); font-size: 0.8rem;">Tổng Request 24h</div>
+              <div id="stat-total-24h" style="font-size: 1.4rem; font-weight: 700; color: var(--text-main); margin-top: 4px;">0</div>
+            </div>
+          </div>
+          <!-- TOP OFFENDING IPS -->
+          <div style="margin-top: 14px;" id="top-offenders-container">
+            <div style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 6px;"><i class="fas fa-crosshairs"></i> Top IP gửi request lỗi nhiều nhất (Click để lọc mốc thời gian):</div>
+            <div id="top-ips-list" style="display: flex; gap: 8px; flex-wrap: wrap;">Chưa có IP vi phạm</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MAIN AUDIT LOGS CARD -->
       <div class="card">
         <div class="card-header">
-          <div class="card-title"><i class="fas fa-clock-rotate-left"></i> Nhật ký Kiểm toán (Audit Logs)</div>
+          <div class="card-title"><i class="fas fa-clock-rotate-left"></i> Nhật ký Kiểm toán & Điều tra Mốc Thời gian (Audit Logs)</div>
           <button class="btn btn-primary btn-sm" onclick="loadAuditLogs(1)"><i class="fas fa-arrows-rotate"></i> Làm mới</button>
         </div>
-        <div class="filter-bar">
-          <input type="text" id="filter-endpoint" class="input-ctrl search-input" placeholder="Lọc theo endpoint...">
-          <select id="filter-role" class="input-ctrl">
+        <div class="filter-bar" style="display:flex; flex-wrap:wrap; gap:10px; align-items:center;">
+          <input type="text" id="filter-endpoint" class="input-ctrl" placeholder="Lọc endpoint..." style="min-width:140px;">
+          <input type="text" id="filter-ip" class="input-ctrl" placeholder="Lọc IP..." style="width:130px;">
+          <select id="filter-role" class="input-ctrl" style="width:110px;">
             <option value="">Tất cả role</option>
             <option value="admin">Admin</option>
             <option value="teacher">Teacher</option>
             <option value="student">Student</option>
           </select>
-          <select id="filter-status" class="input-ctrl">
-            <option value="">Tất cả status</option>
+          <select id="filter-status" class="input-ctrl" style="width:120px;">
+            <option value="">Status...</option>
             <option value="200">200 OK</option>
             <option value="401">401 Unauthorized</option>
             <option value="403">403 Forbidden</option>
+            <option value="404">404 Not Found</option>
             <option value="429">429 Rate Limited</option>
+            <option value="500">500 Server Error</option>
           </select>
-          <button class="btn btn-primary" onclick="loadAuditLogs(1)"><i class="fas fa-filter"></i> Lọc logs</button>
+          <div style="display:inline-flex; align-items:center; gap:6px;">
+            <span style="font-size:0.78rem; color:var(--text-muted);">Từ:</span>
+            <input type="datetime-local" id="filter-from-time" class="input-ctrl" style="width:170px;">
+            <span style="font-size:0.78rem; color:var(--text-muted);">Đến:</span>
+            <input type="datetime-local" id="filter-to-time" class="input-ctrl" style="width:170px;">
+          </div>
+          <label style="display:inline-flex; align-items:center; gap:6px; cursor:pointer; font-size:0.83rem; color:#f87171; font-weight:600;">
+            <input type="checkbox" id="filter-suspicious" onchange="loadAuditLogs(1)"> Chỉ log khả nghi (Attack)
+          </label>
+          <button class="btn btn-primary" onclick="loadAuditLogs(1)"><i class="fas fa-filter"></i> Lọc mốc tấn công</button>
+          <button class="btn btn-sm" onclick="resetAuditFilters()" style="background: rgba(255,255,255,0.08);"><i class="fas fa-xmark"></i> Xóa lọc</button>
         </div>
         <div class="table-responsive" id="audit-table-wrapper">
           <div class="loading">Đang tải audit logs...</div>
@@ -911,8 +963,10 @@
       if (tabName === 'grades') loadGrades(1);
       if (tabName === 'classes') loadClasses();
       if (tabName === 'teachers') loadTeachers();
-      if (tabName === 'users') loadUsers();
-      if (tabName === 'audit') loadAuditLogs(1);
+      if (tabName === 'audit') {
+        loadSecurityAnalytics();
+        loadAuditLogs(1);
+      }
     }
 
     function openModal(id) { document.getElementById(id).classList.add('active'); }
@@ -1447,12 +1501,101 @@
     // ==========================================
     // 7. AUDIT LOGS
     // ==========================================
+    // ==========================================
+    // 7. AUDIT LOGS & SECURITY THREAT ANALYTICS
+    // ==========================================
+    async function loadSecurityAnalytics() {
+      try {
+        const res = await adminFetch('/admin/api/security-analytics/');
+        const data = await res.json();
+        if (!data.success) return;
+        const a = data.analytics;
+
+        // Render Threat Level
+        const badge = document.getElementById('threat-level-badge');
+        const banner = document.getElementById('security-threat-banner');
+        const msgBox = document.getElementById('threat-message-box');
+
+        if (a.threat_level === 'CRITICAL') {
+          badge.className = 'badge';
+          badge.style.background = '#dc2626';
+          badge.style.color = '#fff';
+          badge.innerHTML = '<i class="fas fa-triangle-exclamation"></i> NGUY CẤP (DDoS / Flood)';
+          banner.style.borderLeftColor = '#ef4444';
+          msgBox.style.background = 'rgba(239, 68, 68, 0.2)';
+          msgBox.style.color = '#fca5a5';
+        } else if (a.threat_level === 'WARNING') {
+          badge.className = 'badge';
+          badge.style.background = '#d97706';
+          badge.style.color = '#fff';
+          badge.innerHTML = '<i class="fas fa-triangle-exclamation"></i> CẢNH BÁO (Bất thường)';
+          banner.style.borderLeftColor = '#f59e0b';
+          msgBox.style.background = 'rgba(245, 158, 11, 0.2)';
+          msgBox.style.color = '#fde68a';
+        } else {
+          badge.className = 'badge badge-db';
+          badge.innerHTML = '<span class="status-dot-pulse"></span> AN TOÀN (Healthy)';
+          banner.style.borderLeftColor = '#10b981';
+          msgBox.style.background = 'rgba(16, 185, 129, 0.15)';
+          msgBox.style.color = '#a7f3d0';
+        }
+        msgBox.innerHTML = `<strong>Đánh giá hệ thống:</strong> ${a.threat_message}`;
+
+        // Render Metrics
+        document.getElementById('stat-suspicious-count').textContent = a.suspicious_count;
+        document.getElementById('stat-error-rate').textContent = `${a.error_rate_pct}%`;
+        document.getElementById('stat-rate-limited').textContent = a.rate_limited_429;
+        document.getElementById('stat-total-24h').textContent = a.total_requests_24h;
+
+        // Render Top Offending IPs
+        const ipContainer = document.getElementById('top-ips-list');
+        if (a.top_offending_ips && a.top_offending_ips.length > 0) {
+          ipContainer.innerHTML = a.top_offending_ips.map(item => `
+            <button class="btn btn-sm" onclick="quickFilterIp('${item.ip_address || ''}')" style="background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.4); color: #fca5a5; font-size:0.76rem; border-radius: 6px; padding: 3px 8px;">
+              <i class="fas fa-circle-exclamation"></i> <strong>${item.ip_address || 'Unknown'}</strong>: ${item.error_count} lỗi (${Math.round(item.avg_latency || 0)}ms)
+            </button>
+          `).join('');
+        } else {
+          ipContainer.innerHTML = '<span style="color:var(--text-muted); font-size:0.8rem;">Không có IP nào có dấu hiệu tấn công trong 24h qua.</span>';
+        }
+      } catch (e) {
+        console.error('Lỗi tải security analytics:', e);
+      }
+    }
+
+    function quickFilterIp(ip) {
+      if (!ip) return;
+      document.getElementById('filter-ip').value = ip;
+      document.getElementById('filter-suspicious').checked = true;
+      loadAuditLogs(1);
+      showToast(`Đang lọc mốc thời gian tấn công của IP: ${ip}`, 'info');
+    }
+
+    function resetAuditFilters() {
+      document.getElementById('filter-endpoint').value = '';
+      document.getElementById('filter-ip').value = '';
+      document.getElementById('filter-role').value = '';
+      document.getElementById('filter-status').value = '';
+      document.getElementById('filter-from-time').value = '';
+      document.getElementById('filter-to-time').value = '';
+      document.getElementById('filter-suspicious').checked = false;
+      loadAuditLogs(1);
+    }
+
     async function loadAuditLogs(page = 1) {
       const endpoint = document.getElementById('filter-endpoint')?.value || '';
+      const ip = document.getElementById('filter-ip')?.value || '';
       const role = document.getElementById('filter-role')?.value || '';
       const status = document.getElementById('filter-status')?.value || '';
+      const from_time = document.getElementById('filter-from-time')?.value || '';
+      const to_time = document.getElementById('filter-to-time')?.value || '';
+      const suspicious = document.getElementById('filter-suspicious')?.checked ? 'true' : '';
+
       try {
-        const params = new URLSearchParams({ page, per_page: 30, endpoint, role, status });
+        const params = new URLSearchParams({ 
+          page, per_page: 30, endpoint, ip, role, status, 
+          from_time, to_time, suspicious 
+        });
         const res = await adminFetch(`/admin/api/audit-logs/?${params}`);
         const data = await res.json();
         if (!data.success) throw new Error();
@@ -1462,31 +1605,43 @@
             <thead>
               <tr>
                 <th>ID</th>
+                <th>Cảnh báo</th>
                 <th>Role</th>
                 <th>Endpoint</th>
                 <th>Method</th>
                 <th>Status</th>
                 <th>IP Client</th>
+                <th>Độ trễ</th>
                 <th>Thời gian</th>
               </tr>
             </thead>
             <tbody>
         `;
 
-        data.logs.forEach(l => {
-          const cls = l.status_code === 200 ? 'status-success' : (l.status_code >= 400 ? 'status-danger' : 'status-warning');
-          html += `
-            <tr>
-              <td>${l.id}</td>
-              <td><span class="badge badge-port">${l.role || 'guest'}</span></td>
-              <td><code>${l.endpoint}</code></td>
-              <td><strong>${l.method}</strong></td>
-              <td><span class="status-badge ${cls}">${l.status_code}</span></td>
-              <td>${l.ip_address || '—'}</td>
-              <td>${new Date(l.timestamp).toLocaleString('vi')}</td>
-            </tr>
-          `;
-        });
+        if (!data.logs || data.logs.length === 0) {
+          html += `<tr><td colspan="9" style="text-align:center; padding:30px; color:var(--text-muted);">Không tìm thấy bản ghi log nào phù hợp với mốc thời gian đã lọc.</td></tr>`;
+        } else {
+          data.logs.forEach(l => {
+            const cls = l.status_code === 200 ? 'status-success' : (l.status_code >= 400 ? 'status-danger' : 'status-warning');
+            const alertBadge = l.is_suspicious 
+              ? `<span class="badge" style="background:rgba(239,68,68,0.2); color:#f87171; border:1px solid rgba(239,68,68,0.4);"><i class="fas fa-triangle-exclamation"></i> Khả nghi</span>`
+              : `<span class="badge badge-port" style="opacity:0.7;"><i class="fas fa-check"></i> Bình thường</span>`;
+
+            html += `
+              <tr style="${l.is_suspicious ? 'background: rgba(239,68,68,0.04);' : ''}">
+                <td>${l.id}</td>
+                <td>${alertBadge}</td>
+                <td><span class="badge badge-port">${l.role || 'guest'}</span></td>
+                <td><code title="${l.user_agent || ''}">${l.endpoint}</code></td>
+                <td><strong>${l.method}</strong></td>
+                <td><span class="status-badge ${cls}">${l.status_code}</span></td>
+                <td><strong style="cursor:pointer; color:var(--accent);" onclick="quickFilterIp('${l.ip_address}')" title="Click để lọc mốc thời gian của IP này">${l.ip_address || '—'}</strong></td>
+                <td><span style="font-size:0.8rem; color:${l.execution_time_ms > 500 ? '#f87171' : 'var(--text-muted)'};">${l.execution_time_ms ? Math.round(l.execution_time_ms) + 'ms' : '-'}</span></td>
+                <td><strong style="color:var(--text-main); font-size:0.83rem;">${new Date(l.timestamp).toLocaleString('vi')}</strong></td>
+              </tr>
+            `;
+          });
+        }
 
         html += '</tbody></table>';
         document.getElementById('audit-table-wrapper').innerHTML = html;

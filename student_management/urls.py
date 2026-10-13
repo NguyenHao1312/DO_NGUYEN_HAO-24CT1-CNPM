@@ -38,6 +38,7 @@ urlpatterns = [
     path('admin/dashboard/', views.admin_dashboard_page, name='admin_dashboard'),
     path('admin/api/stats/', views.api_admin_stats, name='api_admin_stats'),
     path('admin/api/audit-logs/', views.api_admin_audit_logs, name='api_admin_audit_logs'),
+    path('admin/api/security-analytics/', views.api_admin_security_analytics, name='api_admin_security_analytics'),
     path('admin/api/users/', views.api_admin_users, name='api_admin_users'),
     path('admin/api/force-logout/', views.api_admin_force_logout, name='api_admin_force_logout'),
     path('admin/api/toggle-user/', views.api_admin_toggle_user, name='api_admin_toggle_user'),
