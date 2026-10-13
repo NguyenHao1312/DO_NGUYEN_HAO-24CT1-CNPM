@@ -7,6 +7,7 @@ Quy tắc:
 - Khác IP hoặc khác User-Agent (thiết bị/trình duyệt/tab ẩn danh): 
   FORCE LOGOUT session cũ, trả HTTP 401 + thông báo cụ thể.
 """
+import json
 import os
 from django.http import JsonResponse, HttpResponseNotFound
 
@@ -17,11 +18,10 @@ class SingleSessionMiddleware:
     Client gửi header `X-Session-Token` với mỗi request.
     """
 
-    # Paths không yêu cầu session token
+    # Paths không yêu cầu session token (chỉ áp dụng trong /api/*)
     EXEMPT_PATHS = [
         '/api/login/',
         '/api/register/',
-        '/admin/',
     ]
 
     def __init__(self, get_response):
