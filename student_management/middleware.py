@@ -68,6 +68,14 @@ class SingleSessionMiddleware:
                 'message': 'Lỗi hệ thống xác thực. Vui lòng đăng nhập lại.'
             }, status=401)
 
+        # Kiểm tra trạng thái tài khoản (bị Admin khoá)
+        if not user.is_active:
+            return JsonResponse({
+                'success': False,
+                'force_logout': True,
+                'message': 'Tài khoản của bạn đã bị khoá. Vui lòng liên hệ Quản trị viên để được hỗ trợ.'
+            }, status=403)
+
         # Kiểm tra IP
         client_ip = self._get_client_ip(request)
         client_ua = request.META.get('HTTP_USER_AGENT', '')

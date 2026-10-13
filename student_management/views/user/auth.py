@@ -180,6 +180,13 @@ def api_login(request):
                 'message': 'Sai thông tin đăng nhập'
             }, status=401)
 
+        # ── Kiểm tra trạng thái hoạt động: Chặn tài khoản bị Admin khoá ──
+        if not user.is_active:
+            return JsonResponse({
+                'success': False,
+                'message': 'Tài khoản của bạn đã bị khoá. Vui lòng liên hệ Quản trị viên để được hỗ trợ.'
+            }, status=403)
+
         # ── Bảo mật phân quyền: Chặn tuyệt đối tài khoản Admin tại cổng đăng nhập công khai ──
         if user.role == 'admin':
             return JsonResponse({
@@ -308,6 +315,12 @@ def api_session_check(request):
 
     try:
         user = CustomUser.objects.get(session_token=session_token)
+        if not user.is_active:
+            return JsonResponse({
+                'valid': False,
+                'force_logout': True,
+                'message': 'Tài khoản của bạn đã bị khoá.'
+            })
         return JsonResponse({
             'valid': True,
             'user': {

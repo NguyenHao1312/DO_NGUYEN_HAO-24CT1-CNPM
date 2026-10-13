@@ -83,9 +83,11 @@ def api_admin_audit_logs(request):
     status_filter = request.GET.get('status', '').strip()
     ip_filter = request.GET.get('ip', '').strip()
     suspicious_filter = request.GET.get('suspicious', '').strip().lower()
+    alert_type_filter = request.GET.get('alert_type', '').strip().lower()
     from_time = request.GET.get('from_time', '').strip()
     to_time = request.GET.get('to_time', '').strip()
 
+    from django.db.models import Q
     logs = AuditLog.objects.all().order_by('-timestamp')
 
     if endpoint_filter:
@@ -96,7 +98,18 @@ def api_admin_audit_logs(request):
         logs = logs.filter(status_code=int(status_filter))
     if ip_filter:
         logs = logs.filter(ip_address__icontains=ip_filter)
-    if suspicious_filter in ('1', 'true', 'yes'):
+
+    # Lọc theo phân loại cảnh báo:
+    # 1. 'attack': Khả nghi (Tấn công) - Không bao gồm sự cố độ trễ/mất kết nối
+    # 2. 'network_lag': Mất kết nối / Độ trễ mạng (status 408/502/504 hoặc execution_time_ms >= 1000)
+    # 3. 'normal': Bản ghi hoạt động bình thường
+    if alert_type_filter == 'network_lag':
+        logs = logs.filter(Q(status_code__in=[408, 502, 504]) | Q(execution_time_ms__gte=1000))
+    elif alert_type_filter == 'attack':
+        logs = logs.filter(is_suspicious=True).exclude(status_code__in=[408, 502, 504]).exclude(execution_time_ms__gte=1000)
+    elif alert_type_filter == 'normal':
+        logs = logs.filter(is_suspicious=False, execution_time_ms__lt=1000).exclude(status_code__in=[408, 502, 504])
+    elif suspicious_filter in ('1', 'true', 'yes'):
         logs = logs.filter(is_suspicious=True)
     elif suspicious_filter in ('0', 'false', 'no'):
         logs = logs.filter(is_suspicious=False)
@@ -114,10 +127,22 @@ def api_admin_audit_logs(request):
         'is_suspicious', 'request_data'
     ))
 
-    # Định dạng ISO timestamp
+    # Định dạng ISO timestamp và phân loại sự kiện (Tấn công vs Mất kết nối/Độ trễ)
     for log in log_list:
         if log['timestamp']:
             log['timestamp'] = log['timestamp'].isoformat()
+        latency = log.get('execution_time_ms') or 0.0
+        status = log.get('status_code') or 200
+
+        if status in (408, 502, 504) or latency >= 1000.0:
+            log['event_type'] = 'network_lag'
+            log['event_label'] = 'Mất kết nối / Trễ cao'
+        elif log.get('is_suspicious'):
+            log['event_type'] = 'attack'
+            log['event_label'] = 'Khả nghi (Tấn công)'
+        else:
+            log['event_type'] = 'normal'
+            log['event_label'] = 'Bình thường'
 
     return JsonResponse({
         'success': True,
@@ -138,6 +163,7 @@ def api_admin_security_analytics(request):
     """
     Phân tích an ninh hệ thống trong 24 giờ qua:
     - Phát hiện bất thường & dấu hiệu tấn công / DDoS
+    - Phân tách sự cố mất kết nối / độ trễ mạng khỏi các đợt tấn công thực sự
     - Top IP vi phạm và tỷ lệ lỗi (Error Rate)
     - Gom nhóm mốc thời gian (Attack Timeline)
     """
@@ -151,6 +177,17 @@ def api_admin_security_analytics(request):
     recent_logs = AuditLog.objects.filter(timestamp__gte=since_24h)
     total_24h = recent_logs.count()
 
+    # Phân tách rõ ràng:
+    # 1. Sự cố mạng / Độ trễ cao (Network Latency / Disconnect)
+    network_lag_count = recent_logs.filter(
+        Q(status_code__in=[408, 502, 504]) | Q(execution_time_ms__gte=1000)
+    ).count()
+
+    # 2. Dấu hiệu tấn công thực tế (Brute Force, Scanning, Exploits)
+    genuine_attack_count = recent_logs.filter(
+        Q(is_suspicious=True) & ~Q(status_code__in=[408, 502, 504]) & Q(execution_time_ms__lt=1000)
+    ).count()
+
     suspicious_count = recent_logs.filter(
         Q(is_suspicious=True) | Q(status_code__in=[401, 403, 404, 429, 500])
     ).count()
@@ -159,6 +196,7 @@ def api_admin_security_analytics(request):
     unauthorized_count = recent_logs.filter(status_code=401).count()
     server_error_count = recent_logs.filter(status_code__gte=500).count()
 
+    # Tỷ lệ lỗi dựa trên các lỗi thực tế (loại trừ mất kết nối đơn thuần)
     error_rate = round((suspicious_count / total_24h * 100), 1) if total_24h > 0 else 0.0
 
     # Top 5 IP có số request lỗi cao nhất
@@ -179,9 +217,12 @@ def api_admin_security_analytics(request):
     if error_rate > 35 or rate_limited_count > 50 or total_24h > 10000:
         threat_level = 'CRITICAL'
         threat_message = 'CẢNH BÁO: Phát hiện dấu hiệu DDoS hoặc Brute-Force mật độ cao! Tỷ lệ lỗi vượt ngưỡng an toàn.'
-    elif error_rate > 15 or suspicious_count > 30:
+    elif error_rate > 15 or genuine_attack_count > 30:
         threat_level = 'WARNING'
-        threat_message = 'CHÚ Ý: Phát hiện nhiều yêu cầu bất thường (401/403/404 dò quét). Cần theo dõi IP vi phạm.'
+        threat_message = 'CHÚ Ý: Phát hiện nhiều yêu cầu bất thường (401/403/404 dò quét tài khoản). Cần theo dõi IP vi phạm.'
+    elif network_lag_count > 5:
+        threat_level = 'WARNING'
+        threat_message = f'LƯU Ý: Ghi nhận {network_lag_count} yêu cầu có độ trễ cao hoặc mất kết nối mạng (Network Latency / Disconnect). Admin có thể xem xét hạ tầng hoặc kiểm tra đường truyền.'
 
     return JsonResponse({
         'success': True,
@@ -190,12 +231,77 @@ def api_admin_security_analytics(request):
             'threat_message': threat_message,
             'total_requests_24h': total_24h,
             'suspicious_count': suspicious_count,
+            'genuine_attack_count': genuine_attack_count,
+            'network_lag_count': network_lag_count,
             'error_rate_pct': error_rate,
             'rate_limited_429': rate_limited_count,
             'unauthorized_401': unauthorized_count,
             'server_error_500': server_error_count,
             'top_offending_ips': top_offending_ips,
         }
+    })
+
+
+# ============================================================
+#  API: PURGE AUDIT LOGS (LÀM TRỐNG / DỌN DẸP BỚT NHẬT KÝ KIỂM TOÁN)
+# ============================================================
+@csrf_exempt
+@require_session
+@require_role(['admin'])
+@audit_log
+def api_admin_purge_audit_logs(request):
+    """
+    Cho phép Admin dọn dẹp hoặc làm trống nhật ký kiểm toán (Audit Logs) để giải phóng lưu trữ:
+    - POST:
+      + mode: 'days' (Xóa log cũ hơn N ngày, mặc định 30 ngày)
+      + mode: 'resolved' (Xóa các log bình thường 200 OK, giữ lại log khả nghi/lỗi mạng)
+      + mode: 'all' (Làm trống toàn bộ audit logs)
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Only POST allowed'}, status=405)
+
+    try:
+        data = json.loads(request.body) if request.body else {}
+    except Exception:
+        data = {}
+
+    mode = data.get('mode', 'days')
+    from datetime import timedelta
+    from django.utils import timezone
+    from student_management.models import AuditLog
+
+    deleted_count = 0
+
+    if mode == 'days':
+        days = int(data.get('days', 30))
+        cutoff = timezone.now() - timedelta(days=days)
+        deleted_count, _ = AuditLog.objects.filter(timestamp__lt=cutoff).delete()
+        msg = f'Đã dọn dẹp {deleted_count} bản ghi audit log cũ hơn {days} ngày.'
+
+    elif mode == 'resolved':
+        # Xóa các log bình thường (status 200, không khả nghi, độ trễ thấp)
+        deleted_count, _ = AuditLog.objects.filter(
+            status_code=200,
+            is_suspicious=False,
+            execution_time_ms__lt=1000
+        ).delete()
+        msg = f'Đã xóa {deleted_count} bản ghi log bình thường, bảo lưu các log khả nghi và sự cố mạng.'
+
+    elif mode == 'all':
+        # Xóa toàn bộ
+        deleted_count, _ = AuditLog.objects.all().delete()
+        msg = f'Đã làm trống toàn bộ ({deleted_count} bản ghi) nhật ký kiểm toán.'
+
+    else:
+        return JsonResponse({'success': False, 'message': 'Chế độ dọn dẹp không hợp lệ.'}, status=400)
+
+    remaining_count = AuditLog.objects.count()
+
+    return JsonResponse({
+        'success': True,
+        'message': msg,
+        'deleted_count': deleted_count,
+        'remaining_count': remaining_count,
     })
 
 
@@ -273,9 +379,13 @@ def api_admin_toggle_user(request):
         user = CustomUser.objects.get(id=user_id)
         user.is_active = not user.is_active
         if not user.is_active:
-            # Nếu khoá → xoá session luôn
+            # Nếu khoá → huỷ session token và thông tin phiên ngay lập tức để kick khỏi hệ thống
             user.session_token = None
-        user.save(update_fields=['is_active', 'session_token'])
+            user.session_ip = None
+            user.session_device = None
+            user.save(update_fields=['is_active', 'session_token', 'session_ip', 'session_device'])
+        else:
+            user.save(update_fields=['is_active'])
 
         status_text = 'kích hoạt' if user.is_active else 'khoá'
         return JsonResponse({

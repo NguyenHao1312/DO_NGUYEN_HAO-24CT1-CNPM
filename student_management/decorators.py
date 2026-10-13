@@ -46,6 +46,11 @@ def require_session(view_func):
                 {'error': 'Session expired', 'message': 'Phiên đăng nhập đã hết hạn', 'force_logout': True},
                 status=401
             )
+        if not user.is_active:
+            return JsonResponse(
+                {'error': 'Account locked', 'message': 'Tài khoản của bạn đã bị khoá', 'force_logout': True},
+                status=403
+            )
         request.session_user = user
         return view_func(request, *args, **kwargs)
     return wrapper

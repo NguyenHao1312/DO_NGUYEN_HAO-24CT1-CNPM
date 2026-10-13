@@ -167,6 +167,10 @@ const Auth = {
       return { success: false, message: 'Sai thông tin đăng nhập' };
     }
 
+    if (user.is_active === false || user.isActive === false) {
+      return { success: false, message: 'Tài khoản của bạn đã bị khoá. Vui lòng liên hệ Quản trị viên.' };
+    }
+
     const sessionToken = this._generateSessionToken();
 
     // Notify các tab khác logout (cùng trình duyệt)

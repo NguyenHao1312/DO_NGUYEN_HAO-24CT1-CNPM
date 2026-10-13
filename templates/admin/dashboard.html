@@ -721,13 +721,17 @@
         </div>
         <div class="card-body" style="padding: 16px 20px;">
           <div id="threat-message-box" style="margin-bottom: 14px; font-size: 0.9rem; padding: 10px 14px; border-radius: 8px; background: rgba(30,41,59,0.5);">Đang kiểm tra dấu hiệu bất thường...</div>
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px;" id="security-metrics-grid">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px;" id="security-metrics-grid">
             <div style="background: rgba(15, 23, 42, 0.6); padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border-subtle);">
-              <div style="color: var(--text-muted); font-size: 0.8rem;">Yêu cầu Khả nghi (4xx/5xx)</div>
+              <div style="color: var(--text-muted); font-size: 0.8rem;">Yêu cầu Khả nghi (Tấn công)</div>
               <div id="stat-suspicious-count" style="font-size: 1.4rem; font-weight: 700; color: #f87171; margin-top: 4px;">0</div>
             </div>
             <div style="background: rgba(15, 23, 42, 0.6); padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border-subtle);">
-              <div style="color: var(--text-muted); font-size: 0.8rem;">Tỷ lệ Lỗi (Dấu hiệu Flood/DDoS)</div>
+              <div style="color: var(--text-muted); font-size: 0.8rem;"><i class="fas fa-wifi" style="color:#facc15;"></i> Mất kết nối / Trễ cao</div>
+              <div id="stat-network-lag" style="font-size: 1.4rem; font-weight: 700; color: #facc15; margin-top: 4px;">0</div>
+            </div>
+            <div style="background: rgba(15, 23, 42, 0.6); padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border-subtle);">
+              <div style="color: var(--text-muted); font-size: 0.8rem;">Tỷ lệ Lỗi (Flood/DDoS)</div>
               <div id="stat-error-rate" style="font-size: 1.4rem; font-weight: 700; color: #fbbf24; margin-top: 4px;">0%</div>
             </div>
             <div style="background: rgba(15, 23, 42, 0.6); padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border-subtle);">
@@ -751,7 +755,10 @@
       <div class="card">
         <div class="card-header">
           <div class="card-title"><i class="fas fa-clock-rotate-left"></i> Nhật ký Kiểm toán & Điều tra Mốc Thời gian (Audit Logs)</div>
-          <button class="btn btn-primary btn-sm" onclick="loadAuditLogs(1)"><i class="fas fa-arrows-rotate"></i> Làm mới</button>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-sm" onclick="openPurgeAuditModal()" style="background: rgba(239,68,68,0.2); border: 1px solid rgba(239,68,68,0.4); color: #fca5a5;"><i class="fas fa-trash-can"></i> Dọn dẹp Nhật ký</button>
+            <button class="btn btn-primary btn-sm" onclick="loadAuditLogs(1)"><i class="fas fa-arrows-rotate"></i> Làm mới</button>
+          </div>
         </div>
         <div class="filter-bar" style="display:flex; flex-wrap:wrap; gap:10px; align-items:center;">
           <input type="text" id="filter-endpoint" class="input-ctrl" placeholder="Lọc endpoint..." style="min-width:140px;">
@@ -768,8 +775,11 @@
             <option value="401">401 Unauthorized</option>
             <option value="403">403 Forbidden</option>
             <option value="404">404 Not Found</option>
+            <option value="408">408 Timeout</option>
             <option value="429">429 Rate Limited</option>
             <option value="500">500 Server Error</option>
+            <option value="502">502 Bad Gateway</option>
+            <option value="504">504 Gateway Timeout</option>
           </select>
           <div style="display:inline-flex; align-items:center; gap:6px;">
             <span style="font-size:0.78rem; color:var(--text-muted);">Từ:</span>
@@ -777,10 +787,14 @@
             <span style="font-size:0.78rem; color:var(--text-muted);">Đến:</span>
             <input type="datetime-local" id="filter-to-time" class="input-ctrl" style="width:170px;">
           </div>
-          <label style="display:inline-flex; align-items:center; gap:6px; cursor:pointer; font-size:0.83rem; color:#f87171; font-weight:600;">
-            <input type="checkbox" id="filter-suspicious" onchange="loadAuditLogs(1)"> Chỉ log khả nghi (Attack)
-          </label>
-          <button class="btn btn-primary" onclick="loadAuditLogs(1)"><i class="fas fa-filter"></i> Lọc mốc tấn công</button>
+          <select id="filter-alert-type" class="input-ctrl" style="width:190px;" onchange="loadAuditLogs(1)">
+            <option value="">Tất cả loại sự kiện</option>
+            <option value="attack">🚨 Khả nghi (Tấn công)</option>
+            <option value="network_lag">⚠️ Mất kết nối / Trễ cao</option>
+            <option value="normal">✅ Bình thường</option>
+          </select>
+          <input type="hidden" id="filter-suspicious" value="">
+          <button class="btn btn-primary" onclick="loadAuditLogs(1)"><i class="fas fa-filter"></i> Lọc mốc thời gian</button>
           <button class="btn btn-sm" onclick="resetAuditFilters()" style="background: rgba(255,255,255,0.08);"><i class="fas fa-xmark"></i> Xóa lọc</button>
         </div>
         <div class="table-responsive" id="audit-table-wrapper">
@@ -938,6 +952,57 @@
       <div class="modal-footer">
         <button class="btn" style="background:#475569; color:#fff;" onclick="closeModal('modal-schedule')">Huỷ</button>
         <button class="btn btn-warning" onclick="saveSchedule()"><i class="fas fa-paper-plane"></i> Áp dụng Điều chỉnh</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: DỌN DẸP NHẬT KÝ KIỂM TOÁN (PURGE AUDIT LOGS) -->
+  <div class="modal-overlay" id="modal-purge-audit">
+    <div class="modal-dialog" style="max-width: 520px;">
+      <div class="modal-header" style="border-bottom-color: rgba(239,68,68,0.3);">
+        <h3><i class="fas fa-trash-can" style="color:#f87171;"></i> Dọn dẹp Nhật ký Kiểm toán</h3>
+        <button class="modal-close" onclick="closeModal('modal-purge-audit')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="color:var(--text-muted); font-size:0.88rem; margin-bottom:16px;">
+          Chọn chế độ dọn dẹp phù hợp. Hành động này <strong style="color:#f87171;">không thể hoàn tác</strong>.
+        </p>
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer; padding:12px 14px; border-radius:10px; border:1px solid var(--border-subtle); background:rgba(15,23,42,0.5); transition:all 0.2s;">
+            <input type="radio" name="purge-mode" value="days" checked style="margin-top:3px;">
+            <div>
+              <div style="font-weight:600; color:var(--text-main);">Xóa log cũ theo thời gian</div>
+              <div style="font-size:0.82rem; color:var(--text-muted); margin-top:2px;">Xóa các bản ghi cũ hơn số ngày chỉ định.</div>
+              <div style="margin-top:8px;">
+                <select id="purge-days" class="form-control" style="width:180px; padding:6px 10px; font-size:0.85rem;">
+                  <option value="7">Cũ hơn 7 ngày</option>
+                  <option value="30" selected>Cũ hơn 30 ngày</option>
+                  <option value="90">Cũ hơn 90 ngày</option>
+                  <option value="180">Cũ hơn 180 ngày</option>
+                  <option value="365">Cũ hơn 1 năm</option>
+                </select>
+              </div>
+            </div>
+          </label>
+          <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer; padding:12px 14px; border-radius:10px; border:1px solid var(--border-subtle); background:rgba(15,23,42,0.5); transition:all 0.2s;">
+            <input type="radio" name="purge-mode" value="resolved" style="margin-top:3px;">
+            <div>
+              <div style="font-weight:600; color:var(--text-main);">Chỉ xóa log bình thường (200 OK)</div>
+              <div style="font-size:0.82rem; color:var(--text-muted); margin-top:2px;">Bảo lưu các log khả nghi, sự cố mạng và lỗi. Chỉ xóa bản ghi hoạt động bình thường.</div>
+            </div>
+          </label>
+          <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer; padding:12px 14px; border-radius:10px; border:1px solid rgba(239,68,68,0.3); background:rgba(239,68,68,0.06); transition:all 0.2s;">
+            <input type="radio" name="purge-mode" value="all" style="margin-top:3px;">
+            <div>
+              <div style="font-weight:600; color:#f87171;">⚠️ Làm trống toàn bộ</div>
+              <div style="font-size:0.82rem; color:var(--text-muted); margin-top:2px;">Xóa tất cả bản ghi audit log trong hệ thống. Cẩn thận khi sử dụng.</div>
+            </div>
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" style="background:#475569; color:#fff;" onclick="closeModal('modal-purge-audit')">Huỷ</button>
+        <button class="btn" style="background:#dc2626; color:#fff;" onclick="confirmPurgeAuditLogs()"><i class="fas fa-trash-can"></i> Xác nhận Dọn dẹp</button>
       </div>
     </div>
   </div>
@@ -1668,7 +1733,8 @@
         msgBox.innerHTML = `<strong>Đánh giá hệ thống:</strong> ${a.threat_message}`;
 
         // Render Metrics
-        document.getElementById('stat-suspicious-count').textContent = a.suspicious_count;
+        document.getElementById('stat-suspicious-count').textContent = a.genuine_attack_count || a.suspicious_count;
+        document.getElementById('stat-network-lag').textContent = a.network_lag_count || 0;
         document.getElementById('stat-error-rate').textContent = `${a.error_rate_pct}%`;
         document.getElementById('stat-rate-limited').textContent = a.rate_limited_429;
         document.getElementById('stat-total-24h').textContent = a.total_requests_24h;
@@ -1692,7 +1758,7 @@
     function quickFilterIp(ip) {
       if (!ip) return;
       document.getElementById('filter-ip').value = ip;
-      document.getElementById('filter-suspicious').checked = true;
+      document.getElementById('filter-alert-type').value = 'attack';
       loadAuditLogs(1);
       showToast(`Đang lọc mốc thời gian tấn công của IP: ${ip}`, 'info');
     }
@@ -1704,7 +1770,7 @@
       document.getElementById('filter-status').value = '';
       document.getElementById('filter-from-time').value = '';
       document.getElementById('filter-to-time').value = '';
-      document.getElementById('filter-suspicious').checked = false;
+      document.getElementById('filter-alert-type').value = '';
       loadAuditLogs(1);
     }
 
@@ -1715,12 +1781,12 @@
       const status = document.getElementById('filter-status')?.value || '';
       const from_time = document.getElementById('filter-from-time')?.value || '';
       const to_time = document.getElementById('filter-to-time')?.value || '';
-      const suspicious = document.getElementById('filter-suspicious')?.checked ? 'true' : '';
+      const alert_type = document.getElementById('filter-alert-type')?.value || '';
 
       try {
         const params = new URLSearchParams({ 
           page, per_page: 30, endpoint, ip, role, status, 
-          from_time, to_time, suspicious 
+          from_time, to_time, alert_type 
         });
         const res = await adminFetch(`/admin/api/audit-logs/?${params}`);
         const data = await res.json();
@@ -1731,7 +1797,7 @@
             <thead>
               <tr>
                 <th>ID</th>
-                <th>Cảnh báo</th>
+                <th>Phân loại</th>
                 <th>Role</th>
                 <th>Endpoint</th>
                 <th>Method</th>
@@ -1745,16 +1811,26 @@
         `;
 
         if (!data.logs || data.logs.length === 0) {
-          html += `<tr><td colspan="9" style="text-align:center; padding:30px; color:var(--text-muted);">Không tìm thấy bản ghi log nào phù hợp với mốc thời gian đã lọc.</td></tr>`;
+          html += `<tr><td colspan="9" style="text-align:center; padding:30px; color:var(--text-muted);">Không tìm thấy bản ghi log nào phù hợp với bộ lọc đã chọn.</td></tr>`;
         } else {
           data.logs.forEach(l => {
             const cls = l.status_code === 200 ? 'status-success' : (l.status_code >= 400 ? 'status-danger' : 'status-warning');
-            const alertBadge = l.is_suspicious 
-              ? `<span class="badge" style="background:rgba(239,68,68,0.2); color:#f87171; border:1px solid rgba(239,68,68,0.4);"><i class="fas fa-triangle-exclamation"></i> Khả nghi</span>`
-              : `<span class="badge badge-port" style="opacity:0.7;"><i class="fas fa-check"></i> Bình thường</span>`;
+
+            // Badge phân loại 3 cấp: Tấn công (đỏ), Mất kết nối (vàng), Bình thường (xanh)
+            let alertBadge;
+            let rowBg = '';
+            if (l.event_type === 'attack') {
+              alertBadge = `<span class="badge" style="background:rgba(239,68,68,0.2); color:#f87171; border:1px solid rgba(239,68,68,0.4);"><i class="fas fa-triangle-exclamation"></i> Khả nghi</span>`;
+              rowBg = 'background: rgba(239,68,68,0.04);';
+            } else if (l.event_type === 'network_lag') {
+              alertBadge = `<span class="badge" style="background:rgba(250,204,21,0.15); color:#facc15; border:1px solid rgba(250,204,21,0.4);"><i class="fas fa-wifi"></i> Mất kết nối / Trễ cao</span>`;
+              rowBg = 'background: rgba(250,204,21,0.03);';
+            } else {
+              alertBadge = `<span class="badge badge-port" style="opacity:0.7;"><i class="fas fa-check"></i> Bình thường</span>`;
+            }
 
             html += `
-              <tr style="${l.is_suspicious ? 'background: rgba(239,68,68,0.04);' : ''}">
+              <tr style="${rowBg}">
                 <td>${l.id}</td>
                 <td>${alertBadge}</td>
                 <td><span class="badge badge-port">${l.role || 'guest'}</span></td>
@@ -1779,6 +1855,49 @@
         document.getElementById('audit-pagination').innerHTML = phtml;
       } catch (e) {
         document.getElementById('audit-table-wrapper').innerHTML = '<div class="loading" style="color:#f87171;">Không thể tải audit logs.</div>';
+      }
+    }
+
+    // ==========================================
+    // 8. PURGE AUDIT LOGS
+    // ==========================================
+    function openPurgeAuditModal() {
+      openModal('modal-purge-audit');
+    }
+
+    async function confirmPurgeAuditLogs() {
+      const mode = document.querySelector('input[name="purge-mode"]:checked')?.value || 'days';
+      const days = document.getElementById('purge-days')?.value || 30;
+
+      const modeLabels = {
+        'days': `Xóa log cũ hơn ${days} ngày`,
+        'resolved': 'Xóa toàn bộ log bình thường (200 OK)',
+        'all': 'Làm trống TOÀN BỘ audit log'
+      };
+
+      if (!confirm(`⚠️ Xác nhận: ${modeLabels[mode]}?\n\nHành động này không thể hoàn tác!`)) return;
+
+      try {
+        const body = { mode };
+        if (mode === 'days') body.days = parseInt(days);
+
+        const res = await adminFetch('/admin/api/audit-logs/purge/', {
+          method: 'POST',
+          headers: API_HEADERS,
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (data.success) {
+          closeModal('modal-purge-audit');
+          showToast(data.message || `Đã dọn dẹp ${data.deleted_count} bản ghi.`, 'success');
+          loadAuditLogs(1);
+          loadSecurityAnalytics();
+          loadStats();
+        } else {
+          showToast(data.message || 'Lỗi khi dọn dẹp audit log.', 'error');
+        }
+      } catch (e) {
+        showToast('Lỗi kết nối khi thực hiện dọn dẹp audit log.', 'error');
       }
     }
 

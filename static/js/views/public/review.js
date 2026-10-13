@@ -1348,6 +1348,8 @@ const ReviewApp = {
           let errorMessage = 'Sai thông tin đăng nhập';
           if (resp.status === 401 || resp.status === 404) {
             errorMessage = result.message || 'Sai thông tin đăng nhập';
+          } else if (resp.status === 403) {
+            errorMessage = result.message || 'Tài khoản của bạn đã bị khoá. Vui lòng liên hệ Quản trị viên.';
           } else if (resp.status >= 500) {
             errorMessage = 'Lỗi máy chủ. Vui lòng thử lại sau.';
           } else {
