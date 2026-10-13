@@ -51,10 +51,13 @@ def api_register(request):
         university_id = data.get('universityId')
 
         if not username or not password:
-            return JsonResponse({'success': False, 'message': 'Username và password là bắt buộc'})
+            return JsonResponse({'success': False, 'message': 'Mã số và mật khẩu là bắt buộc'})
 
-        if CustomUser.objects.filter(username=username).exists():
-            return JsonResponse({'success': False, 'message': 'Tên đăng nhập đã tồn tại trong hệ thống'})
+        # Kiểm tra xem mã đã có trong hệ thống chưa
+        if CustomUser.objects.filter(username=username).exists() or \
+           Student.objects.filter(student_id=username).exists() or \
+           Teacher.objects.filter(teacher_id=username).exists():
+            return JsonResponse({'success': False, 'message': 'Mã đã có trong hệ thống'}, status=400)
 
         # Tạo user
         user = CustomUser(
@@ -96,14 +99,50 @@ def api_register(request):
 
 
 # ============================================================
+#  API: KIỂM TRA MÃ TRONG HỆ THỐNG (Check Code)
+# ============================================================
+@csrf_exempt
+def api_check_code(request):
+    """
+    Kiểm tra mã sinh viên / giảng viên đã có trong hệ thống hay chưa.
+    GET /api/check-code/?code=...
+    Trả về:
+    - Nếu đã có: { success: True, exists: True, message: 'Mã đã có trong hệ thống' }
+    - Nếu chưa có: { success: True, exists: False, message: 'Mã không có trong hệ thống' }
+    """
+    code = request.GET.get('code', '').strip()
+    if not code:
+        return JsonResponse({'success': False, 'message': 'Vui lòng cung cấp mã cần kiểm tra'}, status=400)
+
+    exists = (
+        CustomUser.objects.filter(username=code).exists() or
+        Student.objects.filter(student_id=code).exists() or
+        Teacher.objects.filter(teacher_id=code).exists()
+    )
+
+    if exists:
+        return JsonResponse({
+            'success': True,
+            'exists': True,
+            'message': 'Mã đã có trong hệ thống'
+        })
+    return JsonResponse({
+        'success': True,
+        'exists': False,
+        'message': 'Mã không có trong hệ thống'
+    })
+
+
+# ============================================================
 #  API: ĐĂNG NHẬP (Server-side session)
 # ============================================================
 @csrf_exempt
 def api_login(request):
     """
     Server-side login: Xác thực credentials, tạo session_token.
-    Client gửi: { username, password }
-    Server trả: { success, session_token, user_info }
+    Bảo mật chống User Enumeration (CWE-204):
+    Mọi trường hợp sai mã, sai mật khẩu hoặc sinh viên/giảng viên đăng nhập nhầm tab
+    đều trả về thông báo lỗi chung 'Sai thông tin đăng nhập' để ngăn chặn dò tìm tài khoản.
     """
     if request.method != 'POST':
         return JsonResponse({'success': False, 'message': 'Only POST allowed'}, status=405)
@@ -114,38 +153,38 @@ def api_login(request):
         password = data.get('password', '')
 
         if not username or not password:
-            return JsonResponse({'success': False, 'message': 'Thiếu tên đăng nhập hoặc mật khẩu'})
+            return JsonResponse({'success': False, 'message': 'Vui lòng nhập đầy đủ mã số và mật khẩu'}, status=400)
 
         # Tìm user
         try:
             user = CustomUser.objects.get(username=username)
         except CustomUser.DoesNotExist:
-            return JsonResponse({'success': False, 'message': 'Tên đăng nhập không tồn tại'})
+            user = None
 
-        # Xác thực mật khẩu
-        if not user.check_password(password):
-            return JsonResponse({'success': False, 'message': 'Mật khẩu không đúng'})
+        requested_role = data.get('role', '')
+
+        # Kiểm tra tính hợp lệ tổng quát:
+        # 1. User không tồn tại
+        # 2. Mật khẩu không đúng
+        # 3. Đăng nhập nhầm tab vai trò (Sinh viên đăng nhập nhầm tab Giáo viên hoặc ngược lại)
+        is_invalid = (
+            user is None or
+            not user.check_password(password) or
+            (requested_role and user.role != requested_role and user.role != 'admin')
+        )
+
+        if is_invalid:
+            # Thông báo bảo mật chung: Không tiết lộ đúng mã sai pass hay sai role
+            return JsonResponse({
+                'success': False,
+                'message': 'Sai thông tin đăng nhập'
+            }, status=401)
 
         # ── Bảo mật phân quyền: Chặn tuyệt đối tài khoản Admin tại cổng đăng nhập công khai ──
         if user.role == 'admin':
             return JsonResponse({
                 'success': False,
                 'message': 'Từ chối truy cập: Tài khoản Quản trị viên (Admin) không được phép đăng nhập tại cổng người dùng. Vui lòng sử dụng Cổng Quản trị Local (Admin Control Panel - Port 9000).'
-            }, status=403)
-
-        requested_role = data.get('role', '')
-        # Sinh viên không được đăng nhập qua tab Giáo viên
-        if user.role == 'student' and requested_role == 'teacher':
-            return JsonResponse({
-                'success': False,
-                'message': 'Tài khoản sinh viên không thể đăng nhập qua tab Giáo viên'
-            }, status=403)
-
-        # Giáo viên không được đăng nhập qua tab Sinh viên
-        if user.role == 'teacher' and requested_role == 'student':
-            return JsonResponse({
-                'success': False,
-                'message': 'Tài khoản giáo viên không thể đăng nhập qua tab Sinh viên'
             }, status=403)
 
         # Lấy thông tin client

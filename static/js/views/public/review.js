@@ -1343,13 +1343,11 @@ const ReviewApp = {
             window.location.href = '/';
           }, 800);
         } else {
-          // ── Đăng nhập thất bại ──
+          // ── Đăng nhập thất bại (chống User Enumeration CWE-204) ──
           if (errorEl) errorEl.style.display = 'flex';
-          let errorMessage = 'Sai tên đăng nhập hoặc mật khẩu';
-          if (resp.status === 401) {
-            errorMessage = result.message || 'Mật khẩu không đúng';
-          } else if (resp.status === 404) {
-            errorMessage = result.message || 'Tài khoản không tồn tại trong hệ thống';
+          let errorMessage = 'Sai thông tin đăng nhập';
+          if (resp.status === 401 || resp.status === 404) {
+            errorMessage = result.message || 'Sai thông tin đăng nhập';
           } else if (resp.status >= 500) {
             errorMessage = 'Lỗi máy chủ. Vui lòng thử lại sau.';
           } else {
@@ -1502,8 +1500,8 @@ const ReviewApp = {
             }, 1000);
           } else {
             if (errorEl) errorEl.style.display = 'flex';
-            if (errorText) errorText.textContent = result.message || 'Tên đăng nhập đã tồn tại';
-            this.showToast(result.message || 'Tên đăng nhập đã tồn tại', 'error');
+            if (errorText) errorText.textContent = result.message || 'Mã đã có trong hệ thống';
+            this.showToast(result.message || 'Mã đã có trong hệ thống', 'error');
           }
         } catch (err) {
           if (errorEl) errorEl.style.display = 'flex';
@@ -1515,6 +1513,31 @@ const ReviewApp = {
           if (regSubmit) regSubmit.disabled = false;
         }
       });
+
+      // Kiểm tra mã trong hệ thống khi người dùng nhập xong (blur event)
+      const regUsernameInput = document.getElementById('rv-reg-username');
+      if (regUsernameInput) {
+        regUsernameInput.addEventListener('blur', async () => {
+          const code = regUsernameInput.value.trim();
+          if (!code) return;
+          try {
+            const resp = await fetch(`/api/check-code/?code=${encodeURIComponent(code)}`);
+            const data = await resp.json();
+            const errorEl = document.getElementById('rv-reg-error');
+            const errorText = document.getElementById('rv-reg-error-text');
+            if (data.exists) {
+              if (errorEl) errorEl.style.display = 'flex';
+              if (errorText) errorText.textContent = data.message || 'Mã đã có trong hệ thống';
+            } else {
+              if (errorEl && errorText && errorText.textContent.includes('Mã đã có')) {
+                errorEl.style.display = 'none';
+              }
+            }
+          } catch (e) {
+            // ignore network glitch on blur
+          }
+        });
+      }
       
       const regToggle = document.getElementById('rv-reg-toggle');
       const regPass = document.getElementById('rv-reg-password');

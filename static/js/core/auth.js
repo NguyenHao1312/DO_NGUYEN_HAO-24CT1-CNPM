@@ -164,7 +164,7 @@ const Auth = {
     );
 
     if (!user) {
-      return { success: false, message: 'Sai tên đăng nhập hoặc mật khẩu' };
+      return { success: false, message: 'Sai thông tin đăng nhập' };
     }
 
     const sessionToken = this._generateSessionToken();

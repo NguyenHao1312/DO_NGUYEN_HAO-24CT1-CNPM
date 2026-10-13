@@ -12,6 +12,7 @@ from student_management.views.user.auth import (
     api_login,
     api_logout,
     api_session_check,
+    api_check_code,
 )
 from student_management.views.user.sync import (
     api_sync_down,
@@ -34,6 +35,7 @@ __all__ = [
     'api_login',
     'api_logout',
     'api_session_check',
+    'api_check_code',
     'api_sync_down',
     'api_sync_up',
     'api_ai_chat',

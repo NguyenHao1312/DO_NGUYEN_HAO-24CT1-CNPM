@@ -6,6 +6,7 @@ urlpatterns = [
     path('api/login/', views.api_login, name='api_login'),
     path('api/logout/', views.api_logout, name='api_logout'),
     path('api/register/', views.api_register, name='api_register'),
+    path('api/check-code/', views.api_check_code, name='api_check_code'),
     path('api/session/check/', views.api_session_check, name='api_session_check'),
 
     # Sync

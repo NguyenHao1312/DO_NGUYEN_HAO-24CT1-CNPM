@@ -6,10 +6,10 @@ const ForgotPassword = {
 
     const t = {
       title: isEn ? 'Forgot Password' : 'Quên mật khẩu',
-      desc1: isEn ? 'Please select your university and enter your ID to find your account.' : 'Vui lòng chọn trường và nhập Tên đăng nhập hoặc Mã số của bạn để tìm kiếm tài khoản.',
+      desc1: isEn ? 'Please select your university and enter your ID to find your account.' : 'Vui lòng chọn trường và nhập Mã số (SV / GV) của bạn để tìm kiếm tài khoản.',
       uniLabel: isEn ? 'Select University' : 'Chọn trường Đại học',
-      idLabel: isEn ? 'Student / Teacher ID' : 'Tên đăng nhập / Mã số',
-      idPlaceholder: isEn ? 'Enter your ID...' : 'Nhập mã SV/GV hoặc tên đăng nhập...',
+      idLabel: isEn ? 'Student / Teacher ID' : 'Mã số (SV / GV)',
+      idPlaceholder: isEn ? 'Enter your ID...' : 'Nhập mã số SV / GV...',
       cancelBtn: isEn ? 'Cancel' : 'Hủy',
       continueBtn: isEn ? 'Continue <i class="fas fa-arrow-right" style="margin-left: 8px;"></i>' : 'Tiếp tục <i class="fas fa-arrow-right" style="margin-left: 8px;"></i>',
       accountLabel: isEn ? 'Account' : 'Tài khoản',
@@ -29,7 +29,7 @@ const ForgotPassword = {
       notFoundTitle: isEn ? 'Account not found' : 'Không tìm thấy tài khoản',
       notFoundDesc: isEn ? 'The ID does not exist in the system.' : 'Mã số không tồn tại trong hệ thống.',
       retryBtn: isEn ? '<i class="fas fa-redo" style="margin-right: 6px;"></i> Retry' : '<i class="fas fa-redo" style="margin-right: 6px;"></i> Thử lại',
-      errEmpty: isEn ? 'Please enter your ID!' : 'Vui lòng nhập tên đăng nhập hoặc mã số!'
+      errEmpty: isEn ? 'Please enter your ID!' : 'Vui lòng nhập mã số!'
     };
 
     Utils.showModal(t.title, `
