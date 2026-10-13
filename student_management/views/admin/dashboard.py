@@ -287,3 +287,50 @@ def api_admin_toggle_user(request):
         return JsonResponse({'error': 'User not found'}, status=404)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+
+# ============================================================
+#  API: GHOST ACCOUNTS DETECTION & PURGE (DỌN DẸP TÀI KHOẢN MA)
+# ============================================================
+@csrf_exempt
+@require_session
+@require_role(['admin'])
+@audit_log
+def api_admin_ghost_accounts(request):
+    """
+    Quản lý dọn dẹp tài khoản ma làm nhiễu database:
+    - GET: Quét và trả về danh sách các tài khoản ma (không hoạt động, mồ côi).
+    - POST: Thực hiện dọn dẹp an toàn các tài khoản ma.
+    """
+    from student_management.account_lifecycle import detect_ghost_accounts, purge_ghost_accounts
+
+    if request.method == 'GET':
+        days = int(request.GET.get('days', 30))
+        ghosts = detect_ghost_accounts(days_inactive=days)
+        return JsonResponse({
+            'success': True,
+            'count': len(ghosts),
+            'ghosts': ghosts,
+            'days_threshold': days,
+        })
+
+    elif request.method == 'POST':
+        try:
+            data = json.loads(request.body) if request.body else {}
+        except Exception:
+            data = {}
+
+        days = int(data.get('days', 30))
+        user_ids = data.get('user_ids', None)
+        dry_run = bool(data.get('dry_run', False))
+        admin_user = getattr(request, 'session_user', None)
+
+        result = purge_ghost_accounts(
+            days_inactive=days,
+            user_ids=user_ids,
+            dry_run=dry_run,
+            admin_user=admin_user
+        )
+        return JsonResponse({'success': True, **result})
+
+    return JsonResponse({'error': 'Method not allowed'}, status=405)

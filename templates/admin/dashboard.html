@@ -674,6 +674,28 @@
 
     <!-- TAB 6: USERS -->
     <div id="tab-users" class="tab-panel">
+      <!-- GHOST ACCOUNTS CLEANER PANEL -->
+      <div class="card" style="margin-bottom: 20px; border-left: 4px solid var(--amber);">
+        <div class="card-header" style="padding-bottom: 8px;">
+          <div class="card-title" style="display:flex; align-items:center; gap:10px;">
+            <i class="fas fa-broom" style="color:var(--amber);"></i>
+            <span>Dọn dẹp Tài khoản "Ma" & Rác Database (Storage Optimization)</span>
+            <span id="ghost-count-badge" class="badge badge-port" style="margin-left: 8px;">Chưa quét</span>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-sm" onclick="scanGhostAccounts()" style="background: rgba(255,255,255,0.08);"><i class="fas fa-magnifying-glass"></i> Quét tài khoản ma</button>
+            <button class="btn btn-sm" onclick="purgeGhostAccountsAction()" style="background: #dc2626; color:#fff;"><i class="fas fa-trash-can"></i> Dọn dẹp an toàn</button>
+          </div>
+        </div>
+        <div class="card-body" style="padding: 14px 20px;">
+          <div id="ghost-status-msg" style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5;">
+            Tự động nhận diện tài khoản rác (0 môn học, 0 điểm thi, 0 điểm danh, mồ côi hoặc không đăng nhập &gt; 30 ngày) để giải phóng dung lượng và tối ưu hóa hiệu năng SQL Server.
+          </div>
+          <div id="ghost-list-preview" style="margin-top: 12px; display: none;"></div>
+        </div>
+      </div>
+
+      <!-- MAIN USERS CARD -->
       <div class="card">
         <div class="card-header">
           <div class="card-title"><i class="fas fa-users-gear"></i> Quản lý Tài khoản & Phân quyền Hệ thống</div>
@@ -963,6 +985,10 @@
       if (tabName === 'grades') loadGrades(1);
       if (tabName === 'classes') loadClasses();
       if (tabName === 'teachers') loadTeachers();
+      if (tabName === 'users') {
+        loadUsers();
+        scanGhostAccounts();
+      }
       if (tabName === 'audit') {
         loadSecurityAnalytics();
         loadAuditLogs(1);
@@ -1496,6 +1522,106 @@
         showToast(d.message || 'Đã cập nhật trạng thái', 'success');
         loadUsers();
       } catch (e) { showToast('Lỗi cập nhật user', 'error'); }
+    }
+
+    // ==========================================
+    // 6.1 GHOST ACCOUNTS PURGE & CLEANUP
+    // ==========================================
+    let currentGhostList = [];
+
+    async function scanGhostAccounts() {
+      const badge = document.getElementById('ghost-count-badge');
+      const msg = document.getElementById('ghost-status-msg');
+      const preview = document.getElementById('ghost-list-preview');
+      if (badge) badge.textContent = 'Đang quét...';
+
+      try {
+        const res = await adminFetch('/admin/api/ghost-accounts/?days=30');
+        const data = await res.json();
+        if (!data.success) return;
+
+        currentGhostList = data.ghosts || [];
+        const count = data.count || 0;
+
+        if (badge) {
+          if (count > 0) {
+            badge.className = 'badge';
+            badge.style.background = '#dc2626';
+            badge.style.color = '#fff';
+            badge.innerHTML = `<i class="fas fa-triangle-exclamation"></i> Phát hiện ${count} tài khoản rác`;
+          } else {
+            badge.className = 'badge badge-db';
+            badge.innerHTML = '<i class="fas fa-check"></i> Sạch sẽ (0 tài khoản rác)';
+          }
+        }
+
+        if (count > 0) {
+          msg.innerHTML = `<span style="color:#f87171; font-weight:600;">Cảnh báo:</span> Có <strong>${count}</strong> tài khoản ma không phát sinh dữ liệu học tập hoặc mồ côi. Nên dọn dẹp để giải phóng database.`;
+          preview.style.display = 'block';
+          preview.innerHTML = `
+            <div style="background: rgba(15,23,42,0.6); padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-subtle); max-height: 180px; overflow-y: auto;">
+              <table style="width: 100%; border-collapse: collapse; font-size: 0.78rem;">
+                <thead>
+                  <tr style="color: var(--text-muted); text-align: left; border-bottom: 1px solid var(--border-subtle);">
+                    <th style="padding: 4px;">ID</th>
+                    <th style="padding: 4px;">Username</th>
+                    <th style="padding: 4px;">Vai trò</th>
+                    <th style="padding: 4px;">Lý do phát hiện</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${currentGhostList.slice(0, 10).map(g => `
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+                      <td style="padding: 4px;">${g.user_id}</td>
+                      <td style="padding: 4px; color: var(--accent); font-weight: 600;">${g.username}</td>
+                      <td style="padding: 4px;">${g.role}</td>
+                      <td style="padding: 4px; color: #fca5a5;">${g.reason_display}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+              ${count > 10 ? `<div style="text-align: center; color: var(--text-muted); padding-top: 6px; font-size: 0.75rem;">... và ${count - 10} tài khoản khác</div>` : ''}
+            </div>
+          `;
+        } else {
+          msg.innerHTML = '<span style="color:#34d399;"><i class="fas fa-circle-check"></i> Cơ sở dữ liệu sạch: Không phát hiện tài khoản rác nào.</span>';
+          preview.style.display = 'none';
+        }
+      } catch (e) {
+        if (badge) badge.textContent = 'Lỗi quét';
+      }
+    }
+
+    async function purgeGhostAccountsAction() {
+      if (currentGhostList.length === 0) {
+        await scanGhostAccounts();
+        if (currentGhostList.length === 0) {
+          showToast('Không có tài khoản ma nào cần dọn dẹp!', 'info');
+          return;
+        }
+      }
+
+      const confirmMsg = `Xác nhận dọn dẹp ${currentGhostList.length} tài khoản ma khỏi SQL Server?\n\nThao tác này sẽ loại bỏ an toàn các tài khoản rác (0 môn học, 0 điểm thi) và giải phóng dung lượng bộ nhớ.`;
+      if (!confirm(confirmMsg)) return;
+
+      try {
+        const res = await adminFetch('/admin/api/ghost-accounts/', {
+          method: 'POST',
+          headers: API_HEADERS,
+          body: JSON.stringify({ days: 30 })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(data.message || `Đã dọn dẹp ${data.deleted_count} tài khoản ma!`, 'success');
+          await scanGhostAccounts();
+          loadUsers();
+          loadStats();
+        } else {
+          showToast('Lỗi khi dọn dẹp tài khoản ma', 'error');
+        }
+      } catch (e) {
+        showToast('Lỗi kết nối khi dọn dẹp tài khoản', 'error');
+      }
     }
 
     // ==========================================

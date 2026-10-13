@@ -14,6 +14,7 @@ from student_management.views.admin.dashboard import (
     api_admin_users,
     api_admin_force_logout,
     api_admin_toggle_user,
+    api_admin_ghost_accounts,
 )
 from student_management.views.admin.export import (
     api_export_excel,
@@ -41,6 +42,7 @@ __all__ = [
     'api_admin_users',
     'api_admin_force_logout',
     'api_admin_toggle_user',
+    'api_admin_ghost_accounts',
     'api_export_excel',
     'api_copy_classes_semester',
     'api_admin_students',

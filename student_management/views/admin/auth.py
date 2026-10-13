@@ -11,12 +11,12 @@ from django.utils import timezone
 from student_management.models import CustomUser
 
 
+from student_management.security_utils import get_client_ip
+
+
 def _get_client_ip(request):
-    """Lấy IP client từ request header."""
-    x_forwarded = request.META.get('HTTP_X_FORWARDED_FOR')
-    if x_forwarded:
-        return x_forwarded.split(',')[0].strip()
-    return request.META.get('REMOTE_ADDR', '')
+    """Lấy IP client an toàn từ security_utils."""
+    return get_client_ip(request)
 
 
 def admin_login_page(request):

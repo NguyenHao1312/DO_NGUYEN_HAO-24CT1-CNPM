@@ -326,7 +326,7 @@
               name="username"
               class="form-input"
               placeholder="Username admin..."
-              value="{{ username|default:'admin' }}"
+              value="{{ username|default:'' }}"
               required
               autofocus
               autocomplete="username"
@@ -355,12 +355,6 @@
           <i class="fas fa-arrow-right-to-bracket"></i> Đăng nhập Quản trị viên
         </button>
       </form>
-
-      <div class="info-box">
-        <i class="fas fa-circle-info"></i> <strong>Cơ chế Bảo mật Doanh nghiệp:</strong><br>
-        Tài khoản quản trị mặc định: <code>admin</code> | Mật khẩu: <code>123</code><br>
-        Dữ liệu được bảo mật và đồng bộ trực tiếp với MS SQL Server <code>unims_db</code>.
-      </div>
 
       <div class="footer-links">
         <a href="/review/"><i class="fas fa-arrow-left"></i> Chuyển sang Cổng Người dùng (User Portal)</a>

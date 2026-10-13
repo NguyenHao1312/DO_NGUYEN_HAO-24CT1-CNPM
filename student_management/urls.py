@@ -42,6 +42,7 @@ urlpatterns = [
     path('admin/api/users/', views.api_admin_users, name='api_admin_users'),
     path('admin/api/force-logout/', views.api_admin_force_logout, name='api_admin_force_logout'),
     path('admin/api/toggle-user/', views.api_admin_toggle_user, name='api_admin_toggle_user'),
+    path('admin/api/ghost-accounts/', views.api_admin_ghost_accounts, name='api_admin_ghost_accounts'),
 
     # Admin Academic Management APIs
     path('admin/api/students/', views.api_admin_students, name='api_admin_students'),

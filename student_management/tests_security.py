@@ -114,3 +114,73 @@ class SecurityAnalyticsApiTestCase(TestCase):
         self.assertIn('top_offending_ips', analytics)
         self.assertGreaterEqual(analytics['suspicious_count'], 2)
         self.assertGreaterEqual(analytics['rate_limited_429'], 1)
+
+
+class GhostAccountsTestCase(TestCase):
+    def setUp(self):
+        self.admin = CustomUser.objects.create_user(
+            username='boss_admin', password='password123', role='admin', session_token='admin-ghost-token'
+        )
+
+    def test_detect_and_purge_ghost_account(self):
+        """Kiểm thử phát hiện và dọn dẹp tài khoản mồ côi/rác an toàn."""
+        from student_management.account_lifecycle import detect_ghost_accounts, purge_ghost_accounts
+        from student_management.models import Student
+
+        # 1. Tạo 1 tài khoản mồ côi (không có profile student/teacher)
+        orphan_user = CustomUser.objects.create_user(
+            username='ghost_orphan_99', password='password123', role='student'
+        )
+
+        # 2. Tạo 1 sinh viên bình thường
+        active_user = CustomUser.objects.create_user(
+            username='real_student_99', password='password123', role='student'
+        )
+        Student.objects.create(
+            user=active_user, student_id='ST99', full_name='Sinh Vien That'
+        )
+
+        # 3. Quét tài khoản ma
+        ghosts = detect_ghost_accounts(days_inactive=0)
+        ghost_ids = [g['user_id'] for g in ghosts]
+
+        self.assertIn(orphan_user.id, ghost_ids)
+        self.assertNotIn(self.admin.id, ghost_ids)  # Tuyệt đối không xóa Admin
+
+        # 4. Dọn dẹp tài khoản ma
+        result = purge_ghost_accounts(days_inactive=0, user_ids=[orphan_user.id])
+        self.assertEqual(result['deleted_count'], 1)
+        self.assertFalse(CustomUser.objects.filter(id=orphan_user.id).exists())
+        # Tài khoản thật vẫn còn
+        self.assertTrue(CustomUser.objects.filter(id=active_user.id).exists())
+
+    def test_api_admin_ghost_accounts(self):
+        """Kiểm thử API GET và POST quản lý tài khoản ma."""
+        # Tạo 1 tài khoản rác
+        ghost = CustomUser.objects.create_user(
+            username='api_ghost_user', password='password123', role='student'
+        )
+
+        # GET quét
+        res_get = self.client.get(
+            '/admin/api/ghost-accounts/?days=0',
+            HTTP_X_SESSION_TOKEN='admin-ghost-token'
+        )
+        self.assertEqual(res_get.status_code, 200)
+        d_get = res_get.json()
+        self.assertTrue(d_get['success'])
+        self.assertGreaterEqual(d_get['count'], 1)
+
+        # POST dọn dẹp
+        res_post = self.client.post(
+            '/admin/api/ghost-accounts/',
+            data={'days': 0},
+            content_type='application/json',
+            HTTP_X_SESSION_TOKEN='admin-ghost-token'
+        )
+        self.assertEqual(res_post.status_code, 200)
+        d_post = res_post.json()
+        self.assertTrue(d_post['success'])
+        self.assertGreaterEqual(d_post['deleted_count'], 1)
+        self.assertFalse(CustomUser.objects.filter(id=ghost.id).exists())
+
