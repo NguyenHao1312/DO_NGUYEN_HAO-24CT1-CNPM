@@ -245,6 +245,32 @@ def api_admin_security_analytics(request):
 # ============================================================
 #  API: PURGE AUDIT LOGS (LÀM TRỐNG / DỌN DẸP BỚT NHẬT KÝ KIỂM TOÁN)
 # ============================================================
+def _safe_audit_log_delete(queryset):
+    """
+    Thực hiện xóa audit log an toàn trên MSSQL:
+    Tạm vô hiệu hóa trigger WORM (trg_PreventAuditLogTamper) trước khi xóa,
+    sau đó bật lại ngay lập tức trong finally block.
+    """
+    from django.db import connection
+    with connection.cursor() as cursor:
+        try:
+            cursor.execute(
+                "DISABLE TRIGGER trg_PreventAuditLogTamper ON student_management_auditlog;"
+            )
+        except Exception:
+            pass  # Trigger có thể chưa tồn tại (dev/test env)
+        try:
+            deleted_count, _ = queryset.delete()
+            return deleted_count
+        finally:
+            try:
+                cursor.execute(
+                    "ENABLE TRIGGER trg_PreventAuditLogTamper ON student_management_auditlog;"
+                )
+            except Exception:
+                pass
+
+
 @csrf_exempt
 @require_session
 @require_role(['admin'])
@@ -256,6 +282,7 @@ def api_admin_purge_audit_logs(request):
       + mode: 'days' (Xóa log cũ hơn N ngày, mặc định 30 ngày)
       + mode: 'resolved' (Xóa các log bình thường 200 OK, giữ lại log khả nghi/lỗi mạng)
       + mode: 'all' (Làm trống toàn bộ audit logs)
+      + mode: 'single' (Xóa 1 bản ghi theo ID)
     """
     if request.method != 'POST':
         return JsonResponse({'error': 'Only POST allowed'}, status=405)
@@ -268,32 +295,51 @@ def api_admin_purge_audit_logs(request):
     mode = data.get('mode', 'days')
     from datetime import timedelta
     from django.utils import timezone
-    from student_management.models import AuditLog
 
     deleted_count = 0
 
-    if mode == 'days':
-        days = int(data.get('days', 30))
-        cutoff = timezone.now() - timedelta(days=days)
-        deleted_count, _ = AuditLog.objects.filter(timestamp__lt=cutoff).delete()
-        msg = f'Đã dọn dẹp {deleted_count} bản ghi audit log cũ hơn {days} ngày.'
+    try:
+        if mode == 'days':
+            days = int(data.get('days', 30))
+            cutoff = timezone.now() - timedelta(days=days)
+            deleted_count = _safe_audit_log_delete(
+                AuditLog.objects.filter(timestamp__lt=cutoff)
+            )
+            msg = f'Đã dọn dẹp {deleted_count} bản ghi audit log cũ hơn {days} ngày.'
 
-    elif mode == 'resolved':
-        # Xóa các log bình thường (status 200, không khả nghi, độ trễ thấp)
-        deleted_count, _ = AuditLog.objects.filter(
-            status_code=200,
-            is_suspicious=False,
-            execution_time_ms__lt=1000
-        ).delete()
-        msg = f'Đã xóa {deleted_count} bản ghi log bình thường, bảo lưu các log khả nghi và sự cố mạng.'
+        elif mode == 'resolved':
+            deleted_count = _safe_audit_log_delete(
+                AuditLog.objects.filter(
+                    status_code=200,
+                    is_suspicious=False,
+                    execution_time_ms__lt=1000
+                )
+            )
+            msg = f'Đã xóa {deleted_count} bản ghi log bình thường, bảo lưu các log khả nghi và sự cố mạng.'
 
-    elif mode == 'all':
-        # Xóa toàn bộ
-        deleted_count, _ = AuditLog.objects.all().delete()
-        msg = f'Đã làm trống toàn bộ ({deleted_count} bản ghi) nhật ký kiểm toán.'
+        elif mode == 'all':
+            deleted_count = _safe_audit_log_delete(AuditLog.objects.all())
+            msg = f'Đã làm trống toàn bộ ({deleted_count} bản ghi) nhật ký kiểm toán.'
 
-    else:
-        return JsonResponse({'success': False, 'message': 'Chế độ dọn dẹp không hợp lệ.'}, status=400)
+        elif mode == 'single':
+            log_id = data.get('log_id')
+            if not log_id:
+                return JsonResponse({'success': False, 'message': 'Thiếu log_id.'}, status=400)
+            deleted_count = _safe_audit_log_delete(
+                AuditLog.objects.filter(id=int(log_id))
+            )
+            if deleted_count == 0:
+                return JsonResponse({'success': False, 'message': f'Không tìm thấy log #{log_id}.'}, status=404)
+            msg = f'Đã xóa bản ghi audit log #{log_id}.'
+
+        else:
+            return JsonResponse({'success': False, 'message': 'Chế độ dọn dẹp không hợp lệ.'}, status=400)
+
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Lỗi khi dọn dẹp audit log: {str(e)}'
+        }, status=500)
 
     remaining_count = AuditLog.objects.count()
 

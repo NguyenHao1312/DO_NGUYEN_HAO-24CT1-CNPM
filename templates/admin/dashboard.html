@@ -552,6 +552,9 @@
       <span class="badge badge-port"><i class="fas fa-network-wired"></i> Port {{ request.META.SERVER_PORT|default:"9000" }}</span>
     </div>
     <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+      <span id="session-countdown-badge" style="display:inline-flex; align-items:center; gap:6px; font-size:0.8rem; font-family:var(--font-mono); font-weight:600; padding:4px 12px; border-radius:20px; background:rgba(16,185,129,0.15); color:#34d399; border:1px solid rgba(16,185,129,0.35); transition:all 0.3s;">
+        <i class="fas fa-hourglass-half"></i> <span id="session-timer-text">05:00</span>
+      </span>
       <span style="font-size: 0.85rem; color: var(--text-muted); font-family: var(--font-mono);"><i class="fas fa-user-shield" style="color:var(--accent);"></i> {{ admin_user.username|default:"admin" }}</span>
       <a href="/review/" target="_blank" class="btn btn-primary btn-sm"><i class="fas fa-external-link-alt"></i> Cổng Người dùng</a>
       <a href="/admin/logout/" class="btn btn-danger btn-sm"><i class="fas fa-sign-out-alt"></i> Đăng xuất</a>
@@ -1805,13 +1808,14 @@
                 <th>IP Client</th>
                 <th>Độ trễ</th>
                 <th>Thời gian</th>
+                <th style="width:50px; text-align:center;">Xóa</th>
               </tr>
             </thead>
             <tbody>
         `;
 
         if (!data.logs || data.logs.length === 0) {
-          html += `<tr><td colspan="9" style="text-align:center; padding:30px; color:var(--text-muted);">Không tìm thấy bản ghi log nào phù hợp với bộ lọc đã chọn.</td></tr>`;
+          html += `<tr><td colspan="10" style="text-align:center; padding:30px; color:var(--text-muted);">Không tìm thấy bản ghi log nào phù hợp với bộ lọc đã chọn.</td></tr>`;
         } else {
           data.logs.forEach(l => {
             const cls = l.status_code === 200 ? 'status-success' : (l.status_code >= 400 ? 'status-danger' : 'status-warning');
@@ -1840,6 +1844,7 @@
                 <td><strong style="cursor:pointer; color:var(--accent);" onclick="quickFilterIp('${l.ip_address}')" title="Click để lọc mốc thời gian của IP này">${l.ip_address || '—'}</strong></td>
                 <td><span style="font-size:0.8rem; color:${l.execution_time_ms > 500 ? '#f87171' : 'var(--text-muted)'};">${l.execution_time_ms ? Math.round(l.execution_time_ms) + 'ms' : '-'}</span></td>
                 <td><strong style="color:var(--text-main); font-size:0.83rem;">${new Date(l.timestamp).toLocaleString('vi')}</strong></td>
+                <td style="text-align:center;"><button onclick="deleteSingleAuditLog(${l.id})" title="Xóa log #${l.id}" style="background:rgba(239,68,68,0.15); color:#f87171; border:1px solid rgba(239,68,68,0.3); border-radius:6px; padding:4px 8px; cursor:pointer; font-size:0.75rem; transition:all 0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.35)'" onmouseout="this.style.background='rgba(239,68,68,0.15)'"><i class="fas fa-trash-alt"></i></button></td>
               </tr>
             `;
           });
@@ -1901,9 +1906,118 @@
       }
     }
 
+    // ==========================================
+    // 9. DELETE SINGLE AUDIT LOG
+    // ==========================================
+    async function deleteSingleAuditLog(logId) {
+      if (!confirm(`Xóa bản ghi audit log #${logId}?\n\nHành động này không thể hoàn tác.`)) return;
+
+      try {
+        const res = await adminFetch('/admin/api/audit-logs/purge/', {
+          method: 'POST',
+          headers: API_HEADERS,
+          body: JSON.stringify({ mode: 'single', log_id: logId })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(`Đã xóa log #${logId} thành công.`, 'success');
+          loadAuditLogs();
+          loadSecurityAnalytics();
+          loadStats();
+        } else {
+          showToast(data.message || `Không thể xóa log #${logId}.`, 'error');
+        }
+      } catch (e) {
+        showToast('Lỗi kết nối khi xóa audit log.', 'error');
+      }
+    }
+
+    // ==========================================
+    // 10. SESSION COUNTDOWN TIMER (5 phút)
+    // ==========================================
+    let sessionSecondsLeft = 300;
+    let sessionTimerInterval = null;
+    const warningThresholds = [60, 30, 15, 10, 3];
+    const warningFired = {};
+
+    function updateSessionCountdown() {
+      sessionSecondsLeft--;
+
+      const badge = document.getElementById('session-countdown-badge');
+      const timerText = document.getElementById('session-timer-text');
+      if (!badge || !timerText) return;
+
+      // Format MM:SS
+      const mins = Math.floor(sessionSecondsLeft / 60);
+      const secs = sessionSecondsLeft % 60;
+      timerText.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+
+      // Color transitions based on remaining time
+      if (sessionSecondsLeft > 60) {
+        // Green - safe
+        badge.style.background = 'rgba(16,185,129,0.15)';
+        badge.style.color = '#34d399';
+        badge.style.borderColor = 'rgba(16,185,129,0.35)';
+        badge.style.animation = 'none';
+      } else if (sessionSecondsLeft > 30) {
+        // Yellow - warning
+        badge.style.background = 'rgba(250,204,21,0.15)';
+        badge.style.color = '#facc15';
+        badge.style.borderColor = 'rgba(250,204,21,0.4)';
+        badge.style.animation = 'none';
+      } else if (sessionSecondsLeft > 15) {
+        // Orange - urgent
+        badge.style.background = 'rgba(251,146,60,0.2)';
+        badge.style.color = '#fb923c';
+        badge.style.borderColor = 'rgba(251,146,60,0.4)';
+        badge.style.animation = 'none';
+      } else if (sessionSecondsLeft > 3) {
+        // Red
+        badge.style.background = 'rgba(239,68,68,0.2)';
+        badge.style.color = '#f87171';
+        badge.style.borderColor = 'rgba(239,68,68,0.5)';
+        badge.style.animation = 'none';
+      } else {
+        // Pulsing red - critical
+        badge.style.background = 'rgba(239,68,68,0.35)';
+        badge.style.color = '#fca5a5';
+        badge.style.borderColor = 'rgba(239,68,68,0.7)';
+        badge.style.animation = 'pulse-critical 0.5s ease-in-out infinite alternate';
+      }
+
+      // Toast warnings at specific thresholds
+      warningThresholds.forEach(threshold => {
+        if (sessionSecondsLeft === threshold && !warningFired[threshold]) {
+          warningFired[threshold] = true;
+          const timeLabel = threshold >= 60 ? `${threshold / 60} phút` : `${threshold} giây`;
+          showToast(`⏰ Phiên quản trị còn ${timeLabel} — sắp hết thời gian truy cập!`, 'warning');
+        }
+      });
+
+      // Auto-logout at 0
+      if (sessionSecondsLeft <= 0) {
+        clearInterval(sessionTimerInterval);
+        showToast('🔒 Phiên quản trị đã hết hạn. Đang chuyển hướng...', 'error');
+        setTimeout(() => { window.location.href = '/admin/logout/'; }, 1500);
+      }
+    }
+
+    function startSessionCountdown() {
+      sessionTimerInterval = setInterval(updateSessionCountdown, 1000);
+    }
+
+    // Inject pulse keyframes if not already present
+    if (!document.getElementById('pulse-critical-keyframes')) {
+      const style = document.createElement('style');
+      style.id = 'pulse-critical-keyframes';
+      style.textContent = `@keyframes pulse-critical { from { opacity: 1; transform: scale(1); } to { opacity: 0.7; transform: scale(1.05); } }`;
+      document.head.appendChild(style);
+    }
+
     // Khởi chạy khi tải trang
     document.addEventListener('DOMContentLoaded', () => {
       loadStats();
+      startSessionCountdown();
     });
   </script>
 </body>
