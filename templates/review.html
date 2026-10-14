@@ -76,11 +76,11 @@
           <div class="rv-login-hero-content">
             <i class="fas fa-graduation-cap" style="font-size: 3rem; margin-bottom: 16px; opacity: 0.9;"></i>
             <h2>Uni<span style="color: var(--primary-300);">MS</span></h2>
-            <p>Hệ thống Quản lý Sinh viên Thông minh</p>
+            <p data-i18n="smart_management_desc">Hệ thống Quản lý Sinh viên Thông minh</p>
             <div style="margin-top: 24px; font-size: 0.85rem; opacity: 0.7; line-height: 1.6;">
-              <div><i class="fas fa-check-circle" style="margin-right: 6px;"></i> Quản lý điểm số & học phí</div>
-              <div><i class="fas fa-check-circle" style="margin-right: 6px;"></i> Theo dõi tiến trình học tập</div>
-              <div><i class="fas fa-check-circle" style="margin-right: 6px;"></i> Đồng bộ dữ liệu đa thiết bị</div>
+              <div><i class="fas fa-check-circle" style="margin-right: 6px;"></i> <span data-i18n="feature_grade_tuition">Quản lý điểm số & học phí</span></div>
+              <div><i class="fas fa-check-circle" style="margin-right: 6px;"></i> <span data-i18n="feature_progress">Theo dõi tiến trình học tập</span></div>
+              <div><i class="fas fa-check-circle" style="margin-right: 6px;"></i> <span data-i18n="feature_sync">Đồng bộ dữ liệu đa thiết bị</span></div>
             </div>
           </div>
         </div>
@@ -88,29 +88,29 @@
         <!-- Right: Login form -->
         <div class="rv-login-form-panel">
           <div class="rv-login-form-header" id="rv-form-header">
-            <h3 id="rv-form-title">Đăng nhập</h3>
-            <p id="rv-form-subtitle">Chào mừng trở lại! Vui lòng chọn vai trò và đăng nhập.</p>
+            <h3 id="rv-form-title" data-i18n="login">Đăng nhập</h3>
+            <p id="rv-form-subtitle" data-i18n="login_subtitle">Chào mừng trở lại! Vui lòng chọn vai trò và đăng nhập.</p>
           </div>
 
           <!-- Segmented Control Tabs -->
           <div class="rv-login-tabs">
             <div class="rv-login-tab-indicator" id="rv-login-indicator"></div>
             <button class="rv-login-tab active" data-role="student">
-              <i class="fas fa-user-graduate"></i> Sinh viên
+              <i class="fas fa-user-graduate"></i> <span data-i18n="student_role">Sinh viên</span>
             </button>
             <button class="rv-login-tab" data-role="teacher">
-              <i class="fas fa-chalkboard-teacher"></i> Giáo viên
+              <i class="fas fa-chalkboard-teacher"></i> <span data-i18n="teacher_role">Giáo viên</span>
             </button>
           </div>
 
           <!-- Login Form -->
           <form class="rv-login-form" id="rv-login-form" autocomplete="off">
             <div class="rv-input-group">
-              <label for="rv-login-username"><i class="fas fa-id-card"></i> Mã số (SV / GV)</label>
+              <label for="rv-login-username"><i class="fas fa-id-card"></i> <span data-i18n="idLabel">Mã số (SV / GV)</span></label>
               <input type="text" id="rv-login-username" placeholder="Nhập mã số sinh viên hoặc giảng viên" autocomplete="username" required>
             </div>
             <div class="rv-input-group">
-              <label for="rv-login-password"><i class="fas fa-lock"></i> Mật khẩu</label>
+              <label for="rv-login-password"><i class="fas fa-lock"></i> <span data-i18n="password">Mật khẩu</span></label>
               <div class="rv-input-password-wrap">
                 <input type="password" id="rv-login-password" placeholder="Nhập mật khẩu" autocomplete="current-password" required>
                 <button type="button" class="rv-toggle-pw" id="rv-toggle-pw" tabindex="-1"><i class="fas fa-eye"></i></button>
@@ -119,9 +119,9 @@
 
             <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; margin-bottom: 20px;">
               <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--text-secondary);">
-                <input type="checkbox" style="accent-color: var(--primary-500);"> Ghi nhớ đăng nhập
+                <input type="checkbox" style="accent-color: var(--primary-500);"> <span data-i18n="remember_me">Ghi nhớ đăng nhập</span>
               </label>
-              <a href="#" id="rv-forgot-password" style="color: var(--primary-500); text-decoration: none; font-weight: 500;">Quên mật khẩu?</a>
+              <a href="#" id="rv-forgot-password" style="color: var(--primary-500); text-decoration: none; font-weight: 500;" data-i18n="forgot_password">Quên mật khẩu?</a>
             </div>
 
             <!-- Error message -->
@@ -181,8 +181,8 @@
             </button>
 
             <div class="rv-login-footer" id="rv-register-footer">
-              <span style="color: var(--text-secondary);">Đã có tài khoản?</span>
-              <a href="#" id="rv-back-to-login" class="rv-switch-link">Đăng nhập ngay</a>
+              <span style="color: var(--text-secondary);" data-i18n="have_account">Đã có tài khoản?</span>
+              <a href="#" id="rv-back-to-login" class="rv-switch-link" data-i18n="login_now_link">Đăng nhập ngay</a>
             </div>
           </form>
 
@@ -208,6 +208,7 @@
 
   </div>
 
+  <script src="{% static 'js/core/translations.js' %}?v=3.1.0"></script>
   <script src="{% static 'js/views/public/review.js' %}?v=3.1.0"></script>
 </body>
 </html>

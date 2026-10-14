@@ -48,11 +48,26 @@ const DashboardView = {
     this.currentCalendarMonth = currentMonth;
 
     const currentDay = (currentYear === now.getFullYear() && currentMonth === now.getMonth()) ? now.getDate() : -1;
+    // FIX: Khi xem tháng khác, mặc định chọn ngày 1 thay vì -1
+    const selectedDay = currentDay > 0 ? currentDay : 1;
     
     const monthYearEl = document.getElementById('cal-month-year');
     if (monthYearEl) {
-      const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      const lang = (typeof Database !== 'undefined' && Database.settings) ? (Database.settings.get().language || 'vi') : 'vi';
+      const monthsVI = ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6', 'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'];
+      const monthsEN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      const months = lang === 'en' ? monthsEN : monthsVI;
       monthYearEl.textContent = `${months[currentMonth]} ${currentYear}`;
+    }
+
+    // Update weekday headers based on language
+    const weekdayEl = document.getElementById('cal-weekday-headers');
+    if (weekdayEl) {
+      const lang = (typeof Database !== 'undefined' && Database.settings) ? (Database.settings.get().language || 'vi') : 'vi';
+      const wdVI = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+      const wdEN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const wd = lang === 'en' ? wdEN : wdVI;
+      weekdayEl.innerHTML = wd.map(d => `<div>${d}</div>`).join('');
     }
 
     const gridBody = document.getElementById('grid-calendar-body');
@@ -171,7 +186,7 @@ const DashboardView = {
       // Update header
       const header = document.querySelector('#schedule-list').previousElementSibling;
       if (header) {
-         const formattedDate = `${day}/${currentMonth+1}/${currentYear}`;
+         const formattedDate = `${String(day).padStart(2, '0')}/${String(currentMonth+1).padStart(2, '0')}/${currentYear}`;
          header.innerHTML = t('Lịch trình ngày {date}', { date: formattedDate });
       }
 
@@ -228,7 +243,7 @@ const DashboardView = {
       div.style.flexDirection = 'column';
       div.style.alignItems = 'center';
       
-      if (day === currentDay) {
+      if (day === selectedDay) {
         div.style.background = 'var(--primary-500)';
         div.style.color = '#fff';
         div.style.fontWeight = 'bold';
@@ -252,7 +267,7 @@ const DashboardView = {
             dot.style.width = '4px';
             dot.style.height = '4px';
             dot.style.borderRadius = '50%';
-            dot.style.backgroundColor = (day === currentDay) ? '#fff' : color;
+            dot.style.backgroundColor = (day === selectedDay) ? '#fff' : color;
             dotsContainer.appendChild(dot);
          });
          div.appendChild(dotsContainer);
@@ -265,7 +280,7 @@ const DashboardView = {
              el.style.background = 'transparent';
            }
          });
-         if (day !== currentDay) {
+         if (day !== selectedDay) {
            div.style.background = 'var(--bg-tertiary)';
            div.style.border = '1px solid var(--primary-500)';
          }
@@ -273,12 +288,12 @@ const DashboardView = {
       });
 
       div.addEventListener('mouseenter', () => {
-        if (day !== currentDay && div.style.background === 'transparent') {
+        if (day !== selectedDay && div.style.background === 'transparent') {
            div.style.background = 'var(--bg-secondary)';
         }
       });
       div.addEventListener('mouseleave', () => {
-        if (day !== currentDay && !div.style.border) {
+        if (day !== selectedDay && !div.style.border) {
            div.style.background = 'transparent';
         }
       });
@@ -298,8 +313,8 @@ const DashboardView = {
       gridBody.appendChild(div);
     }
 
-    // Initialize with current day
-    renderScheduleForDay(currentDay, monthEvents[currentDay]);
+    // Initialize with selected day (today if current month, day 1 otherwise)
+    renderScheduleForDay(selectedDay, monthEvents[selectedDay]);
   },
 
   getHTML() {
@@ -628,8 +643,8 @@ const DashboardView = {
                  <button class="btn-icon" id="cal-next" style="color: var(--text-secondary);"><i class="fas fa-chevron-down"></i></button>
                </div>
             </div>
-            <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; margin-bottom: 12px; color: var(--text-secondary); font-size: 0.9rem; font-weight: 600;">
-               <div>Su</div><div>Mo</div><div>Tu</div><div>We</div><div>Th</div><div>Fr</div><div>Sa</div>
+            <div id="cal-weekday-headers" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; margin-bottom: 12px; color: var(--text-secondary); font-size: 0.9rem; font-weight: 600;">
+               <div>CN</div><div>T2</div><div>T3</div><div>T4</div><div>T5</div><div>T6</div><div>T7</div>
             </div>
             <div id="grid-calendar-body" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px 4px; text-align: center;">
                <!-- Generated by JS -->

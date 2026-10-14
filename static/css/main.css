@@ -441,9 +441,14 @@ select.form-control:focus, select.form-input:focus {
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
 }
 body.dark-mode select.form-control, body.dark-mode select.form-input {
-  background-color: #ffffff;
-  color: #111827;
-  border-color: #d1d5db;
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-color) !important;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+}
+body.dark-mode select.form-control option, body.dark-mode select.form-input option {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
 }
 
 .notification-btn {
@@ -1468,3 +1473,116 @@ input[type="password"]::-webkit-reveal {
 }
 
 
+
+
+/* ── SLEEK ACADEMIC TOP HEADER COMPONENTS ── */
+.uni-header-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
+  padding: 4px 14px 4px 6px;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-fast);
+  margin-right: var(--space-3);
+}
+.uni-header-badge:hover {
+  border-color: var(--primary-400);
+}
+.uni-header-logo {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--primary-50);
+  color: var(--primary-600);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+body.dark-mode .uni-header-logo {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--primary-400);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+.uni-header-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+.uni-header-text .uni-name {
+  font-weight: 600;
+  font-size: 0.82rem;
+  color: var(--text-primary);
+}
+.uni-header-text .uni-desc {
+  font-size: 0.68rem;
+  color: var(--text-tertiary);
+  max-width: 170px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.realtime-clock-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-family);
+  font-size: 0.85rem;
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
+  padding: 5px 14px;
+  box-shadow: var(--shadow-sm);
+  margin-right: var(--space-3);
+}
+.realtime-clock-badge i {
+  color: var(--primary-500);
+  font-size: 0.85rem;
+}
+.realtime-clock-badge #clock-time {
+  font-family: monospace;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.5px;
+}
+.realtime-clock-badge .clock-divider {
+  opacity: 0.35;
+  font-size: 0.8rem;
+}
+.realtime-clock-badge #clock-date {
+  font-size: 0.78rem;
+  color: var(--text-tertiary);
+  font-weight: 500;
+}
+
+/* Header utility buttons */
+.top-header .btn-icon {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-primary);
+  border-radius: 10px;
+  transition: all var(--transition-fast);
+}
+.top-header .btn-icon:hover {
+  border-color: var(--primary-400);
+  background-color: var(--bg-secondary);
+  color: var(--primary-600);
+  transform: translateY(-1px);
+}
+body.dark-mode .top-header .btn-icon:hover {
+  color: var(--primary-400);
+}
+#btn-theme i.fa-sun {
+  color: #f59e0b;
+}
+#btn-theme i.fa-moon {
+  color: #818cf8;
+}

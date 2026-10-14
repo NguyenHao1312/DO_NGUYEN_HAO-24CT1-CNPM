@@ -97,14 +97,14 @@
 
 /* ── DARK MODE THEME ── */
 [data-theme="dark"], body.dark-mode {
-  /* 1. MAIN CONTENT (Dark Mode) */
-  --bg-primary: #121212; /* Đen nhám cho nội dung chính */
-  --bg-secondary: #1E1E1E;
-  --bg-tertiary: #2C2C2C;
-  --text-primary: #F8FAFC;
-  --text-secondary: #94A3B8;
-  --text-tertiary: #64748B;
-  --border-color: #333333;
+  /* 1. MAIN CONTENT (Dark Mode - Academic Slate) */
+  --bg-primary: #0b0f19; /* Obsidian Slate - sang trọng, chống lóa */
+  --bg-secondary: #151d2a; /* Deep Slate Navy cho card/box */
+  --bg-tertiary: #1e293b; /* Slate 800 cho hover */
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-tertiary: #64748b;
+  --border-color: #222f44; /* Viền xanh đêm tinh tế */
   --shadow-sm: 0 1px 2px rgba(0,0,0,0.5);
   --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.5);
   --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.5);

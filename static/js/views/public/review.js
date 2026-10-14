@@ -36,6 +36,28 @@ const ReviewApp = {
       close: 'Đóng',
       login_now: 'Đăng nhập ngay',
       preview_watermark: 'Bạn đang xem bản xem trước — Đăng nhập để trải nghiệm đầy đủ tính năng',
+      smart_management_desc: 'Hệ thống Quản lý Sinh viên Thông minh',
+      feature_grade_tuition: 'Quản lý điểm số & học phí',
+      feature_progress: 'Theo dõi tiến trình học tập',
+      feature_sync: 'Đồng bộ dữ liệu đa thiết bị',
+      login_subtitle: 'Chào mừng trở lại! Vui lòng chọn vai trò và đăng nhập.',
+      register_subtitle: 'Tạo tài khoản mới để truy cập hệ thống.',
+      student_role: 'Sinh viên',
+      teacher_role: 'Giáo viên',
+      idLabel: 'Mã số (SV / GV)',
+      password: 'Mật khẩu',
+      remember_me: 'Ghi nhớ đăng nhập',
+      forgot_password: 'Quên mật khẩu?',
+      no_account: 'Chưa có tài khoản?',
+      register_now: 'Đăng ký ngay',
+      have_account: 'Đã có tài khoản?',
+      login_now_link: 'Đăng nhập ngay',
+      forgot_modal_title: 'Cấp lại Mật khẩu',
+      forgot_modal_desc: 'Để đảm bảo an toàn và bảo mật thông tin học vụ, hệ thống UniMS áp dụng quy trình cấp lại mật khẩu xác thực đa lớp:',
+      forgot_step1: 'Liên hệ Phòng Đào tạo & Khảo thí hoặc Cố vấn học tập trực tiếp tại văn phòng khoa.',
+      forgot_step2: 'Cung cấp Mã số (SV/GV), CCCD/CMND và Thẻ sinh viên/giảng viên để xác minh danh tính.',
+      forgot_step3: 'Hotline hỗ trợ khẩn cấp: 0236.3822.xxx (Giờ hành chính) hoặc gửi email đến: daotao@unims.edu.vn.',
+      understand_btn: 'Đã hiểu',
       home_tab: 'Trang chủ',
       uni_tab: 'Trường Đại Học',
       ai_tab: 'AI Trợ lý',
@@ -86,6 +108,28 @@ const ReviewApp = {
       close: 'Close',
       login_now: 'Login Now',
       preview_watermark: 'You are viewing a preview — Login to experience full features',
+      smart_management_desc: 'Smart Student Management System',
+      feature_grade_tuition: 'Grades & Tuition management',
+      feature_progress: 'Academic progress tracking',
+      feature_sync: 'Multi-device data synchronization',
+      login_subtitle: 'Welcome back! Please select your role and log in.',
+      register_subtitle: 'Create a new account to access the system.',
+      student_role: 'Student',
+      teacher_role: 'Teacher',
+      idLabel: 'ID (Student / Teacher)',
+      password: 'Password',
+      remember_me: 'Remember me',
+      forgot_password: 'Forgot password?',
+      no_account: 'Don\'t have an account?',
+      register_now: 'Register now',
+      have_account: 'Already have an account?',
+      login_now_link: 'Log in now',
+      forgot_modal_title: 'Password Recovery',
+      forgot_modal_desc: 'To ensure data security and academic privacy, UniMS enforces a multi-layer verification password recovery procedure:',
+      forgot_step1: 'Contact the Academic Affairs Office or your Faculty Academic Advisor directly.',
+      forgot_step2: 'Provide your Student/Teacher ID, National ID card, and University Card for identity verification.',
+      forgot_step3: 'Support Hotline: 0236.3822.xxx (Business hours) or email: daotao@unims.edu.vn.',
+      understand_btn: 'Understood',
       home_tab: 'Home',
       uni_tab: 'Universities',
       ai_tab: 'AI Assistant',
@@ -173,7 +217,9 @@ const ReviewApp = {
 
   t(key) {
     const lang = this.getLang();
-    return this.i18n[lang]?.[key] || this.i18n['vi']?.[key] || key;
+    if (this.i18n[lang]?.[key]) return this.i18n[lang][key];
+    if (window.AppTranslations && window.AppTranslations[lang]?.[key]) return window.AppTranslations[lang][key];
+    return this.i18n['vi']?.[key] || (window.AppTranslations && window.AppTranslations['vi']?.[key]) || key;
   },
 
   updateTranslations() {
@@ -219,6 +265,54 @@ const ReviewApp = {
       toast.style.opacity = '0';
       setTimeout(function() { toast.remove(); }, 300);
     }, 3000);
+  },
+
+  showForgotModal() {
+    const modalContent = document.getElementById('rv-info-modal-content');
+    const infoModal = document.getElementById('rv-info-modal');
+    if (!modalContent || !infoModal) return;
+
+    const html = `
+      <div style="padding: 10px;">
+        <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 20px;">
+          <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(59, 130, 246, 0.12); color: var(--primary-600); display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">
+            <i class="fas fa-key"></i>
+          </div>
+          <div>
+            <h3 style="margin: 0; font-size: 1.25rem; color: var(--text-primary); font-weight: 700;">${this.t('forgot_modal_title')}</h3>
+            <p style="margin: 4px 0 0; font-size: 0.85rem; color: var(--text-secondary);">${this.t('moet_news')}</p>
+          </div>
+        </div>
+
+        <p style="color: var(--text-secondary); font-size: 0.92rem; line-height: 1.6; margin-bottom: 18px;">
+          ${this.t('forgot_modal_desc')}
+        </p>
+
+        <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; margin-bottom: 24px; display: flex; flex-direction: column; gap: 12px;">
+          <div style="display: flex; gap: 10px; align-items: flex-start;">
+            <i class="fas fa-building" style="color: var(--primary-500); margin-top: 3px;"></i>
+            <span style="font-size: 0.88rem; color: var(--text-primary);">${this.t('forgot_step1')}</span>
+          </div>
+          <div style="display: flex; gap: 10px; align-items: flex-start;">
+            <i class="fas fa-id-card" style="color: var(--success); margin-top: 3px;"></i>
+            <span style="font-size: 0.88rem; color: var(--text-primary);">${this.t('forgot_step2')}</span>
+          </div>
+          <div style="display: flex; gap: 10px; align-items: flex-start;">
+            <i class="fas fa-headset" style="color: var(--warning); margin-top: 3px;"></i>
+            <span style="font-size: 0.88rem; color: var(--text-primary);">${this.t('forgot_step3')}</span>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end;">
+          <button class="rv-btn-primary" onclick="document.getElementById('rv-info-modal').classList.remove('active')" style="padding: 10px 24px; border-radius: 8px; font-weight: 600;">
+            <i class="fas fa-check" style="margin-right: 6px;"></i> ${this.t('understand_btn')}
+          </button>
+        </div>
+      </div>
+    `;
+
+    modalContent.innerHTML = html;
+    infoModal.classList.add('active');
   },
 
   init() {
@@ -1377,12 +1471,12 @@ const ReviewApp = {
       if (rememberCheckbox) rememberCheckbox.checked = true;
     }
 
-    // Forgot Password
+    // Forgot Password — Professional Academic Modal
     const forgotBtn = document.getElementById('rv-forgot-password');
     if (forgotBtn) {
       forgotBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        this.showToast('Chức năng cấp lại mật khẩu đang được bảo trì.', 'info');
+        this.showForgotModal();
       });
     }
 

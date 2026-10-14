@@ -67,21 +67,23 @@
           <span>Uni<span class="brand-accent">MS</span></span>
         </div>
         
-        <!-- Hiển thị tên trường cho Dashboard theo yêu cầu -->
-        <div id="header-university-display" style="display: none; align-items: center; gap: 8px; margin-right: var(--space-4); background: linear-gradient(135deg, rgba(59,130,246,0.08), rgba(16,185,129,0.08)); padding: 6px 14px; border-radius: var(--radius-full); border: 1px solid rgba(59,130,246,0.15);">
-          <div id="header-university-logo" style="width: 28px; height: 28px; border-radius: 50%; background: var(--bg-primary); display: flex; justify-content: center; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); overflow: hidden;">
-             <i class="fas fa-university" style="color: var(--primary-600); font-size: 0.85rem;"></i>
+        <!-- Hiển thị tên trường cho Dashboard: Tinh gọn, phong cách Academic Office -->
+        <div id="header-university-display" class="uni-header-badge" style="display: none;">
+          <div id="header-university-logo" class="uni-header-logo">
+             <i class="fas fa-university"></i>
           </div>
-          <div style="display: flex; flex-direction: column; line-height: 1.1;">
-            <span id="header-university-name" style="font-weight: 600; font-size: 0.85rem; color: var(--primary-700);">Đang tải...</span>
-            <span id="header-university-desc" style="font-size: 0.7rem; color: var(--text-secondary); max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></span>
+          <div class="uni-header-text">
+            <span id="header-university-name" class="uni-name">Đang tải...</span>
+            <span id="header-university-desc" class="uni-desc"></span>
           </div>
         </div>
 
-        <div id="realtime-clock" style="font-family: monospace; font-size: 0.95rem; font-weight: 500; color: var(--text-secondary); background: var(--bg-secondary); padding: 4px 12px; border-radius: var(--radius-full); margin-right: var(--space-4); display: flex; align-items: center; gap: 8px;">
+        <!-- Đồng hồ thời gian thực tinh gọn -->
+        <div id="realtime-clock" class="realtime-clock-badge">
           <i class="far fa-clock"></i>
           <span id="clock-time">--:--:--</span>
-          <span id="clock-date" style="font-size: 0.8rem; opacity: 0.8;">--/--/----</span>
+          <span class="clock-divider">•</span>
+          <span id="clock-date">--/--/----</span>
         </div>
         <div class="search-global">
           <i class="fas fa-search"></i>

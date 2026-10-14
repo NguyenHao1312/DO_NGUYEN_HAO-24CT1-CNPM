@@ -480,6 +480,33 @@ window.AppTranslations = {
     student_role: 'Sinh viên',
     user: 'Người dùng',
     no_permission: 'Bạn không có quyền truy cập trang này'
+    // Bổ sung đồng bộ i18n
+    login: 'Đăng nhập',
+    register: 'Đăng ký',
+    confirm_clear_chat: 'Bạn có chắc muốn xóa lịch sử chat?',
+    grade_10: 'HỆ 10:',
+    grade_4: 'HỆ 4:',
+    letter_grade: 'ĐIỂM CHỮ:',
+    'Qua môn': 'Qua môn',
+    'Trượt': 'Trượt',
+    'Đại học Sư phạm': 'Đại học Sư phạm',
+    'Trung tâm đào tạo giáo viên và khoa học cơ bản': 'Trung tâm đào tạo giáo viên và khoa học cơ bản',
+    'Đại học FPT Đà Nẵng': 'Đại học FPT Đà Nẵng',
+    'Trường đại học của doanh nghiệp (Tư thục)': 'Trường đại học của doanh nghiệp (Tư thục)',
+    'Đại học Duy Tân': 'Đại học Duy Tân',
+    'Đại học tư thục lớn nhất miền Trung (Tư thục)': 'Đại học tư thục lớn nhất miền Trung (Tư thục)',
+    'Đại học Đông Á': 'Đại học Đông Á',
+    'Đầu tư phát triển toàn diện (Tư thục)': 'Đầu tư phát triển toàn diện (Tư thục)',
+    'Đại học Kiến trúc Đà Nẵng': 'Đại học Kiến trúc Đà Nẵng',
+    'Kiến trúc, Mỹ thuật và Xây dựng (Tư thục)': 'Kiến trúc, Mỹ thuật và Xây dựng (Tư thục)',
+    'Đại học Sư phạm Kỹ thuật': 'Đại học Sư phạm Kỹ thuật',
+    'Kỹ thuật thực hành và Ứng dụng': 'Kỹ thuật thực hành và Ứng dụng',
+    'Đại học CNTT & TT Việt - Hàn': 'Đại học CNTT & TT Việt - Hàn',
+    'Công nghệ Thông tin và Kinh tế số': 'Công nghệ Thông tin và Kinh tế số',
+    'Khoa Y Dược': 'Khoa Y Dược',
+    'Đào tạo Y bác sĩ chất lượng cao': 'Đào tạo Y bác sĩ chất lượng cao',
+    'Nơi khởi nguồn ngôn ngữ và văn hóa': 'Nơi khởi nguồn ngôn ngữ và văn hóa',
+    'Đào tạo kinh tế, quản trị kinh doanh': 'Đào tạo kinh tế, quản trị kinh doanh',
   },
 
   en: {
@@ -954,5 +981,11 @@ window.AppTranslations = {
     lecturer: 'Lecturer',
     assoc_prof: 'Associate Professor',
     professor: 'Professor'
+    // Synchronized i18n additions
+    login: 'Login',
+    register: 'Register',
+    confirm_clear_chat: 'Are you sure you want to clear chat history?',
+    'Trung tâm đào tạo ngôn ngữ chuẩn quốc tế': 'International Standard Language Training Center',
+    'Trường đào tạo kinh tế trọng điểm': 'Key Economic Training University',
   }
 };

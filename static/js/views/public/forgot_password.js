@@ -1,7 +1,17 @@
 // js/views/forgot_password.js
 const ForgotPassword = {
   show() {
-    const lang = (typeof LoginView !== 'undefined' && LoginView.currentLang === 'en') ? 'en' : 'vi';
+    let lang = 'vi';
+    try {
+      const s = localStorage.getItem('unims_settings');
+      if (s) {
+        const parsed = JSON.parse(s);
+        if (parsed.language) lang = parsed.language;
+      }
+    } catch(e) {}
+    if (typeof Database !== 'undefined' && Database.settings) {
+      lang = Database.settings.get().language || lang;
+    }
     const isEn = lang === 'en';
 
     const t = {
