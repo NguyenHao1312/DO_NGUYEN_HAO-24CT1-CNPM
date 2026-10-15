@@ -10,7 +10,7 @@ const TuitionView = {
         <div class="app-content-container">
           <div class="alert alert-warning">
             <i class="fas fa-exclamation-triangle"></i>
-            Chỉ sinh viên mới có thể xem thông tin học phí. / Only students can view tuition information.
+            ${t('student_only_tuition')}
           </div>
         </div>
       `;
@@ -135,25 +135,25 @@ const TuitionView = {
 
     Utils.showModal(t('tuition_payment'), `
       <div style="padding: var(--space-2); color: var(--text-primary);">
-        <div class="alert alert-info" style="margin-bottom: var(--space-4);">
+        <div class="alert alert-info" style="margin-bottom: var(--space-4); display: flex; align-items: center; gap: 10px;">
           <i class="fas fa-info-circle"></i>
-          <strong>${t('note')}:</strong> Quét mã QR dưới đây để thanh toán học phí. Vui lòng nhập đúng cú pháp chuyển khoản.
+          <div><strong>${t('note')}:</strong> ${t('qr_payment_note')}</div>
         </div>
         
-        <p style="margin-bottom: var(--space-2); text-align: center;">Số tiền cần thanh toán: <strong style="color: var(--danger); font-size: 1.2rem;">${formattedFee}</strong></p>
+        <p style="margin-bottom: var(--space-2); text-align: center;">${t('amount_to_pay')} <strong style="color: var(--danger); font-size: 1.25rem;">${formattedFee}</strong></p>
         
         <div style="display: flex; justify-content: center; margin-top: var(--space-4); margin-bottom: var(--space-4);">
-          <div style="background: #fff; border-radius: var(--radius-lg); padding: 8px; box-shadow: 0 2px 12px rgba(0,0,0,0.08);">
-            <img src="/static/assets/logos/BANK_PAYMENT_QR.png" alt="QR Thanh toán" style="max-width: 280px; width: 100%; object-fit: contain; display: block;">
+          <div style="background: #fff; border-radius: var(--radius-lg); padding: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); border: 1px solid var(--border-color);">
+            <img src="/static/assets/logos/BANK_PAYMENT_QR.png" alt="${t('payment_qr_code')}" style="max-width: 280px; width: 100%; object-fit: contain; display: block; border-radius: 8px;">
           </div>
         </div>
 
         <div class="form-group" style="margin-top: var(--space-4);">
-          <label style="font-weight: 600;">Cú pháp chuyển khoản:</label>
-          <div style="background: var(--primary-50); padding: 12px; border-left: 4px solid var(--primary-500); font-family: monospace; font-size: 1.1rem; font-weight: bold; color: var(--primary-800); margin-top: 8px; word-break: break-all; text-align: center;">
+          <label style="font-weight: 600;">${t('transfer_syntax')}</label>
+          <div style="background: var(--primary-50, rgba(59, 130, 246, 0.08)); padding: 12px; border-left: 4px solid var(--primary-500); font-family: monospace; font-size: 1.1rem; font-weight: bold; color: var(--primary-800, #1e40af); margin-top: 8px; word-break: break-all; text-align: center; border-radius: 4px;">
             ${syntax}
           </div>
-          <small style="color: var(--text-secondary); display: block; margin-top: 8px; text-align: center;">* Hệ thống sẽ cập nhật trạng thái sau khi xác nhận thanh toán thành công (Thủ công).</small>
+          <small style="color: var(--text-secondary); display: block; margin-top: 8px; text-align: center;">${t('qr_payment_footer')}</small>
         </div>
       </div>
     `);

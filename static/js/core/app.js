@@ -15,40 +15,71 @@ window.addEventListener('unhandledrejection', (event) => {
     console.error('Unhandled Promise Rejection:', event.reason);
 });
 
-// Translations — tách riêng ra file translations.js để dễ bảo trì
-const translations = window.AppTranslations || {};
-
+// Translations — dynamically read from window.AppTranslations
 window.t = function(key, params = {}) {
-  const lang = (typeof Database !== 'undefined' && Database.settings) ? (Database.settings.get().language || 'vi') : (localStorage.getItem('unims_settings') ? JSON.parse(localStorage.getItem('unims_settings')).language : 'vi');
-  let text = translations[lang]?.[key] || translations['vi']?.[key] || key;
+  const dict = window.AppTranslations || {};
+  const lang = (typeof Database !== 'undefined' && Database.settings) 
+    ? (Database.settings.get().language || 'vi') 
+    : (localStorage.getItem('unims_settings') ? JSON.parse(localStorage.getItem('unims_settings')).language : 'vi');
+    
+  let text = dict[lang]?.[key] || dict['vi']?.[key];
+  if (!text) {
+    // User-friendly fallbacks so raw system keys never leak into the UI
+    const friendlyFallbacks = {
+      nav_dashboard: lang === 'en' ? 'Dashboard' : 'Bảng điều khiển',
+      nav_students: lang === 'en' ? 'Students Management' : 'Quản lý Sinh viên',
+      nav_teachers: lang === 'en' ? 'Lecturers Management' : 'Quản lý Giảng viên',
+      nav_classes: lang === 'en' ? 'Classes & Schedule' : 'Lớp học & Lịch trình',
+      nav_registration: lang === 'en' ? 'Course Registration' : 'Đăng ký môn học',
+      nav_tuition: lang === 'en' ? 'Tuition & Fees' : 'Học phí & Lệ phí',
+      nav_grades: lang === 'en' ? 'Grades & Results' : 'Bảng điểm & Kết quả',
+      nav_chatbot: lang === 'en' ? 'AI Assistant' : 'Trợ lý AI UniMS',
+      nav_helpdesk: lang === 'en' ? 'Technical Support' : 'Hỗ trợ kỹ thuật',
+      nav_profile: lang === 'en' ? 'User Profile' : 'Hồ sơ cá nhân',
+      nav_workshop: lang === 'en' ? 'Developer Workshop' : 'Xưởng thực hành Dev',
+      welcome_user: lang === 'en' ? 'Welcome, {name}!' : 'Xin chào, {name}!',
+      dashboard_quote: lang === 'en' ? 'Academic excellence through knowledge and discipline.' : 'Chào mừng bạn đến với hệ sinh thái học thuật UniMS.',
+      news_board: lang === 'en' ? 'ACADEMIC BULLETIN' : 'BẢNG TIN ĐÀO TẠO',
+      moet_news: lang === 'en' ? 'Notice: Course registration for the upcoming semester is now open.' : 'Thông báo: Lịch đăng ký môn học học kỳ mới đã được mở.',
+      learning_results: lang === 'en' ? 'Academic Results' : 'Kết quả học tập',
+      all_semesters: lang === 'en' ? 'All Semesters' : 'Tất cả học kỳ',
+      study_progress: lang === 'en' ? 'Credit Completion Progress' : 'Tiến độ học tập',
+      student_role: lang === 'en' ? 'Student' : 'Sinh viên',
+      teacher_role: lang === 'en' ? 'Lecturer' : 'Giảng viên',
+      admin_role: lang === 'en' ? 'Administrator' : 'Quản trị viên',
+      search_placeholder: lang === 'en' ? 'Search: student name, class, course...' : 'Gợi ý: Nhập tên, lớp, môn học...'
+    };
+    text = friendlyFallbacks[key] || key;
+  }
   
-  if (params) {
+  if (params && typeof text === 'string') {
     for (const [k, v] of Object.entries(params)) {
-      text = text.replace(`{${k}}`, v);
+      text = text.replace(new RegExp(`\\{${k}\\}`, 'g'), v);
     }
   }
   return text;
 };
 
-// Also keep global function t for backward compatibility
+// Global shorthand
 function t(key, params = {}) {
   return window.t(key, params);
 }
 
+// Navigation Items with explicit user-friendly Vietnamese and English titles
 const NAV_ITEMS = [
-  { hash: '#/dashboard', color: '#3B82F6', icon: '<svg viewBox="0 0 24 24" class="nav-svg"><rect x="3" y="3" width="7" height="7" rx="1.5" fill="currentColor" opacity="0.4"/><rect x="14" y="3" width="7" height="11" rx="1.5" fill="currentColor"/><rect x="14" y="18" width="7" height="3" rx="1.5" fill="currentColor" opacity="0.4"/><rect x="3" y="14" width="7" height="7" rx="1.5" fill="currentColor"/></svg>', label: 'nav_dashboard', id: 'dashboard' },
-  { hash: '#/students', color: '#10B981', icon: '<svg viewBox="0 0 24 24" class="nav-svg"><path d="M12 3l8 4.5-8 4.5-8-4.5L12 3z" fill="currentColor"/><path d="M12 12l8-4.5v5.8a2 2 0 01-1.1 1.8l-5.9 3.2a2 2 0 01-2 0l-5.9-3.2a2 2 0 01-1.1-1.8V7.5L12 12z" fill="currentColor" opacity="0.4"/></svg>', label: 'nav_students', id: 'students' },
-  { hash: '#/teachers', color: '#F59E0B', icon: '<svg viewBox="0 0 24 24" class="nav-svg"><rect x="2" y="3" width="20" height="13" rx="2" fill="currentColor" opacity="0.4"/><path d="M8 21h8M12 16v5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="9" r="3" fill="currentColor"/><path d="M7 16c0-2.2 2-4 5-4s5 1.8 5 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>', label: 'nav_teachers', id: 'teachers' },
-  { hash: '#/classes', color: '#8B5CF6', icon: '<svg viewBox="0 0 24 24" class="nav-svg"><path d="M4 6a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6z" fill="currentColor" opacity="0.3"/><path d="M8 10h8M8 14h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M16 4v16M8 4v16" stroke="currentColor" stroke-width="1.5" stroke-dasharray="2 4" opacity="0.5"/></svg>', label: 'nav_classes', id: 'classes' },
-  { hash: '#/registration', color: '#EC4899', icon: '<svg viewBox="0 0 24 24" class="nav-svg"><rect x="5" y="3" width="14" height="18" rx="2" fill="currentColor" opacity="0.3"/><path d="M9 9h6M9 13h6M9 17h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M14 2l5 5h-3a2 2 0 01-2-2V2z" fill="currentColor"/></svg>', label: 'nav_registration', id: 'registration' },
-  { hash: '#/tuition', color: '#F43F5E', icon: '<svg viewBox="0 0 24 24" class="nav-svg"><rect x="3" y="6" width="18" height="12" rx="2" fill="currentColor" opacity="0.3"/><circle cx="12" cy="12" r="3" fill="currentColor"/><path d="M3 10h18M3 14h18" stroke="currentColor" stroke-width="1" opacity="0.5"/><path d="M20 6h-2M20 18h-2" stroke="currentColor" stroke-width="2"/></svg>', label: 'nav_tuition', id: 'tuition' },
-  { hash: '#/grades', color: '#0EA5E9', icon: '<svg viewBox="0 0 24 24" class="nav-svg"><path d="M12 2l2.4 7.4h7.6l-6.2 4.5 2.4 7.4-6.2-4.5-6.2 4.5 2.4-7.4-6.2-4.5h7.6z" fill="currentColor" opacity="0.4"/><path d="M12 5l1.6 4.8h5.1l-4.1 3 1.6 4.8-4.2-3-4.2 3 1.6-4.8-4.1-3h5.1z" fill="currentColor"/></svg>', label: 'nav_grades', id: 'grades' },
+  { hash: '#/dashboard', color: '#3B82F6', icon: '<svg viewBox="0 0 24 24" class="nav-svg"><rect x="3" y="3" width="7" height="7" rx="1.5" fill="currentColor" opacity="0.4"/><rect x="14" y="3" width="7" height="11" rx="1.5" fill="currentColor"/><rect x="14" y="18" width="7" height="3" rx="1.5" fill="currentColor" opacity="0.4"/><rect x="3" y="14" width="7" height="7" rx="1.5" fill="currentColor"/></svg>', labelKey: 'nav_dashboard', label: 'Bảng điều khiển', labelEn: 'Dashboard', id: 'dashboard' },
+  { hash: '#/students', color: '#10B981', icon: '<svg viewBox="0 0 24 24" class="nav-svg"><path d="M12 3l8 4.5-8 4.5-8-4.5L12 3z" fill="currentColor"/><path d="M12 12l8-4.5v5.8a2 2 0 01-1.1 1.8l-5.9 3.2a2 2 0 01-2 0l-5.9-3.2a2 2 0 01-1.1-1.8V7.5L12 12z" fill="currentColor" opacity="0.4"/></svg>', labelKey: 'nav_students', label: 'Quản lý Sinh viên', labelEn: 'Students Management', id: 'students' },
+  { hash: '#/teachers', color: '#F59E0B', icon: '<svg viewBox="0 0 24 24" class="nav-svg"><rect x="2" y="3" width="20" height="13" rx="2" fill="currentColor" opacity="0.4"/><path d="M8 21h8M12 16v5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="9" r="3" fill="currentColor"/><path d="M7 16c0-2.2 2-4 5-4s5 1.8 5 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>', labelKey: 'nav_teachers', label: 'Quản lý Giảng viên', labelEn: 'Lecturers Management', id: 'teachers' },
+  { hash: '#/classes', color: '#8B5CF6', icon: '<svg viewBox="0 0 24 24" class="nav-svg"><path d="M4 6a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6z" fill="currentColor" opacity="0.3"/><path d="M8 10h8M8 14h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M16 4v16M8 4v16" stroke="currentColor" stroke-width="1.5" stroke-dasharray="2 4" opacity="0.5"/></svg>', labelKey: 'nav_classes', label: 'Lớp học & Lịch trình', labelEn: 'Classes & Schedule', id: 'classes' },
+  { hash: '#/registration', color: '#EC4899', icon: '<svg viewBox="0 0 24 24" class="nav-svg"><rect x="5" y="3" width="14" height="18" rx="2" fill="currentColor" opacity="0.3"/><path d="M9 9h6M9 13h6M9 17h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M14 2l5 5h-3a2 2 0 01-2-2V2z" fill="currentColor"/></svg>', labelKey: 'nav_registration', label: 'Đăng ký môn học', labelEn: 'Course Registration', id: 'registration' },
+  { hash: '#/tuition', color: '#F43F5E', icon: '<svg viewBox="0 0 24 24" class="nav-svg"><rect x="3" y="6" width="18" height="12" rx="2" fill="currentColor" opacity="0.3"/><circle cx="12" cy="12" r="3" fill="currentColor"/><path d="M3 10h18M3 14h18" stroke="currentColor" stroke-width="1" opacity="0.5"/><path d="M20 6h-2M20 18h-2" stroke="currentColor" stroke-width="2"/></svg>', labelKey: 'nav_tuition', label: 'Học phí & Lệ phí', labelEn: 'Tuition & Fees', id: 'tuition' },
+  { hash: '#/grades', color: '#0EA5E9', icon: '<svg viewBox="0 0 24 24" class="nav-svg"><path d="M12 2l2.4 7.4h7.6l-6.2 4.5 2.4 7.4-6.2-4.5-6.2 4.5 2.4-7.4-6.2-4.5h7.6z" fill="currentColor" opacity="0.4"/><path d="M12 5l1.6 4.8h5.1l-4.1 3 1.6 4.8-4.2-3-4.2 3 1.6-4.8-4.1-3h5.1z" fill="currentColor"/></svg>', labelKey: 'nav_grades', label: 'Bảng điểm & Kết quả', labelEn: 'Grades & Results', id: 'grades' },
   { divider: true },
-  { hash: '#/chatbot', color: '#14B8A6', icon: '<svg viewBox="0 0 24 24" class="nav-svg"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z" fill="currentColor" opacity="0.3"/><circle cx="9" cy="10" r="1.5" fill="currentColor"/><circle cx="15" cy="10" r="1.5" fill="currentColor"/><path d="M9 15h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>', label: 'nav_chatbot', id: 'chatbot' },
-  { hash: '#/helpdesk', color: '#F97316', icon: '<svg viewBox="0 0 24 24" class="nav-svg"><circle cx="12" cy="12" r="10" fill="currentColor" opacity="0.2"/><path d="M12 2a10 10 0 00-10 10v4a2 2 0 002 2h2a2 2 0 002-2v-4a2 2 0 00-2-2H4" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/><path d="M12 2a10 10 0 0110 10v4a2 2 0 01-2 2h-2a2 2 0 01-2-2v-4a2 2 0 012-2h2" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/><path d="M15 22H9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>', label: 'nav_helpdesk', id: 'helpdesk' },
-  { hash: '#/profile', color: '#6366F1', icon: '<svg viewBox="0 0 24 24" class="nav-svg"><rect x="3" y="4" width="18" height="16" rx="2" fill="currentColor" opacity="0.3"/><circle cx="12" cy="10" r="3" fill="currentColor"/><path d="M7 17c0-2.2 2-4 5-4s5 1.8 5 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>', label: 'nav_profile', id: 'profile' },
+  { hash: '#/chatbot', color: '#14B8A6', icon: '<svg viewBox="0 0 24 24" class="nav-svg"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z" fill="currentColor" opacity="0.3"/><circle cx="9" cy="10" r="1.5" fill="currentColor"/><circle cx="15" cy="10" r="1.5" fill="currentColor"/><path d="M9 15h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>', labelKey: 'nav_chatbot', label: 'Trợ lý AI UniMS', labelEn: 'AI Assistant', id: 'chatbot' },
+  { hash: '#/helpdesk', color: '#F97316', icon: '<svg viewBox="0 0 24 24" class="nav-svg"><circle cx="12" cy="12" r="10" fill="currentColor" opacity="0.2"/><path d="M12 2a10 10 0 00-10 10v4a2 2 0 002 2h2a2 2 0 002-2v-4a2 2 0 00-2-2H4" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/><path d="M12 2a10 10 0 0110 10v4a2 2 0 01-2 2h-2a2 2 0 01-2-2v-4a2 2 0 012-2h2" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/><path d="M15 22H9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>', labelKey: 'nav_helpdesk', label: 'Hỗ trợ kỹ thuật', labelEn: 'Technical Support', id: 'helpdesk' },
+  { hash: '#/profile', color: '#6366F1', icon: '<svg viewBox="0 0 24 24" class="nav-svg"><rect x="3" y="4" width="18" height="16" rx="2" fill="currentColor" opacity="0.3"/><circle cx="12" cy="10" r="3" fill="currentColor"/><path d="M7 17c0-2.2 2-4 5-4s5 1.8 5 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>', labelKey: 'nav_profile', label: 'Hồ sơ cá nhân', labelEn: 'User Profile', id: 'profile' },
   { divider: true, id: 'admin_divider' },
-  { hash: '#/workshop', color: '#EF4444', icon: '<svg viewBox="0 0 24 24" class="nav-svg"><path d="M12 22a10 10 0 100-20 10 10 0 000 20z" fill="currentColor" opacity="0.2"/><path d="M12 16l-3 3-2-2 3-3V9l4-4 2 2-4 4v5z" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg>', label: 'nav_workshop', id: 'workshop' },
+  { hash: '#/workshop', color: '#EF4444', icon: '<svg viewBox="0 0 24 24" class="nav-svg"><path d="M12 22a10 10 0 100-20 10 10 0 000 20z" fill="currentColor" opacity="0.2"/><path d="M12 16l-3 3-2-2 3-3V9l4-4 2 2-4 4v5z" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg>', labelKey: 'nav_workshop', label: 'Xưởng thực hành Dev', labelEn: 'Developer Workshop', id: 'workshop' },
 ];
 
 const routes = {
@@ -222,7 +253,14 @@ const App = {
 
       const iconColor = item.color || 'var(--primary-500)';
       const iconBg = item.bg || (item.color + '1A');
-      const label = t(item.label);
+      const isEn = (typeof Database !== 'undefined' && Database.settings) 
+        ? (Database.settings.get().language === 'en') 
+        : (localStorage.getItem('unims_settings') ? JSON.parse(localStorage.getItem('unims_settings')).language === 'en' : false);
+      
+      let label = t(item.labelKey || item.label);
+      if (!label || label.startsWith('nav_')) {
+        label = isEn ? (item.labelEn || item.label) : (item.label || item.labelEn);
+      }
 
       return `
         <a href="${item.hash}" class="nav-item" data-hash="${item.hash}" data-tooltip="${label}" data-tooltip-color="${iconColor}">

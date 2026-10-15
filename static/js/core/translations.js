@@ -479,7 +479,7 @@ window.AppTranslations = {
     teacher_role: 'Giáo viên',
     student_role: 'Sinh viên',
     user: 'Người dùng',
-    no_permission: 'Bạn không có quyền truy cập trang này'
+    no_permission: 'Bạn không có quyền truy cập trang này',
     // Bổ sung đồng bộ i18n
     login: 'Đăng nhập',
     register: 'Đăng ký',
@@ -507,6 +507,41 @@ window.AppTranslations = {
     'Đào tạo Y bác sĩ chất lượng cao': 'Đào tạo Y bác sĩ chất lượng cao',
     'Nơi khởi nguồn ngôn ngữ và văn hóa': 'Nơi khởi nguồn ngôn ngữ và văn hóa',
     'Đào tạo kinh tế, quản trị kinh doanh': 'Đào tạo kinh tế, quản trị kinh doanh',
+    // Navigation labels (User-friendly)
+    nav_dashboard: 'Bảng điều khiển',
+    nav_students: 'Quản lý Sinh viên',
+    nav_teachers: 'Quản lý Giảng viên',
+    nav_classes: 'Lớp học & Lịch trình',
+    nav_registration: 'Đăng ký môn học',
+    nav_tuition: 'Học phí & Lệ phí',
+    nav_grades: 'Bảng điểm & Kết quả',
+    nav_chatbot: 'Trợ lý AI UniMS',
+    nav_helpdesk: 'Hỗ trợ kỹ thuật',
+    nav_profile: 'Hồ sơ cá nhân',
+    nav_workshop: 'Xưởng thực hành Dev',
+
+    // Tuition QR Payment & Finance
+    qr_payment_note: 'Quét mã QR dưới đây để thanh toán học phí. Vui lòng nhập đúng cú pháp chuyển khoản.',
+    amount_to_pay: 'Số tiền cần thanh toán:',
+    transfer_syntax: 'Cú pháp chuyển khoản:',
+    qr_payment_footer: '* Hệ thống sẽ tự động cập nhật trạng thái sau khi xác nhận thanh toán thành công.',
+    payment_qr_code: 'Mã QR thanh toán học phí',
+    student_only_tuition: 'Chỉ sinh viên mới có thể xem thông tin học phí.',
+
+    // Dashboard Charts & Schedule
+    your_score: 'Điểm của bạn',
+    class_average: 'Điểm TB lớp học phần',
+    credits_earned_count: 'Đã học: {count} tín chỉ',
+    credits_total_count: 'Tổng: {count} tín chỉ',
+    schedule_for_date: 'Lịch trình ngày {date}',
+    no_schedule_today: 'Không có sự kiện hoặc lịch học nào trong ngày.',
+    no_linked_info: 'Không tìm thấy thông tin liên kết người dùng',
+    'Thông báo từ Khoa / Trường': 'Thông báo từ Khoa / Trường',
+    'Thông báo mới': 'Thông báo mới',
+    'Hệ thống Quản trị': 'Hệ thống Quản trị',
+    'Quyền điều hành đa trường học': 'Quyền điều hành đa trường học',
+    'Lịch trình ngày {date}': 'Lịch trình ngày {date}',
+    'Không có sự kiện hoặc lịch học nào trong ngày.': 'Không có sự kiện hoặc lịch học nào trong ngày.',
   },
 
   en: {
@@ -980,12 +1015,47 @@ window.AppTranslations = {
     import: 'Import',
     lecturer: 'Lecturer',
     assoc_prof: 'Associate Professor',
-    professor: 'Professor'
+    professor: 'Professor',
     // Synchronized i18n additions
     login: 'Login',
     register: 'Register',
     confirm_clear_chat: 'Are you sure you want to clear chat history?',
     'Trung tâm đào tạo ngôn ngữ chuẩn quốc tế': 'International Standard Language Training Center',
     'Trường đào tạo kinh tế trọng điểm': 'Key Economic Training University',
+    // Navigation labels (User-friendly)
+    nav_dashboard: 'Dashboard',
+    nav_students: 'Students Management',
+    nav_teachers: 'Lecturers Management',
+    nav_classes: 'Classes & Schedule',
+    nav_registration: 'Course Registration',
+    nav_tuition: 'Tuition & Fees',
+    nav_grades: 'Grades & Results',
+    nav_chatbot: 'AI Assistant',
+    nav_helpdesk: 'Technical Support',
+    nav_profile: 'User Profile',
+    nav_workshop: 'Developer Workshop',
+
+    // Tuition QR Payment & Finance
+    qr_payment_note: 'Scan the QR code below to pay tuition. Please enter the exact transfer note syntax.',
+    amount_to_pay: 'Amount to pay:',
+    transfer_syntax: 'Transfer syntax:',
+    qr_payment_footer: '* The system will automatically update status upon successful payment confirmation.',
+    payment_qr_code: 'Tuition Payment QR Code',
+    student_only_tuition: 'Only students can view tuition information.',
+
+    // Dashboard Charts & Schedule
+    your_score: 'Your Score',
+    class_average: 'Course Average',
+    credits_earned_count: 'Earned: {count} credits',
+    credits_total_count: 'Total: {count} credits',
+    schedule_for_date: 'Schedule for {date}',
+    no_schedule_today: 'No classes or events scheduled for this day.',
+    no_linked_info: 'Linked user information not found',
+    'Thông báo từ Khoa / Trường': 'Announcements from Faculty / University',
+    'Thông báo mới': 'New Announcement',
+    'Hệ thống Quản trị': 'Administration System',
+    'Quyền điều hành đa trường học': 'Multi-university management privileges',
+    'Lịch trình ngày {date}': 'Schedule for {date}',
+    'Không có sự kiện hoặc lịch học nào trong ngày.': 'No classes or events scheduled for this day.',
   }
 };

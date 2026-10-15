@@ -16,6 +16,8 @@ from student_management.models import CustomUser, AuditLog, Student, Teacher, Un
 # ============================================================
 #  ADMIN DASHBOARD PAGE
 # ============================================================
+SESSION_TIMEOUT_SECONDS = 1800  # 30 phút
+
 def admin_dashboard_page(request):
     """
     Trang dashboard admin — render HTML.
@@ -32,7 +34,40 @@ def admin_dashboard_page(request):
         return redirect('/admin/login/?next=/admin/dashboard/')
 
     request.session_user = user
-    return render(request, 'admin/dashboard.html', {'admin_user': user})
+    response = render(request, 'admin/dashboard.html', {
+        'admin_user': user,
+        'session_timeout_seconds': SESSION_TIMEOUT_SECONDS
+    })
+    # Gia hạn cookie trượt (Sliding session) khi tải dashboard
+    response.set_cookie(
+        'session_token',
+        token,
+        httponly=True,
+        secure=not request.get_host().split(':')[0] in ('localhost', '127.0.0.1', 'testserver'),
+        samesite='Lax',
+        max_age=SESSION_TIMEOUT_SECONDS,
+        path='/',
+    )
+    return response
+
+
+@require_session
+@require_role(['admin'])
+def api_admin_ping(request):
+    """Giữ phiên đăng nhập admin (Keep-alive / Heartbeat)."""
+    response = JsonResponse({'success': True, 'message': 'Session renewed'})
+    token = request.COOKIES.get('session_token', '').strip() or request.META.get('HTTP_X_SESSION_TOKEN', '').strip()
+    if token:
+        response.set_cookie(
+            'session_token',
+            token,
+            httponly=True,
+            secure=not request.get_host().split(':')[0] in ('localhost', '127.0.0.1', 'testserver'),
+            samesite='Lax',
+            max_age=SESSION_TIMEOUT_SECONDS,
+            path='/',
+        )
+    return response
 
 
 # ============================================================

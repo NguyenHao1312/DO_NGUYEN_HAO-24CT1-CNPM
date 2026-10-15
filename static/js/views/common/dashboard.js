@@ -187,11 +187,11 @@ const DashboardView = {
       const header = document.querySelector('#schedule-list').previousElementSibling;
       if (header) {
          const formattedDate = `${String(day).padStart(2, '0')}/${String(currentMonth+1).padStart(2, '0')}/${currentYear}`;
-         header.innerHTML = t('Lịch trình ngày {date}', { date: formattedDate });
+         header.innerHTML = t('schedule_for_date', { date: formattedDate });
       }
 
       if (!events || events.length === 0) {
-        listEl.innerHTML = `<div style="color: var(--text-tertiary); font-style: italic;">${t('Không có sự kiện hoặc lịch học nào trong ngày.')}</div>`;
+        listEl.innerHTML = `<div style="color: var(--text-tertiary); font-style: italic;">${t('no_schedule_today')}</div>`;
         return;
       }
 
@@ -479,7 +479,7 @@ const DashboardView = {
   },
 
   getStudentOrTeacherDashboardHTML(user, role) {
-    if (!user.linkedId) return '<div class="page-header"><h1 class="page-title">Không tìm thấy thông tin liên kết</h1></div>';
+    if (!user.linkedId) return `<div class="page-header"><h1 class="page-title">${t('no_linked_info')}</h1></div>`;
     
     let grades = [];
     let classesList = [];
@@ -575,7 +575,7 @@ const DashboardView = {
               </div>
             </div>
             <div style="margin-top: var(--space-4); font-weight: 700; color: var(--text-primary); font-size: 1.1rem;">
-              <span id="static-progress-text">${earnedCredits}/${requiredCredits}</span> tín chỉ
+              <span id="static-progress-text">${earnedCredits}/${requiredCredits}</span> ${t('credits')}
             </div>
           </div>
         </div>
@@ -993,8 +993,8 @@ const DashboardView = {
       comboContainer.innerHTML = '';
       const comboChartOptions = {
         series: [
-          { name: 'Điểm của bạn', type: 'column', data: gradeScores },
-          { name: 'Điểm TB lớp học phần', type: 'line', data: classAverages }
+          { name: t('your_score'), type: 'column', data: gradeScores },
+          { name: t('class_average'), type: 'line', data: classAverages }
         ],
         chart: {
           height: 300,
@@ -1027,8 +1027,8 @@ const DashboardView = {
           axisTicks: { show: false }
         },
         yaxis: [
-          { title: { text: 'Điểm của bạn', style: { color: '#FF7F50', fontWeight: 600 } }, min: 0, max: 10, labels: { style: { colors: '#FF7F50' } } },
-          { opposite: true, title: { text: 'Điểm TB lớp học phần', style: { color: '#FBBF24', fontWeight: 600 } }, min: 0, max: 10, labels: { style: { colors: '#FBBF24' } } }
+          { title: { text: t('your_score'), style: { color: '#FF7F50', fontWeight: 600 } }, min: 0, max: 10, labels: { style: { colors: '#FF7F50' } } },
+          { opposite: true, title: { text: t('class_average'), style: { color: '#FBBF24', fontWeight: 600 } }, min: 0, max: 10, labels: { style: { colors: '#FBBF24' } } }
         ],
         tooltip: {
           shared: true,
@@ -1042,11 +1042,11 @@ const DashboardView = {
                 <div style="font-weight: 700; color: var(--text-primary, #333); margin-bottom: 10px; font-size: 14px;">${subject}</div>
                 <div style="display: flex; align-items: center; margin-bottom: 6px;">
                   <span style="width: 10px; height: 10px; border-radius: 50%; background-color: #FF7F50; margin-right: 8px;"></span>
-                  <span style="color: var(--text-secondary, #666);">Điểm của bạn: <b style="color: var(--text-primary, #333);">${uScore}</b></span>
+                  <span style="color: var(--text-secondary, #666);">${t('your_score')}: <b style="color: var(--text-primary, #333);">${uScore}</b></span>
                 </div>
                 <div style="display: flex; align-items: center;">
                   <span style="width: 10px; height: 10px; border-radius: 50%; background-color: #FBBF24; margin-right: 8px;"></span>
-                  <span style="color: var(--text-secondary, #666);">Điểm TB lớp: <b style="color: var(--text-primary, #333);">${aScore}</b></span>
+                  <span style="color: var(--text-secondary, #666);">${t('class_average')}: <b style="color: var(--text-primary, #333);">${aScore}</b></span>
                 </div>
               </div>
             `;
@@ -1066,12 +1066,12 @@ const DashboardView = {
         if (!centerTextDiv) return;
         if (isEarnedHovered) {
           centerTextDiv.innerHTML = `
-            <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 4px;">Đã học: ${displayEarned} tín chỉ</div>
+            <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 4px;">${t('credits_earned_count', { count: displayEarned })}</div>
             <div style="font-size: 32px; font-weight: 800; color: #10B981; line-height: 1;">${progressPercent}%</div>
           `;
         } else {
           centerTextDiv.innerHTML = `
-            <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 4px;">Tổng: ${requiredCredits} tín chỉ</div>
+            <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 4px;">${t('credits_total_count', { count: requiredCredits })}</div>
             <div style="font-size: 32px; font-weight: 800; color: #3B82F6; line-height: 1;">100%</div>
           `;
         }

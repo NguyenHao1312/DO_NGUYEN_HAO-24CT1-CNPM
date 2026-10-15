@@ -16,6 +16,7 @@ from student_management.views.admin.dashboard import (
     api_admin_force_logout,
     api_admin_toggle_user,
     api_admin_ghost_accounts,
+    api_admin_ping,
 )
 from student_management.views.admin.export import (
     api_export_excel,
