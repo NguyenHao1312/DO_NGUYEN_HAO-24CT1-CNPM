@@ -243,7 +243,7 @@ def create_candidate_account_and_notify(app: AdmissionApplication, login_url: st
 
     # 4. Gửi email thông báo trúng tuyển (ngoài atomic block để không rollback nếu mail lỗi)
     uni_name = app.university.short_name or app.university.name
-    send_admission_success_email(
+    mail_sent = send_admission_success_email(
         to_email=app.email,
         candidate_name=app.full_name,
         university_name=uni_name,
@@ -257,5 +257,6 @@ def create_candidate_account_and_notify(app: AdmissionApplication, login_url: st
         'success': True,
         'student_id': student_id,
         'temp_password': temp_pwd,
-        'message': f'Đã cấp mã sinh viên {student_id} và gửi mật khẩu qua Gmail thành công.'
+        'email_sent': mail_sent,
+        'message': f'Đã cấp mã sinh viên {student_id} thành công!' + (' Mật khẩu đã được gửi về Gmail.' if mail_sent else ' (Gợi ý: Cần Google App Password trong .env để chuyển phát mail thực tế).')
     }

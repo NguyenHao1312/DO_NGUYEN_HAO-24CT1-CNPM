@@ -11,6 +11,7 @@ const AdmissionApp = {
   currentApplicationId: null,
   countdownInterval: null,
   countdownSeconds: 600, // 10 minutes
+  lastDevOtp: null,
 
   async init() {
     await this.loadUniversities();
@@ -219,12 +220,34 @@ const AdmissionApp = {
       document.getElementById('otp-section').style.display = 'block';
       document.getElementById('otp-target-email').textContent = email;
 
+      if (data.dev_otp) {
+        this.lastDevOtp = data.dev_otp;
+        const devBox = document.getElementById('otp-dev-box');
+        const devVal = document.getElementById('dev-otp-val');
+        if (devBox && devVal) {
+          devVal.textContent = data.dev_otp;
+          devBox.style.display = 'block';
+        }
+      } else {
+        const devBox = document.getElementById('otp-dev-box');
+        if (devBox) devBox.style.display = 'none';
+      }
+
       document.getElementById('step-badge-1').classList.remove('active');
       document.getElementById('step-line-1').classList.add('active');
       document.getElementById('step-badge-2').classList.add('active');
       document.getElementById('step-title').textContent = 'Bước 2: Xác Thực Gmail Bằng Mã OTP';
 
       this.startCountdown();
+        if (data.dev_otp) {
+          this.lastDevOtp = data.dev_otp;
+          const devBox = document.getElementById('otp-dev-box');
+          const devVal = document.getElementById('dev-otp-val');
+          if (devBox && devVal) {
+            devVal.textContent = data.dev_otp;
+            devBox.style.display = 'block';
+          }
+        }
 
       Swal.fire({
         icon: 'info',
@@ -271,12 +294,31 @@ const AdmissionApp = {
       const data = await res.json();
       if (data.success) {
         this.startCountdown();
+        if (data.dev_otp) {
+          this.lastDevOtp = data.dev_otp;
+          const devBox = document.getElementById('otp-dev-box');
+          const devVal = document.getElementById('dev-otp-val');
+          if (devBox && devVal) {
+            devVal.textContent = data.dev_otp;
+            devBox.style.display = 'block';
+          }
+        }
         Swal.fire({ icon: 'success', title: 'Thành công', text: data.message, timer: 2000 });
       } else {
         Swal.fire({ icon: 'error', title: 'Lỗi', text: data.message });
       }
     } catch (err) {
       Swal.fire({ icon: 'error', title: 'Lỗi', text: 'Không thể gửi lại mã OTP' });
+    }
+  },
+
+  autoFillOtp() {
+    if (this.lastDevOtp) {
+      const otpInput = document.getElementById('otp-digit');
+      if (otpInput) {
+        otpInput.value = this.lastDevOtp;
+        otpInput.focus();
+      }
     }
   },
 
@@ -321,6 +363,12 @@ const AdmissionApp = {
         document.getElementById('qualified-school-info').textContent =
           `Trường: ${data.university_name} | Ngành: ${data.department} | Điểm xét tuyển: ${data.score.toFixed(2)}đ (Điểm chuẩn: ${data.benchmark.toFixed(2)}đ)`;
         document.getElementById('res-student-id').textContent = data.student_id;
+        const tempPassEl = document.getElementById('res-temp-pass');
+        const tempPassRow = document.getElementById('res-temp-pass-row');
+        if (data.temp_password && tempPassEl && tempPassRow) {
+          tempPassEl.textContent = data.temp_password;
+          tempPassRow.style.display = 'flex';
+        }
       } else {
         // Chưa đạt
         document.getElementById('result-qualified').style.display = 'none';

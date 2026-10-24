@@ -110,7 +110,23 @@
       border-bottom: 1px solid var(--border-strong);
       margin-bottom: 26px;
       overflow-x: auto;
-      padding-bottom: 0;
+      padding-bottom: 4px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(56, 189, 248, 0.25) transparent;
+    }
+    .tab-bar::-webkit-scrollbar {
+      height: 5px;
+    }
+    .tab-bar::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: 4px;
+    }
+    .tab-bar::-webkit-scrollbar-thumb {
+      background: rgba(56, 189, 248, 0.35);
+      border-radius: 4px;
+    }
+    .tab-bar::-webkit-scrollbar-thumb:hover {
+      background: var(--accent);
     }
     .tab-btn {
       background: transparent;

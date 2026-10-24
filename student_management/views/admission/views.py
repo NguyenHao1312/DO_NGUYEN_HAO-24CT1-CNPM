@@ -137,7 +137,13 @@ def api_admission_apply(request):
         )
 
         # 5. Gửi mã OTP xác minh qua Gmail
-        send_otp_email(email, otp, full_name)
+        email_sent = send_otp_email(email, otp, full_name)
+
+        msg = f'Đã xác minh số CCCD {clean_cccd} hợp lệ.'
+        if email_sent:
+            msg += f' Mã xác thực OTP (6 chữ số) đã được gửi đến hộp thư {email}.'
+        else:
+            msg += f' Mã OTP xác thực của bạn là: {otp} (Lưu ý: Hệ thống Gmail SMTP cần Google App Password 16 ký tự để gửi mail thực tế).'
 
         return JsonResponse({
             'success': True,
@@ -147,7 +153,9 @@ def api_admission_apply(request):
             'benchmark': benchmark,
             'university_name': university.short_name or university.name,
             'department': department,
-            'message': f'Đã xác minh số CCCD {clean_cccd} hợp lệ. Mã xác thực OTP (6 chữ số) đã được gửi đến hộp thư {email}.'
+            'email_sent': email_sent,
+            'dev_otp': otp,
+            'message': msg
         })
 
     except json.JSONDecodeError:
@@ -215,11 +223,13 @@ def api_admission_verify_otp(request):
                 'success': True,
                 'qualified': True,
                 'student_id': enroll_res.get('student_id'),
+                'temp_password': enroll_res.get('temp_password'),
+                'email_sent': enroll_res.get('email_sent', False),
                 'university_name': app.university.short_name or app.university.name,
                 'department': app.department,
                 'score': app.score,
                 'benchmark': app.benchmark_score,
-                'message': f'🎉 Chúc mừng bạn đã trúng tuyển vào {app.university.short_name or app.university.name}! Mã số sinh viên và mật khẩu đăng nhập đã được gửi tự động tới email {app.email}.'
+                'message': f"🎉 Chúc mừng bạn đã trúng tuyển vào {app.university.short_name or app.university.name}! Mã số sinh viên: {enroll_res.get('student_id')}. " + ("Mật khẩu đã được gửi đến email " + app.email if enroll_res.get('email_sent') else f"Mật khẩu khởi tạo: {enroll_res.get('temp_password')}")
             })
         else:
             # Không đủ điểm chuẩn
@@ -255,11 +265,19 @@ def api_admission_resend_otp(request):
         app.otp_created_at = timezone.now()
         app.save(update_fields=['otp_code', 'otp_created_at'])
 
-        send_otp_email(app.email, new_otp, app.full_name)
+        email_sent = send_otp_email(app.email, new_otp, app.full_name)
+
+        msg = f'Đã tạo mã OTP mới.'
+        if email_sent:
+            msg += f' Đã gửi đến email {app.email}.'
+        else:
+            msg += f' Mã OTP mới của bạn là: {new_otp}.'
 
         return JsonResponse({
             'success': True,
-            'message': f'Đã gửi lại mã OTP mới đến email {app.email}. Vui lòng kiểm tra hộp thư đến.'
+            'email_sent': email_sent,
+            'dev_otp': new_otp,
+            'message': msg
         })
     except AdmissionApplication.DoesNotExist:
         return JsonResponse({'success': False, 'message': 'Không tìm thấy hồ sơ xét tuyển'}, status=404)
