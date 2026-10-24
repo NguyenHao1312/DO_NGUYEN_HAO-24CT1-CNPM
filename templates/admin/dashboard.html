@@ -1210,8 +1210,8 @@
                 <small style="color:var(--text-muted);">${a.department}</small>
               </td>
               <td>
-                <span style="font-weight:700; color:${a.score >= a.benchmark_score ? '#34d399' : '#f87171'};">${a.score.toFixed(2)}đ</span> / 
-                <small style="color:var(--text-muted);">${a.benchmark_score.toFixed(2)}đ</small>
+                <span style="font-weight:700; color:${a.score >= a.benchmark_score ? '#34d399' : '#f87171'};">${(a.score != null ? a.score : 0).toFixed(2)}đ</span> / 
+                <small style="color:var(--text-muted);">${(a.benchmark_score != null ? a.benchmark_score : 0).toFixed(2)}đ</small>
               </td>
               <td>${badgeHtml}</td>
               <td>
@@ -1231,11 +1231,12 @@
         document.getElementById('admissions-table-wrapper').innerHTML = html;
 
         // Render phân trang
-        renderPagination('admissions-pagination', data.page, data.total_pages, loadAdmissions);
+        let phtml = ''; const totalP = data.total_pages || 1; for (let i = 1; i <= totalP; i++) { phtml += `<button class="${i === data.page ? 'active' : ''}" onclick="loadAdmissions(${i})">${i}</button>`; } const pagEl = document.getElementById('admissions-pagination'); if (pagEl) pagEl.innerHTML = phtml;
 
       } catch (e) {
         if (e.name !== 'AbortError') {
-          document.getElementById('admissions-table-wrapper').innerHTML = '<div class="loading" style="color:#f87171;">Lỗi khi tải dữ liệu xét nguyện vọng.</div>';
+          console.error("Lỗi admissions:", e);
+          document.getElementById('admissions-table-wrapper').innerHTML = `<div class="loading" style="color:#f87171;">Lỗi khi tải dữ liệu xét nguyện vọng: ${e.message}</div>`;
         }
       }
     }
