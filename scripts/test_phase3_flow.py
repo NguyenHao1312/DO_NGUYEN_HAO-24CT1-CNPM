@@ -52,7 +52,7 @@ def test_all():
 
     # 2. Thí sinh nộp hồ sơ xét tuyển đạt điểm chuẩn
     test_cccd = "048099887766"
-    test_email = "bruhlmaobruhlmaoooo@gmail.com"
+    test_email = "candidate_test_dut@gmail.com"
     # Dọn dẹp dữ liệu test cũ nếu có
     AdmissionApplication.objects.filter(cccd=test_cccd).delete()
     CustomUser.objects.filter(username__startswith='10011').delete()

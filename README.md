@@ -42,7 +42,7 @@ Dự án được xây dựng với kiến trúc **Hybrid Web**:
 - **Kiểm tra CCCD thông minh:** Tích hợp kiểm tra tính hợp lệ của số định danh căn cước công dân.
 - **Xác thực Gmail qua OTP 6 số:** 
   - Lọc nghiêm ngặt tài khoản `@gmail.com` thật, loại trừ hoàn toàn email rác/ảo.
-  - Tự động sinh mã OTP 6 số và gửi qua hệ thống SMTP Gmail (`bruhlmaobruhlmaoooo@gmail.com`) với thời hạn hiệu lực 10 phút.
+  - Tự động sinh mã OTP 6 số và gửi qua hệ thống SMTP Gmail (cấu hình trong file .env) với thời hạn hiệu lực 10 phút.
 - **Đối soát Điểm Chuẩn tự động:**
   - Bách Khoa (10011): 27.00 – 29.10đ.
   - Các trường khác (10012 – 10021): 18.00 – 26.50đ.

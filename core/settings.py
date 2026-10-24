@@ -5,8 +5,10 @@ Django 6.1 + SQL Server (MSSQL)
 """
 import os
 from pathlib import Path
+from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / '.env')
 
 SECRET_KEY = os.environ.get(
     'DJANGO_SECRET_KEY',
@@ -134,9 +136,9 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_TIMEOUT = 5  # Giới hạn 5s chống nghẽn đường truyền
-EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', 'bruhlmaobruhlmaoooo@gmail.com')
-EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', 'Bruhlmaobruh12345')
-DEFAULT_FROM_EMAIL = f'UniMS Tuyển Sinh <{EMAIL_HOST_USER}>'
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', f'UniMS Tuyển Sinh <{EMAIL_HOST_USER}>' if EMAIL_HOST_USER else 'UniMS Tuyển Sinh <noreply@unims.edu.vn>')
 
 # Static files storage — tự hash file tĩnh khi collectstatic
 STORAGES = {

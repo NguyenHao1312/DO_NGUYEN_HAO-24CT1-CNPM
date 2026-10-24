@@ -182,7 +182,7 @@ flowchart TD
     subgraph APPLICATION_SERVICES["UniMS Django Core Services"]
         AUTH_SVC["Auth & Session Service\n(Login, Must-Change-PW, Change-PW)"]
         ADMISSION_SVC["Admission Service\n(Đánh giá điểm sàn, Cấp mã SV {code}0..n,\nTạo mật khẩu 8 ký tự alphanumeric)"]
-        EMAIL_SVC["Email Service\n(Gửi OTP 6 số, Gửi thông báo trúng tuyển,\nSMTP bruhlmaobruhlmaoooo@gmail.com)"]
+        EMAIL_SVC["Email Service\n(Gửi OTP 6 số, Gửi thông báo trúng tuyển,\nSMTP Gmail / TLS 587)"]
         ACADEMIC_SVC["Academic Service\n(Điểm danh, Lớp học phần, Bảng điểm)"]
     end
 
