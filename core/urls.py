@@ -7,4 +7,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', views.index, name='index'),
     path('review/', views.review, name='review'),
+    path('admission/', views.admission_page, name='admission'),
 ]

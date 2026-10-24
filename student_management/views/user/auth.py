@@ -219,6 +219,7 @@ def api_login(request):
             'name': user.first_name or user.username,
             'role': user.role,
             'avatar': user.avatar,
+            'must_change_password': getattr(user, 'must_change_password', False),
         }
 
         # Lấy linkedId (student_id hoặc teacher_id)
@@ -336,3 +337,54 @@ def api_session_check(request):
             'force_logout': True,
             'message': 'Phiên đăng nhập đã hết hạn hoặc bị thay thế bởi đăng nhập mới.'
         })
+
+
+# ============================================================
+#  API: ĐỔI MẬT KHẨU (Bắt buộc lần đầu hoặc tự nguyện)
+# ============================================================
+@csrf_exempt
+def api_change_password(request):
+    """
+    API đổi mật khẩu cho Sinh viên và Giáo viên:
+    - Bắt buộc lần đầu khi tài khoản mới cấp (must_change_password=True).
+    - Hoặc tự đổi trong trang cá nhân / cài đặt.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Only POST allowed'}, status=405)
+
+    session_token = request.META.get('HTTP_X_SESSION_TOKEN', '').strip() or request.COOKIES.get('session_token', '').strip()
+    if not session_token:
+        return JsonResponse({'success': False, 'message': 'Vui lòng đăng nhập để thực hiện'}, status=401)
+
+    try:
+        user = CustomUser.objects.get(session_token=session_token)
+    except CustomUser.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Phiên đăng nhập không hợp lệ hoặc đã hết hạn'}, status=401)
+
+    try:
+        data = json.loads(request.body)
+        new_password = data.get('new_password', '').strip()
+        current_password = data.get('current_password', '')
+
+        if not new_password or len(new_password) < 6:
+            return JsonResponse({'success': False, 'message': 'Mật khẩu mới phải có ít nhất 6 ký tự'}, status=400)
+
+        # Nếu người dùng đổi tự nguyện (không phải lần đầu bắt buộc) và có nhập mật khẩu hiện tại
+        if not user.must_change_password and current_password:
+            if not user.check_password(current_password):
+                return JsonResponse({'success': False, 'message': 'Mật khẩu hiện tại không chính xác'}, status=400)
+
+        # Cập nhật mật khẩu trong SSMS
+        user.set_password(new_password)
+        user.must_change_password = False
+        user.save(update_fields=['password', 'must_change_password'])
+
+        return JsonResponse({
+            'success': True,
+            'message': 'Đổi mật khẩu thành công! Mật khẩu mới đã được lưu vào hệ thống cơ sở dữ liệu.'
+        })
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'message': 'Dữ liệu JSON không hợp lệ'}, status=400)
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+

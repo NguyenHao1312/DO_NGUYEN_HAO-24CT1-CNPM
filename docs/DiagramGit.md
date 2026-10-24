@@ -3,7 +3,7 @@
 > **CÁCH VẼ TỰ ĐỘNG TRÊN DIAGRAMS.NET (DRAW.IO):**
 > 1. Trên thanh menu chọn: **Arrange** -> **Insert** -> **Advanced** -> **Mermaid...**
 > 2. Copy đoạn code bên dưới chữ ````mermaid` của từng chức năng và dán vào hộp thoại.
-> *(Các biểu đồ đã được cập nhật đường dẫn tuyệt đối (ổ đĩa D:) trỏ thẳng tới các file Frontend/Backend tương ứng)*
+> *(Các biểu đồ đã được cập nhật đường dẫn tuyệt đối trỏ thẳng tới các file Frontend/Backend tương ứng)*
 
 ---
 
@@ -12,31 +12,52 @@
 ```mermaid
 sequenceDiagram
     autonumber
-    
-    actor U as Người dùng
-    participant FE as Giao diện Đăng ký<br/>(D:\24CT1-DO_NGUYEN_HAO\static\js\views\student\registration.js)
-    participant BE as Xử lý Backend<br/>(D:\24CT1-DO_NGUYEN_HAO\student_management\views\auth.py)
-    participant DB as Database<br/>(SQL Server Management)
 
-    U->>+FE: Điền form (Họ tên, Mã số, Pass) và bấm Đăng ký
+    actor U as Người dùng<br/>(Sinh viên hoặc Giảng viên)
+    participant FE as Giao diện Đăng ký<br/>(static/js/views/student/registration.js)
+    participant BE as Backend Đăng Ký()<br/>(student_management/views/user/auth.py)
+    participant DB as Database<br/>(SQL Server - student_management_customuser)
+
+    U->>FE: Điền form (Mã số, Họ tên, Mật khẩu, Vai trò, Trường) và bấm Đăng ký
     FE->>FE: Kiểm tra tính hợp lệ dữ liệu trống
-    
-    FE->>+BE: Gọi API POST /api/register/
-    
-    BE->>+DB: Truy vấn kiểm tra Mã số sinh viên
-    
-    alt Mã số đã tồn tại
-        DB-->>-BE: Trả về dữ liệu: Có tồn tại
-        BE-->>FE: Trả về lỗi 400 (Tài khoản đã tồn tại)
-        FE-->>U: Hiển thị thông báo cảnh báo đỏ
-        
-    else Mã số hợp lệ (Chưa tồn tại)
-        DB-->>+BE: Trả về: Chưa tồn tại
-        BE->>BE: Mã hóa (Hash) mật khẩu bảo mật
-        BE->>+DB: INSERT thông tin vào bảng CustomUser
-        DB-->>-BE: Xác nhận lưu thành công
-        BE-->>-FE: Trả về HTTP 201 (Đăng ký thành công)
-        FE-->>-U: Báo thành công và chuyển về Đăng nhập
+    FE->>BE: POST /api/register/ (username, name, password, role, universityId)
+    BE->>BE: Đọc JSON, strip username và name, role mặc định là student
+
+    alt role = admin
+        BE-->>FE: HTTP 403 (Không thể tự đăng ký tài khoản quản trị viên)
+        FE-->>U: Hiển thị thông báo lỗi
+    else role không thuộc student, teacher
+        BE-->>FE: HTTP 400 (Role không hợp lệ)
+        FE-->>U: Hiển thị thông báo lỗi
+    else Thiếu Mã số hoặc Mật khẩu
+        BE-->>FE: HTTP 200 với success = false (Mã số và mật khẩu là bắt buộc)
+        FE-->>U: Hiển thị thông báo lỗi
+    else Dữ liệu đầu vào hợp lệ
+        BE->>DB: Kiểm tra tồn tại lần lượt ở customuser.username,<br/>student.student_id, teacher.teacher_id
+        alt Mã đã tồn tại ở một trong 3 bảng
+            DB-->>BE: Có tồn tại
+            BE-->>FE: HTTP 400 (Mã đã có trong hệ thống)
+            FE-->>U: Hiển thị thông báo cảnh báo đỏ
+        else Mã chưa tồn tại
+            DB-->>BE: Chưa tồn tại
+            BE->>BE: set_password() băm mật khẩu bảo mật
+            BE->>DB: INSERT customuser (username, first_name = name, role, password đã băm)
+            DB-->>BE: Xác nhận lưu thành công
+
+            opt Có universityId
+                BE->>DB: get_or_create University theo id
+                DB-->>BE: Trả về University
+            end
+
+            alt role = student
+                BE->>DB: INSERT student (user, student_id, full_name, department = Chung, university)
+            else role = teacher
+                BE->>DB: INSERT teacher (user, teacher_id, full_name, department = Chung, university)
+            end
+            DB-->>BE: Xác nhận lưu thành công
+            BE-->>FE: HTTP 200 với success = true (Đăng ký thành công)
+            FE-->>U: Báo thành công và chuyển về Đăng nhập
+        end
     end
 ```
 
@@ -47,43 +68,50 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    
-    actor U as Người dùng
-    participant FE as Xử lý Đăng nhập<br/>(D:\24CT1-DO_NGUYEN_HAO\static\js\core\auth.js)
-    participant BE as Xử lý Backend<br/>(D:\24CT1-DO_NGUYEN_HAO\student_management\views\auth.py)
-    participant DB as Database<br/>(SQL Server Management)
 
-    U->>+FE: Điền form (Mã số, Pass) và bấm Đăng nhập
-    FE->>+BE: Gọi API POST /api/login/
-    BE->>+DB: Truy vấn lấy thông tin User (CustomUser)
-    
-    alt Không tồn tại hoặc Sai Mật khẩu
-        DB-->>-BE: Trả về rỗng / Sai pass
-        BE-->>FE: Trả về lỗi 401 (Unauthorized)
-        FE-->>U: Hiển thị lỗi "Sai tài khoản hoặc mật khẩu"
-    else Thông tin chính xác
-        DB-->>+BE: Trả về thông tin User hợp lệ
-        BE->>BE: Khởi tạo Session Token & Lấy IP máy tính
-        BE->>+DB: UPDATE Session Token và IP vào bảng CustomUser
-        DB-->>-BE: Cập nhật thành công
-        BE-->>-FE: Trả về JSON chứa Token + HTTP 200
-        FE->>FE: Lưu Token vào LocalStorage
-        FE-->>-U: Cấp quyền và chuyển hướng vào Dashboard
+    actor U as Người dùng
+    participant FE as Xử lý Đăng nhập<br/>(static/js/core/auth.js)
+    participant LS as Kho dữ liệu phía client<br/>(localStorage, sessionStorage)
+    participant BE as Backend Đăng Nhập()<br/>(student_management/views/user/auth.py)
+    participant DB as Database<br/>(SQL Server - student_management_customuser)
+
+    U->>FE: Chọn vai trò, nhập Mã số, Mật khẩu rồi bấm Đăng nhập
+
+    alt role = admin hoặc username = admin
+        FE-->>U: Từ chối: Admin chỉ đăng nhập tại Cổng Quản trị Local (Port 9000)
+    else Người dùng thường (Sinh viên / Giảng viên)
+        FE->>BE: POST /api/login/ (username, password, role)
+        BE->>DB: Truy vấn CustomUser theo username
+        DB-->>BE: Trả về User
+
+        alt User không tồn tại hoặc sai mật khẩu
+            BE-->>FE: HTTP 401 (Sai thông tin đăng nhập - CWE-204)
+            FE-->>U: Thông báo lỗi đăng nhập chung
+        else Tài khoản bị khóa (is_active = False)
+            BE-->>FE: HTTP 403 (Tài khoản bị khóa)
+            FE-->>U: Thông báo tài khoản bị khóa
+        else Hợp lệ
+            BE->>BE: Sinh session_token (UUIDv4)
+            BE->>DB: UPDATE session_token, session_ip, last_login_at
+            BE-->>FE: HTTP 200 {session_token, user: {must_change_password}}
+            FE->>LS: Lưu session và server_token
+            FE-->>U: Đăng nhập thành công, chuyển hướng vào Dashboard
+        end
     end
 ```
 
 ---
 
-## 3. Biểu đồ Tuần tự: Chức năng Nhập điểm (Có phân quyền theo Role)
+## 3. Biểu đồ Tuần tự: Chức năng Nhập Điểm & Tính GPA
 
 ```mermaid
 sequenceDiagram
     autonumber
     
     actor U as Người dùng (Giáo viên)
-    participant FE as Giao diện Nhập điểm<br/>(D:\24CT1-DO_NGUYEN_HAO\static\js\views\common\grades.js)
-    participant BE as Xử lý Backend<br/>(D:\24CT1-DO_NGUYEN_HAO\student_management\views\sync.py)
-    participant DB as Database<br/>(SQL Server Management)
+    participant FE as Giao diện Nhập điểm<br/>(static/js/views/common/grades.js)
+    participant BE as Xử lý Backend<br/>(student_management/views/user/sync.py)
+    participant DB as Database<br/>(SQL Server - student_management_grade)
 
     U->>+FE: Chỉnh sửa điểm và bấm "Lưu"
     FE->>FE: Đóng gói dữ liệu điểm mới
@@ -115,9 +143,9 @@ sequenceDiagram
     autonumber
     
     actor U as Người dùng
-    participant FE as Hàng đợi Đồng bộ<br/>(D:\24CT1-DO_NGUYEN_HAO\static\js\core\sync-queue.js)
-    participant MW as Middleware<br/>(D:\24CT1-DO_NGUYEN_HAO\student_management\middleware.py)
-    participant BE as Sync Backend<br/>(D:\24CT1-DO_NGUYEN_HAO\student_management\views\sync.py)
+    participant FE as Hàng đợi Đồng bộ<br/>(static/js/core/sync-queue.js)
+    participant MW as Middleware<br/>(student_management/middleware.py)
+    participant BE as Sync Backend<br/>(student_management/views/user/sync.py)
     participant DB as Database<br/>(SQL Server)
 
     U->>+FE: Truy cập hệ thống
@@ -146,5 +174,170 @@ sequenceDiagram
         MW-->>-FE: Nhận dữ liệu JSON
         FE->>FE: Ghi đè vào Offline Cache (database.js)
         FE-->>-U: Giao diện sẵn sàng sử dụng
+    end
+```
+
+---
+
+## 5. Biểu đồ Tuần tự: Đăng Ký Xét Nguyện Vọng, Gửi OTP Gmail & Cấp Mã Sinh Viên Tự Động
+
+```mermaid
+sequenceDiagram
+    autonumber
+
+    actor C as Thí sinh (Candidate)
+    participant FE as Cổng Xét Tuyển<br/>(templates/admission.html & admission.js)
+    participant BE as Admission Views<br/>(student_management/views/admission/views.py)
+    participant SVC as Admission Service<br/>(student_management/admission_service.py)
+    participant MAIL as Email Service<br/>(student_management/email_service.py)
+    participant DB as SQL Server (SSMS)<br/>(AdmissionApplication, CustomUser, Student)
+
+    C->>FE: Điền Họ tên, CCCD (12 số), Gmail, SĐT, Chọn Trường, Ngành, Điểm thi
+    FE->>FE: Kiểm tra CCCD (12 số) & định dạng @gmail.com
+    C->>FE: Nhấn "Nộp Hồ Sơ & Nhận Mã OTP"
+    FE->>BE: POST /api/admission/apply/
+    BE->>SVC: Tra cứu điểm chuẩn theo mã trường & ngành (get_benchmark_score)
+    SVC-->>BE: Điểm chuẩn tham chiếu (VD: Bách Khoa CNTT 28.75đ)
+    BE->>BE: Đối soát điểm thi >= điểm chuẩn? -> approved / rejected
+    BE->>SVC: Sinh mã OTP 6 số (generate_otp)
+    BE->>DB: Lưu AdmissionApplication (status, otp_code, otp_created_at)
+    BE->>MAIL: Gửi mã OTP xác thực qua SMTP Gmail
+    MAIL-->>C: Email chứa mã OTP 6 số
+    BE-->>FE: HTTP 200 {application_id, is_qualified, message}
+    FE-->>C: Hiển thị ô nhập OTP kèm đếm ngược 10 phút
+
+    C->>FE: Nhập mã OTP 6 số và nhấn "Xác Thực"
+    FE->>BE: POST /api/admission/verify-otp/ (application_id, otp)
+    BE->>DB: Kiểm tra OTP khớp và trong thời hạn 10 phút
+    
+    alt OTP sai hoặc hết hạn
+        BE-->>FE: HTTP 400 (Mã OTP không chính xác hoặc hết hạn)
+        FE-->>C: Báo lỗi và cho phép bấm "Gửi lại mã OTP"
+    else OTP hợp lệ
+        BE->>DB: Cập nhật email_verified = True
+        alt Điểm thi >= Điểm chuẩn (Trúng tuyển)
+            BE->>SVC: create_candidate_account_and_notify(application)
+            SVC->>DB: Sinh mã SV kế tiếp (100110 cho Bách Khoa) có khóa hàng atomic
+            SVC->>SVC: Sinh mật khẩu ngẫu nhiên 8 ký tự (chữ + số)
+            SVC->>DB: INSERT CustomUser (username = mã SV, role = student, must_change_password = True)
+            SVC->>DB: INSERT Student (student_id = mã SV, full_name, university, department)
+            SVC->>DB: UPDATE AdmissionApplication (status = credentials_sent, generated_student_id = mã SV)
+            SVC->>MAIL: Gửi email trúng tuyển kèm Mã SV & Mật khẩu khởi tạo
+            MAIL-->>C: Nhận Gmail thông báo Mã SV + Mật khẩu
+            BE-->>FE: HTTP 200 {qualified: true, student_id: 100110}
+            FE-->>C: Hiển thị thiệp chúc mừng trúng tuyển, hiện mã SV và nút "Đăng Nhập Cổng Sinh Viên"
+        else Điểm thi < Điểm chuẩn
+            BE-->>FE: HTTP 200 {qualified: false, message: Chưa đạt điểm chuẩn}
+            FE-->>C: Thông báo chưa đạt chuẩn, hồ sơ lưu vào hàng đợi xét bổ sung
+        end
+    end
+```
+
+---
+
+## 6. Biểu đồ Tuần tự: Quy Trình Đổi Mật Khẩu Bắt Buộc (Lần Đầu) & Tự Nguyện
+
+```mermaid
+sequenceDiagram
+    autonumber
+
+    actor S as Sinh viên mới trúng tuyển
+    participant FE as Giao diện Web Chính<br/>(static/js/core/app.js & profile.js)
+    participant BE as Auth API<br/>(student_management/views/user/auth.py)
+    participant DB as SQL Server (SSMS)<br/>(student_management_customuser)
+
+    S->>FE: Đăng nhập tại /review/ bằng Mã SV (100110) và Mật khẩu tạm từ Gmail
+    FE->>BE: POST /api/login/
+    BE->>DB: Kiểm tra thông tin đăng nhập
+    DB-->>BE: User hợp lệ, must_change_password = True
+    BE-->>FE: HTTP 200 {session_token, user: {must_change_password: true}}
+    FE->>FE: App.init() phát hiện must_change_password = True
+    FE-->>S: Bật modal cảnh báo an ninh bắt buộc: "Hãy đổi lại mật khẩu để tránh mất thông tin"
+
+    S->>FE: Nhập Mật khẩu mới & Xác nhận mật khẩu mới (tối thiểu 6 ký tự)
+    S->>FE: Bấm "Đổi Mật Khẩu & Lưu Vào Hệ Thống"
+    FE->>BE: POST /api/change-password/ (new_password) kèm Header X-Session-Token
+    BE->>BE: Kiểm tra độ dài mật khẩu >= 6 ký tự
+    BE->>DB: user.set_password(new_password) & must_change_password = False
+    DB-->>BE: Cập nhật thành công vào SSMS
+    BE-->>FE: HTTP 200 {success: true, message: Đổi mật khẩu thành công}
+    FE->>FE: Tắt modal bắt buộc, gỡ cờ must_change_password trong session client
+    FE-->>S: Thông báo thành công! Sinh viên truy cập Dashboard bình thường
+
+    opt Khi Sinh viên hoặc Giảng viên muốn tự đổi mật khẩu sau này
+        S->>FE: Truy cập Hồ sơ cá nhân (Profile)
+        S->>FE: Nhập Mật khẩu cũ, Mật khẩu mới và bấm "Lưu Mật Khẩu Mới"
+        FE->>BE: POST /api/change-password/ (current_password, new_password)
+        BE->>DB: Xác thực mật khẩu cũ và cập nhật mật khẩu mới vào SSMS
+        DB-->>BE: Cập nhật thành công
+        BE-->>FE: HTTP 200 (Thành công)
+        FE-->>S: Toast thông báo: "Đổi mật khẩu thành công!"
+    end
+```
+
+---
+
+## 7. Biểu đồ Tuần tự: Quản Trị Viên Duyệt Hồ Sơ Thủ Công Trên Admin Dashboard
+
+```mermaid
+sequenceDiagram
+    autonumber
+
+    actor A as Quản trị viên (Admin)
+    participant ADM_FE as Admin Dashboard<br/>(templates/admin/dashboard.html)
+    participant ADM_BE as Admin Admission API<br/>(student_management/views/admin/admissions.py)
+    participant SVC as Admission Service<br/>(student_management/admission_service.py)
+    participant MAIL as Email Service<br/>(student_management/email_service.py)
+    participant DB as SQL Server (SSMS)
+
+    A->>ADM_FE: Mở Tab "Xét Nguyện Vọng" trên Cyber-Office Dashboard (Port 9000)
+    ADM_FE->>ADM_BE: GET /admin/api/admissions/?status=&q= (có AbortController chống lag)
+    ADM_BE->>DB: Truy vấn danh sách hồ sơ thí sinh nộp trực tuyến
+    DB-->>ADM_BE: Trả về danh sách thí sinh kèm điểm thi, điểm chuẩn, trạng thái OTP
+    ADM_BE-->>ADM_FE: HTTP 200 {admissions: [...], stats: {...}}
+    ADM_FE-->>A: Hiển thị bảng thí sinh, điểm xét tuyển và trạng thái trúng tuyển
+
+    A->>ADM_FE: Bấm nút "Duyệt thủ công" cho thí sinh cần xét vớt
+    ADM_FE-->>A: Hộp thoại xác nhận duyệt và cấp mã cho thí sinh
+    A->>ADM_FE: Xác nhận
+    ADM_FE->>ADM_BE: POST /admin/api/admissions/approve/ {id: application_id}
+    ADM_BE->>SVC: create_candidate_account_and_notify(application)
+    SVC->>DB: Sinh mã SV mới theo trường (VD: 100111) với transaction.atomic
+    SVC->>SVC: Sinh mật khẩu ngẫu nhiên (chữ + số)
+    SVC->>DB: Tạo CustomUser (must_change_password=True) & Student trong SSMS
+    SVC->>DB: Cập nhật AdmissionApplication (status = credentials_sent, reviewed_by = admin)
+    SVC->>MAIL: Gửi Gmail thông báo trúng tuyển kèm Mã SV & Mật khẩu
+    MAIL-->>A: Hoàn tất gửi mail
+    ADM_BE-->>ADM_FE: HTTP 200 {success: true, student_id: 100111}
+    ADM_FE-->>A: Toast xanh: "Đã duyệt thủ công và cấp mã sinh viên 100111 thành công!"
+    ADM_FE->>ADM_FE: Cập nhật lại dòng trạng thái trên bảng tức thời
+```
+
+---
+
+## 8. Biểu đồ Tuần tự: Tra Cứu Kết Quả Xét Tuyển & Mã Sinh Viên Bằng Số CCCD
+
+```mermaid
+sequenceDiagram
+    autonumber
+
+    actor C as Thí sinh (Candidate)
+    participant FE as Cổng Xét Tuyển<br/>(templates/admission.html - Tab Tra Cứu)
+    participant BE as Admission Views<br/>(student_management/views/admission/views.py)
+    participant DB as SQL Server (SSMS)<br/>(student_management_admissionapplication)
+
+    C->>FE: Chuyển sang Tab "Tra Cứu Kết Quả", nhập số CCCD (12 chữ số)
+    C->>FE: Bấm nút "Tra Cứu"
+    FE->>BE: GET /api/admission/check-status/?cccd=048099887766
+    BE->>DB: SELECT AdmissionApplication WHERE cccd = '048099887766' ORDER BY created_at DESC
+    
+    alt Không tìm thấy hồ sơ
+        DB-->>BE: Không có bản ghi
+        BE-->>FE: HTTP 200 {found: false, message: Chưa tìm thấy hồ sơ}
+        FE-->>C: Hiển thị thông báo không tìm thấy kết quả
+    else Tìm thấy hồ sơ
+        DB-->>BE: Trả về danh sách hồ sơ nộp vào các trường
+        BE-->>FE: HTTP 200 {found: true, applications: [{university_name, department, score, benchmark, status, generated_student_id, created_at}]}
+        FE-->>C: Hiển thị danh thiếp kết quả: Tên trường, Ngành, Điểm thi/Điểm chuẩn, Trạng thái (Trúng tuyển / Đã cấp mã SV) và Mã SV (nếu đã cấp)
     end
 ```

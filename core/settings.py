@@ -17,7 +17,7 @@ DEBUG = os.environ.get('DJANGO_DEBUG', 'True').lower() in ('true', '1', 'yes')
 
 _raw_hosts = os.environ.get(
     'DJANGO_ALLOWED_HOSTS',
-    'unims-ssm.onrender.com,localhost,127.0.0.1,.ngrok-free.app,.ngrok.io'
+    'unims-ssm.onrender.com,localhost,127.0.0.1,.ngrok-free.app,.ngrok.io,testserver'
 ).split(',')
 ALLOWED_HOSTS = [h.strip().lstrip('*') for h in _raw_hosts if h.strip()]
 
@@ -127,6 +127,16 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Session configuration
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 SESSION_COOKIE_AGE = 86400  # 24 hours
+
+# Email configuration (Gmail SMTP)
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_TIMEOUT = 5  # Giới hạn 5s chống nghẽn đường truyền
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', 'bruhlmaobruhlmaoooo@gmail.com')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', 'Bruhlmaobruh12345')
+DEFAULT_FROM_EMAIL = f'UniMS Tuyển Sinh <{EMAIL_HOST_USER}>'
 
 # Static files storage — tự hash file tĩnh khi collectstatic
 STORAGES = {

@@ -1,0 +1,270 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cổng Xét Nguyện Vọng Đại Học Trực Tuyến — UniMS Admissions</title>
+  <link rel="icon" type="image/svg+xml" href="{% static 'assets/favicon.svg' %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="{% static 'css/admission.css' %}">
+  <script src="{% static 'js/vendor/sweetalert2.all.min.js' %}"></script>
+</head>
+<body>
+  <!-- HEADER -->
+  <header class="adm-header">
+    <div class="adm-container header-inner">
+      <div class="adm-logo">
+        <div class="logo-icon">
+          <i class="fas fa-graduation-cap"></i>
+        </div>
+        <div>
+          <span class="logo-title">UniMS ADMISSIONS</span>
+          <span class="logo-sub">Cổng Xét Tuyển Đại Học Trực Tuyến</span>
+        </div>
+      </div>
+
+      <nav class="adm-nav">
+        <button class="nav-btn active" id="tab-apply-btn" onclick="AdmissionApp.switchTab('apply')">
+          <i class="fas fa-file-signature"></i> Đăng Ký Xét Tuyển
+        </button>
+        <button class="nav-btn" id="tab-lookup-btn" onclick="AdmissionApp.switchTab('lookup')">
+          <i class="fas fa-search"></i> Tra Cứu Kết Quả
+        </button>
+        <a href="/review/" class="nav-btn login-btn">
+          <i class="fas fa-sign-in-alt"></i> Cổng Sinh Viên
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- HERO BANNER -->
+  <section class="adm-hero">
+    <div class="adm-container hero-inner">
+      <div class="hero-badge">
+        <i class="fas fa-shield-alt"></i> Tuyển Sinh Đại Học 2026 — Cấp Mã Số & Mật Khẩu Tự Động
+      </div>
+      <h1 class="hero-title">Đăng Ký Xét Nguyện Vọng Đại Học</h1>
+      <p class="hero-desc">
+        Hệ thống tích hợp xác minh hồ sơ trực tiếp, xét tuyển tự động theo điểm chuẩn các trường và gửi Mã Sinh Viên chính thức cùng mật khẩu qua Gmail.
+      </p>
+    </div>
+  </section>
+
+  <!-- MAIN CONTAINER -->
+  <main class="adm-container adm-main">
+    
+    <!-- TAB 1: ĐĂNG KÝ XÉT TUYỂN -->
+    <div id="section-apply" class="adm-card shadow-lg">
+      <div class="card-header-styled">
+        <div class="step-indicator">
+          <span class="step-badge active" id="step-badge-1">1</span>
+          <span class="step-line" id="step-line-1"></span>
+          <span class="step-badge" id="step-badge-2">2</span>
+          <span class="step-line" id="step-line-2"></span>
+          <span class="step-badge" id="step-badge-3">3</span>
+        </div>
+        <h2 id="step-title" class="step-heading">Bước 1: Điền Thông Tin Hồ Sơ & Chọn Nguyện Vọng</h2>
+      </div>
+
+      <!-- FORM BƯỚC 1 -->
+      <form id="apply-form" onsubmit="AdmissionApp.handleApplySubmit(event)">
+        <div class="form-grid">
+          <!-- Họ tên -->
+          <div class="form-group">
+            <label class="form-label" for="full_name">
+              <i class="fas fa-user"></i> Họ và tên thí sinh <span class="req">*</span>
+            </label>
+            <input type="text" id="full_name" class="form-control" placeholder="Ví dụ: NGUYỄN VĂN AN" required>
+          </div>
+
+          <!-- Số CCCD -->
+          <div class="form-group">
+            <label class="form-label" for="cccd">
+              <i class="fas fa-id-card"></i> Số Căn cước công dân (12 chữ số) <span class="req">*</span>
+            </label>
+            <div class="input-with-btn">
+              <input type="text" id="cccd" class="form-control" maxlength="12" placeholder="048099012345" required oninput="AdmissionApp.onCccdInput(this)">
+              <button type="button" class="btn-verify-cccd" onclick="AdmissionApp.checkCccdMock()">
+                <i class="fas fa-check-circle"></i> Kiểm tra
+              </button>
+            </div>
+            <div id="cccd-status" class="validation-note"></div>
+          </div>
+
+          <!-- Gmail -->
+          <div class="form-group">
+            <label class="form-label" for="email">
+              <i class="fab fa-google"></i> Địa chỉ Gmail nhận kết quả <span class="req">*</span>
+            </label>
+            <input type="email" id="email" class="form-control" placeholder="thinhsinh2026@gmail.com" required onblur="AdmissionApp.validateEmailField(this)">
+            <small class="form-hint"><i class="fas fa-info-circle"></i> Bắt buộc phải là tài khoản <b>@gmail.com</b> đang hoạt động để nhận mã SV và mật khẩu.</small>
+          </div>
+
+          <!-- Số điện thoại -->
+          <div class="form-group">
+            <label class="form-label" for="phone">
+              <i class="fas fa-phone"></i> Số điện thoại liên lạc <span class="req">*</span>
+            </label>
+            <input type="tel" id="phone" class="form-control" placeholder="0905123456" required>
+          </div>
+
+          <!-- Trường đăng ký -->
+          <div class="form-group">
+            <label class="form-label" for="university_select">
+              <i class="fas fa-university"></i> Trường Đại học đăng ký <span class="req">*</span>
+            </label>
+            <select id="university_select" class="form-control" required onchange="AdmissionApp.onUniversityChange(this.value)">
+              <option value="">-- Chọn trường đại học --</option>
+              {% for uni in universities %}
+                <option value="{{ uni.id }}" data-code="{{ uni.university_code }}">
+                  [{{ uni.university_code }}] {{ uni.short_name|default:uni.name }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Ngành đăng ký -->
+          <div class="form-group">
+            <label class="form-label" for="department_select">
+              <i class="fas fa-book-reader"></i> Ngành xét tuyển <span class="req">*</span>
+            </label>
+            <select id="department_select" class="form-control" required onchange="AdmissionApp.onDepartmentChange(this)">
+              <option value="">-- Vui lòng chọn trường trước --</option>
+            </select>
+            <div id="benchmark-display" class="benchmark-pill" style="display: none;">
+              Điểm chuẩn tham chiếu: <b id="benchmark-value">--</b> đ
+            </div>
+          </div>
+
+          <!-- Điểm xét tuyển -->
+          <div class="form-group full-width">
+            <label class="form-label" for="score">
+              <i class="fas fa-chart-line"></i> Điểm thi xét tuyển (Thang điểm 30, tối đa 2 chữ số thập phân) <span class="req">*</span>
+            </label>
+            <div class="score-input-wrapper">
+              <input type="number" id="score" class="form-control score-input" step="0.05" min="0" max="30" placeholder="Ví dụ: 28.50" required oninput="AdmissionApp.evaluateScoreRealtime()">
+              <div id="score-evaluation" class="score-tag"></div>
+            </div>
+            <small class="form-hint">
+              * Điểm trúng tuyển Bách Khoa (10011): 27.00 - 29.25đ. Các trường khác dao động từ 18.00 - 26.50đ.
+            </small>
+          </div>
+        </div>
+
+        <div class="form-footer">
+          <button type="submit" id="btn-submit-apply" class="btn-primary-lg">
+            <i class="fas fa-paper-plane"></i> Nộp Hồ Sơ & Nhận Mã OTP Xác Thực
+          </button>
+        </div>
+      </form>
+
+      <!-- BƯỚC 2: XÁC THỰC OTP -->
+      <div id="otp-section" style="display: none;" class="otp-box">
+        <div class="otp-header">
+          <div class="otp-icon-wrap"><i class="fas fa-envelope-open-text"></i></div>
+          <h3>Xác Thực Địa Chỉ Gmail</h3>
+          <p>Mã OTP 6 chữ số đã được gửi đến: <strong id="otp-target-email" class="text-primary"></strong></p>
+        </div>
+
+        <div class="otp-input-row">
+          <input type="text" id="otp-digit" class="otp-input-field" maxlength="6" placeholder="• • • • • •" autocomplete="one-time-code">
+        </div>
+
+        <div class="otp-timer">
+          Mã hết hạn trong: <span id="otp-countdown" class="badge-time">10:00</span>
+        </div>
+
+        <div class="otp-actions">
+          <button type="button" class="btn-secondary" onclick="AdmissionApp.resendOtp()">
+            <i class="fas fa-redo"></i> Gửi lại mã OTP
+          </button>
+          <button type="button" class="btn-primary-lg" onclick="AdmissionApp.verifyOtp()">
+            <i class="fas fa-check-circle"></i> Xác Thực & Hoàn Tất Xét Tuyển
+          </button>
+        </div>
+      </div>
+
+      <!-- BƯỚC 3: KẾT QUẢ XÉT TUYỂN -->
+      <div id="result-section" style="display: none;" class="result-box">
+        <div id="result-qualified" class="result-card success" style="display: none;">
+          <div class="result-badge-anim"><i class="fas fa-award"></i></div>
+          <h2 class="result-title text-success">CHÚC MỪNG BẠN ĐÃ TRÚNG TUYỂN!</h2>
+          <p class="result-subtitle" id="qualified-school-info"></p>
+          
+          <div class="credentials-card">
+            <div class="cred-row">
+              <span class="cred-label">Mã Sinh Viên của bạn:</span>
+              <span class="cred-val text-primary" id="res-student-id">100110</span>
+            </div>
+            <div class="cred-note">
+              <i class="fas fa-envelope"></i> Mật khẩu tạm thời đã được tự động khởi tạo trong cơ sở dữ liệu SSMS và gửi đến Gmail của bạn.
+            </div>
+            <div class="security-warning">
+              <i class="fas fa-lock"></i> <strong>Lưu ý bảo mật:</strong> Khi đăng nhập lần đầu tiên tại Cổng sinh viên, hệ thống sẽ yêu cầu: <em>"Hãy đổi lại mật khẩu để tránh mất thông tin"</em>.
+            </div>
+          </div>
+
+          <div class="result-actions">
+            <a href="/review/" class="btn-primary-lg">
+              <i class="fas fa-sign-in-alt"></i> Đăng Nhập Cổng Sinh Viên Ngay
+            </a>
+          </div>
+        </div>
+
+        <div id="result-unqualified" class="result-card warning" style="display: none;">
+          <div class="result-badge-anim warn"><i class="fas fa-hourglass-half"></i></div>
+          <h2 class="result-title text-warning">KẾT QUẢ XÉT TUYỂN ĐỢT 1</h2>
+          <p class="result-subtitle" id="unqualified-info"></p>
+          <p class="text-muted" style="margin-top: 12px; line-height: 1.6;">
+            Hồ sơ xét tuyển của bạn đã được xác thực email hợp lệ và lưu vào hệ thống UniMS. Quản trị viên phòng Đào tạo có thể xem xét và duyệt thủ công trong các đợt xét tuyển bổ sung.
+          </p>
+          <div class="result-actions">
+            <button type="button" class="btn-secondary" onclick="AdmissionApp.resetForm()">
+              <i class="fas fa-redo"></i> Đăng ký nguyện vọng trường khác
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- TAB 2: TRA CỨU KẾT QUẢ BẰNG CCCD -->
+    <div id="section-lookup" class="adm-card shadow-lg" style="display: none;">
+      <div class="card-header-styled">
+        <h2 class="step-heading"><i class="fas fa-search"></i> Tra Cứu Kết Quả Xét Nguyện Vọng</h2>
+        <p class="card-subheading">Nhập số Căn cước công dân (CCCD) để xem tiến độ và trạng thái cấp mã sinh viên.</p>
+      </div>
+
+      <div class="lookup-form-wrap">
+        <div class="input-with-btn">
+          <input type="text" id="lookup-cccd" class="form-control" maxlength="12" placeholder="Nhập số CCCD (12 chữ số)...">
+          <button type="button" class="btn-primary-lg" onclick="AdmissionApp.lookupByCccd()">
+            <i class="fas fa-search"></i> Tra Cứu
+          </button>
+        </div>
+      </div>
+
+      <div id="lookup-results" style="margin-top: 24px;"></div>
+    </div>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="adm-footer">
+    <div class="adm-container footer-inner">
+      <div>
+        <strong>UniMS Admissions</strong> — Cổng Thông Tin Tuyển Sinh & Cấp Mã Sinh Viên Trực Tuyến.
+      </div>
+      <div>
+        Hệ thống tích hợp Cơ sở dữ liệu SQL Server (SSMS) & Bảo mật phiên làm việc.
+      </div>
+    </div>
+  </footer>
+
+  <script src="{% static 'js/views/public/admission.js' %}"></script>
+</body>
+</html>

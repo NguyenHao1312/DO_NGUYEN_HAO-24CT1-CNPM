@@ -31,6 +31,9 @@ class CustomUser(AbstractUser):
     session_device = models.TextField(blank=True, null=True)
     last_login_at = models.DateTimeField(blank=True, null=True)
 
+    # --- Đổi mật khẩu bắt buộc lần đầu ---
+    must_change_password = models.BooleanField(default=False)
+
     groups = models.ManyToManyField(
         'auth.Group',
         related_name='student_management_user_set',
@@ -57,6 +60,7 @@ class University(models.Model):
     name = models.CharField(max_length=255)
     short_name = models.CharField(max_length=50, blank=True, null=True)
     code = models.CharField(max_length=20, unique=True, blank=True, null=True)
+    university_code = models.CharField(max_length=20, unique=True, blank=True, null=True, help_text='Mã số trường (VD: 10011, 10012)')
     fee_per_credit = models.IntegerField(default=500000)
     increase_rate = models.FloatField(default=0.0)
 
@@ -461,3 +465,47 @@ class AuditLog(models.Model):
 
     def __str__(self):
         return f"[{self.timestamp}] {self.role}:{self.user_id} → {self.method} {self.endpoint} ({self.status_code})"
+
+
+# ============================================================
+#  12. ADMISSION APPLICATION — Xét Tuyển & Nguyện Vọng
+# ============================================================
+class AdmissionApplication(models.Model):
+    STATUS_CHOICES = (
+        ('pending', 'Chờ xử lý / Đang xét'),
+        ('approved', 'Trúng tuyển'),
+        ('rejected', 'Không trúng tuyển'),
+        ('credentials_sent', 'Đã cấp mã SV & mật khẩu'),
+    )
+
+    full_name = models.CharField(max_length=255)
+    cccd = models.CharField(max_length=12, db_index=True)
+    email = models.EmailField()
+    phone = models.CharField(max_length=20)
+    university = models.ForeignKey(University, on_delete=models.CASCADE, related_name='admission_applications')
+    department = models.CharField(max_length=255)
+    score = models.FloatField(default=0.0, help_text='Điểm thi xét tuyển (Thang 30)')
+    benchmark_score = models.FloatField(default=0.0, help_text='Điểm chuẩn của ngành trúng tuyển')
+    status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='pending')
+
+    # Thông tin tài khoản được cấp
+    generated_student_id = models.CharField(max_length=50, blank=True, null=True)
+    generated_user = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='admission_records')
+
+    # OTP xác thực Gmail
+    email_verified = models.BooleanField(default=False)
+    otp_code = models.CharField(max_length=10, blank=True, null=True)
+    otp_created_at = models.DateTimeField(blank=True, null=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    reviewed_by = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='reviewed_admissions')
+    review_note = models.TextField(blank=True, default='')
+
+    class Meta:
+        db_table = 'student_management_admissionapplication'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.cccd} - {self.full_name} ({self.university.code or self.university.name}: {self.score}đ - {self.status})"
+

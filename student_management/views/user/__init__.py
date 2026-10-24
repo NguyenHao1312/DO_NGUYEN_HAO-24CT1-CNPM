@@ -1,7 +1,7 @@
 """
 student_management/views/user/__init__.py
 Package chứa các views dùng chung cho Người dùng (Student & Teacher):
-- Auth: Đăng ký, Đăng nhập, Đăng xuất, Session Check (chặn Admin ở cổng public).
+- Auth: Đăng ký, Đăng nhập, Đăng xuất, Session Check, Đổi mật khẩu.
 - Sync: Đồng bộ dữ liệu xuống/lên DB (lọc theo role).
 - AI: Trợ lý AI Assistant tích hợp Gemini / Offline KB.
 - Pages: Render các trang giao diện công khai (index, review).
@@ -13,6 +13,7 @@ from student_management.views.user.auth import (
     api_logout,
     api_session_check,
     api_check_code,
+    api_change_password,
 )
 from student_management.views.user.sync import (
     api_sync_down,
@@ -36,6 +37,7 @@ __all__ = [
     'api_logout',
     'api_session_check',
     'api_check_code',
+    'api_change_password',
     'api_sync_down',
     'api_sync_up',
     'api_ai_chat',

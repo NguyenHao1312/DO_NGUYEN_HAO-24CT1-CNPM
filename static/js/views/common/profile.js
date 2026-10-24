@@ -122,6 +122,41 @@ const ProfileView = {
             </form>
           </div>
         </div>
+
+        <!-- Password Change Section (Sinh Viên & Giáo Viên) -->
+        <div class="card" style="grid-column: span 2; margin-top: var(--space-4);">
+          <div class="card-header" style="display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-shield-alt" style="color: var(--primary-500);"></i>
+            <h3>Đổi Mật Khẩu Đăng Nhập</h3>
+          </div>
+          <div class="card-body">
+            <p style="color: var(--text-secondary); margin-bottom: var(--space-4); font-size: 0.9rem;">
+              Bạn có thể chủ động cập nhật mật khẩu mới bất kỳ lúc nào để bảo mật tài khoản. Dữ liệu sẽ được đồng bộ trực tiếp vào cơ sở dữ liệu SSMS.
+            </p>
+            <form id="password-change-form">
+              <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--space-4);">
+                <div class="form-group">
+                  <label class="form-label">Mật khẩu hiện tại</label>
+                  <input type="password" class="form-control" id="profile-current-pass" placeholder="Nhập mật khẩu cũ..." required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Mật khẩu mới (tối thiểu 6 ký tự)</label>
+                  <input type="password" class="form-control" id="profile-new-pass" placeholder="Nhập mật khẩu mới..." required minlength="6">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Xác nhận mật khẩu mới</label>
+                  <input type="password" class="form-control" id="profile-confirm-pass" placeholder="Nhập lại mật khẩu mới..." required minlength="6">
+                </div>
+              </div>
+              <div style="display: flex; justify-content: flex-end; margin-top: var(--space-4);">
+                <button type="submit" class="btn btn-primary" id="btn-submit-change-pass">
+                  <i class="fas fa-key"></i> Lưu Mật Khẩu Mới
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
       </div>
     `;
   },
@@ -189,6 +224,53 @@ const ProfileView = {
         setTimeout(() => {
           window.location.reload();
         }, 800);
+      });
+    }
+
+    // Password change event listener
+    const pwdForm = document.getElementById('password-change-form');
+    if (pwdForm) {
+      pwdForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const currentPass = document.getElementById('profile-current-pass').value;
+        const newPass = document.getElementById('profile-new-pass').value;
+        const confirmPass = document.getElementById('profile-confirm-pass').value;
+
+        if (newPass.length < 6) {
+          Utils.showToast('Mật khẩu mới phải có tối thiểu 6 ký tự!', 'warning');
+          return;
+        }
+
+        if (newPass !== confirmPass) {
+          Utils.showToast('Mật khẩu xác nhận không khớp!', 'warning');
+          return;
+        }
+
+        const btn = document.getElementById('btn-submit-change-pass');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang lưu SSMS...';
+
+        try {
+          const res = await Auth.apiFetch('/api/change-password/', {
+            method: 'POST',
+            body: {
+              current_password: currentPass,
+              new_password: newPass
+            }
+          });
+          const data = await res.json();
+          if (data && data.success) {
+            Utils.showToast(data.message || 'Đổi mật khẩu thành công!', 'success');
+            pwdForm.reset();
+          } else {
+            Utils.showToast(data.message || 'Đổi mật khẩu thất bại!', 'error');
+          }
+        } catch (err) {
+          Utils.showToast('Không thể kết nối đến máy chủ SSMS', 'error');
+        } finally {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fas fa-key"></i> Lưu Mật Khẩu Mới';
+        }
       });
     }
   }

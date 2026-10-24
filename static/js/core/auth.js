@@ -243,6 +243,19 @@ const Auth = {
       const data = await res.json();
       if (data.success && data.session_token) {
         localStorage.setItem(this.SERVER_TOKEN_KEY, data.session_token);
+        if (data.user && data.user.must_change_password) {
+          const sess = this.getCurrentUser();
+          if (sess) {
+            sess.must_change_password = true;
+            sessionStorage.setItem(this.SESSION_KEY, JSON.stringify(sess));
+            localStorage.setItem(this.SESSION_KEY + '_auto', JSON.stringify(sess));
+            setTimeout(() => {
+              if (window.App && typeof window.App.checkMandatoryPasswordChange === 'function') {
+                window.App.checkMandatoryPasswordChange();
+              }
+            }, 600);
+          }
+        }
       }
     } catch (err) {
       console.log('Server login failed (offline mode):', err.message);

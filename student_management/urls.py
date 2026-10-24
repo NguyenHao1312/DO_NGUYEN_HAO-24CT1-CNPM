@@ -2,12 +2,13 @@ from django.urls import path
 from student_management import views
 
 urlpatterns = [
-    # Auth
+    # Auth & Account
     path('api/login/', views.api_login, name='api_login'),
     path('api/logout/', views.api_logout, name='api_logout'),
     path('api/register/', views.api_register, name='api_register'),
     path('api/check-code/', views.api_check_code, name='api_check_code'),
     path('api/session/check/', views.api_session_check, name='api_session_check'),
+    path('api/change-password/', views.api_change_password, name='api_change_password'),
 
     # Sync
     path('api/sync/down/', views.api_sync_down, name='api_sync_down'),
@@ -16,21 +17,23 @@ urlpatterns = [
     # AI Assistant
     path('api/ai/chat/', views.api_ai_chat, name='api_ai_chat'),
 
-    # Attendance (Phase 2)
+    # Attendance
     path('api/attendance/', views.api_attendance, name='api_attendance'),
     path('api/attendance/summarize/', views.api_attendance_summarize, name='api_attendance_summarize'),
 
-    # Grade Lock (Phase 2)
+    # Grade Lock & Semesters
     path('api/grades/lock-status/', views.api_grade_lock_status, name='api_grade_lock_status'),
-
-    # Semesters (Phase 2)
     path('api/semesters/', views.api_semesters, name='api_semesters'),
-
-    # Copy Classes (Phase 2)
     path('api/classes/copy-semester/', views.api_copy_classes_semester, name='api_copy_classes_semester'),
-
-    # Export Excel (Phase 2)
     path('api/export/excel/', views.api_export_excel, name='api_export_excel'),
+
+    # Public Admission Portal (Cổng Xét Tuyển & Nguyện Vọng)
+    path('admission/', views.admission_page, name='admission_page'),
+    path('api/admission/universities/', views.api_admission_universities, name='api_admission_universities'),
+    path('api/admission/apply/', views.api_admission_apply, name='api_admission_apply'),
+    path('api/admission/verify-otp/', views.api_admission_verify_otp, name='api_admission_verify_otp'),
+    path('api/admission/resend-otp/', views.api_admission_resend_otp, name='api_admission_resend_otp'),
+    path('api/admission/check-status/', views.api_admission_check_status, name='api_admission_check_status'),
 
     # Admin Portal & Dashboard
     path('admin/', views.admin_dashboard_page, name='admin_root'),
@@ -55,4 +58,9 @@ urlpatterns = [
     path('admin/api/classes/', views.api_admin_classes, name='api_admin_classes'),
     path('admin/api/classes/update-schedule/', views.api_admin_update_schedule, name='api_admin_update_schedule'),
     path('admin/api/semesters/', views.api_admin_semesters, name='api_admin_semesters'),
+
+    # Admin Admission Applications Management
+    path('admin/api/admissions/', views.api_admin_admissions, name='api_admin_admissions'),
+    path('admin/api/admissions/approve/', views.api_admin_admission_approve, name='api_admin_admission_approve'),
+    path('admin/api/admissions/reject/', views.api_admin_admission_reject, name='api_admin_admission_reject'),
 ]

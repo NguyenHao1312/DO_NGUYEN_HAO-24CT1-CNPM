@@ -158,6 +158,78 @@ const App = {
     this.setupNotifications();
     this.setupHelpdeskBadge();
     this.setupRealtimeClock();
+    this.checkMandatoryPasswordChange();
+  },
+
+  checkMandatoryPasswordChange() {
+    const user = Auth.getCurrentUser();
+    if (!user || !user.must_change_password) return;
+
+    if (typeof Swal === 'undefined') return;
+
+    Swal.fire({
+      title: 'YÊU CẦU BẢO MẬT TÀI KHOẢN',
+      html: `
+        <div style="text-align: left; font-size: 0.95rem; line-height: 1.5; color: #334155;">
+          <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 12px; margin-bottom: 16px; color: #991b1b; font-weight: 600;">
+            <i class="fas fa-exclamation-triangle"></i> Hãy đổi lại mật khẩu để tránh mất thông tin
+          </div>
+          <p style="margin-bottom: 14px;">Chào mừng bạn! Tài khoản của bạn vừa được cấp tự động từ Cổng xét nguyện vọng. Vui lòng thiết lập mật khẩu cá nhân mới để đảm bảo bảo mật dữ liệu học tập và điểm số.</p>
+          <div style="margin-bottom: 12px;">
+            <label style="font-weight: 600; font-size: 0.85rem; display: block; margin-bottom: 4px;">Mật khẩu mới (tối thiểu 6 ký tự):</label>
+            <input type="password" id="swal-new-password" class="swal2-input" placeholder="Nhập mật khẩu mới..." style="width: 100%; margin: 0; box-sizing: border-box;">
+          </div>
+          <div>
+            <label style="font-weight: 600; font-size: 0.85rem; display: block; margin-bottom: 4px;">Xác nhận mật khẩu mới:</label>
+            <input type="password" id="swal-confirm-password" class="swal2-input" placeholder="Nhập lại mật khẩu mới..." style="width: 100%; margin: 0; box-sizing: border-box;">
+          </div>
+        </div>
+      `,
+      icon: 'warning',
+      showCancelButton: false,
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      confirmButtonText: '<i class="fas fa-key"></i> Đổi Mật Khẩu & Lưu Vào Hệ Thống',
+      confirmButtonColor: '#2563eb',
+      preConfirm: () => {
+        const newPass = document.getElementById('swal-new-password').value.trim();
+        const confirmPass = document.getElementById('swal-confirm-password').value.trim();
+        if (!newPass || newPass.length < 6) {
+          Swal.showValidationMessage('Mật khẩu mới phải có tối thiểu 6 ký tự');
+          return false;
+        }
+        if (newPass !== confirmPass) {
+          Swal.showValidationMessage('Mật khẩu xác nhận không khớp');
+          return false;
+        }
+        return newPass;
+      }
+    }).then(async (result) => {
+      if (result.isConfirmed && result.value) {
+        try {
+          const res = await Auth.apiFetch('/api/change-password/', {
+            method: 'POST',
+            body: { new_password: result.value }
+          });
+          const data = await res.json();
+          if (data && data.success) {
+            user.must_change_password = false;
+            sessionStorage.setItem(Auth.SESSION_KEY, JSON.stringify(user));
+            localStorage.setItem(Auth.SESSION_KEY + '_auto', JSON.stringify(user));
+            Swal.fire({
+              icon: 'success',
+              title: 'Cập nhật thành công!',
+              text: 'Mật khẩu mới đã được lưu thành công vào cơ sở dữ liệu SSMS. Từ lần sau bạn sử dụng mật khẩu này để đăng nhập.',
+              timer: 3500
+            });
+          } else {
+            Swal.fire({ icon: 'error', title: 'Lỗi', text: data.message || 'Không thể đổi mật khẩu' });
+          }
+        } catch (err) {
+          Swal.fire({ icon: 'error', title: 'Lỗi máy chủ', text: 'Không thể kết nối đến máy chủ SSMS để đổi mật khẩu' });
+        }
+      }
+    });
   },
 
   setupUserProfile() {

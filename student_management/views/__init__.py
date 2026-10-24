@@ -1,28 +1,6 @@
 """
 student_management/views/__init__.py
-Explicit imports — phân vùng theo vai trò: User, Student, Teacher, Admin.
-
-Cấu trúc phân vùng:
-├── views/
-│   ├── user/                → Shared cho Student & Teacher (Auth, Pages, Sync, AI, Academic Status)
-│   │   ├── auth.py          → Register, Login, Logout, Session check (chặn Admin ở public)
-│   │   ├── sync.py          → Sync down / sync up data theo role
-│   │   ├── ai.py            → Trợ lý AI Assistant (Gemini / Offline KB)
-│   │   ├── pages.py         → Render public HTML pages (index, review)
-│   │   └── api.py           → Shared status (grade_lock_status, semesters)
-│   │
-│   ├── student/             → Sinh viên (Student Portal)
-│   │   └── portal.py        → Profile, học phí cá nhân, tiến độ học tập
-│   │
-│   ├── teacher/             → Giảng viên (Teacher Portal & APIs)
-│   │   └── attendance.py    → Attendance APIs & điểm danh
-│   │
-│   └── admin/               → Quản trị viên (Admin Portal & Local Control Panel)
-│       ├── academic.py      → Quản lý điểm, học phí, lớp học, thời khóa biểu
-│       ├── auth.py          → Đăng nhập, đăng xuất Admin Local
-│       ├── dashboard.py     → Dashboard KPIs, quản lý người dùng, audit logs
-│       ├── export.py        → Xuất báo cáo Excel
-│       └── management.py    → Nhân bản môn học & lớp học kì
+Explicit imports — phân vùng theo vai trò: User, Student, Teacher, Admin, Admission.
 """
 
 # ── User Views (Dùng chung cho Sinh viên & Giáo viên) ──
@@ -34,6 +12,7 @@ from student_management.views.user import (
     api_logout,
     api_session_check,
     api_check_code,
+    api_change_password,
     api_sync_down,
     api_sync_up,
     api_ai_chat,
@@ -50,6 +29,16 @@ from student_management.views.student import (
 from student_management.views.teacher import (
     api_attendance,
     api_attendance_summarize,
+)
+
+# ── Admission Views (Xét Nguyện Vọng Tuyển Sinh) ──
+from student_management.views.admission import (
+    admission_page,
+    api_admission_universities,
+    api_admission_apply,
+    api_admission_verify_otp,
+    api_admission_resend_otp,
+    api_admission_check_status,
 )
 
 # ── Admin Views (Quản trị viên) ──
@@ -75,6 +64,9 @@ from student_management.views.admin import (
     api_admin_classes,
     api_admin_update_schedule,
     api_admin_semesters,
+    api_admin_admissions,
+    api_admin_admission_approve,
+    api_admin_admission_reject,
 )
 
 __all__ = [
@@ -86,6 +78,7 @@ __all__ = [
     'api_logout',
     'api_session_check',
     'api_check_code',
+    'api_change_password',
     'api_sync_down',
     'api_sync_up',
     'api_ai_chat',
@@ -96,6 +89,13 @@ __all__ = [
     # Teacher
     'api_attendance',
     'api_attendance_summarize',
+    # Admission
+    'admission_page',
+    'api_admission_universities',
+    'api_admission_apply',
+    'api_admission_verify_otp',
+    'api_admission_resend_otp',
+    'api_admission_check_status',
     # Admin
     'admin_login_page',
     'admin_logout_page',
@@ -118,4 +118,7 @@ __all__ = [
     'api_admin_classes',
     'api_admin_update_schedule',
     'api_admin_semesters',
+    'api_admin_admissions',
+    'api_admin_admission_approve',
+    'api_admin_admission_reject',
 ]

@@ -2,9 +2,9 @@
 
 # 🎓 UniMS — University Management System
 
-**Hệ thống Quản lý Đại học & Đào tạo Tự lưu trữ (Self-Hosted Enterprise Architecture)**
+**Hệ thống Quản lý Đại học & Xét Tuyển Trực Tuyến Tự lưu trữ (Self-Hosted Enterprise Architecture)**
 
-Kiến trúc Phân tầng • Bảo mật Đa lớp • Cô lập Quản trị Local • Tự động hóa Dọn dẹp • Trợ lý AI • 100% Vanilla JS
+Kiến trúc Phân tầng • Xét Nguyện Vọng Trực Tuyến • Cấp Mã SV & Mật Khẩu Tự Động • Xác Thực Gmail OTP • Cô Lập Quản Trị Local • 100% Vanilla JS SPA
 
 **Hệ thống quản lý đại học toàn diện do bạn hoàn toàn làm chủ.**
 
@@ -16,7 +16,7 @@ Kiến trúc Phân tầng • Bảo mật Đa lớp • Cô lập Quản trị L
 ![Tests](https://img.shields.io/badge/tests-45%2F45_passed-brightgreen)
 ![UI](https://img.shields.io/badge/UI-Vanilla_JS_SPA-yellow)
 
-*Dual-Port Architecture — Local-Only Admin (Port 9000) — Public User Portal (Port 8000) — Audit Logging & Threat Analytics*
+*Dual-Port Architecture — Local-Only Admin (Port 9000) — Public User Portal (Port 8000) — Online Admission Portal (`/admission/`)*
 
 </div>
 
@@ -28,42 +28,81 @@ UniMS giải quyết triệt để các nhược điểm cố hữu của phần
 
 Dự án được xây dựng với kiến trúc **Hybrid Web**:
 - **Cơ sở dữ liệu trung tâm:** Microsoft SQL Server (MSSQL / SSMS) với bảo mật cơ sở dữ liệu cao cấp.
-- **Backend Django 6.1:** Kiến trúc module sạch, phân vùng rõ ràng theo 4 nhóm đối tượng (`user`, `student`, `teacher`, `admin`).
+- **Backend Django 6.1:** Kiến trúc module sạch, phân vùng rõ ràng theo 5 nhóm đối tượng (`user`, `student`, `teacher`, `admin`, `admission`).
 - **Frontend SPA (Vanilla JS):** Không cồng kềnh framework, hỗ trợ Offline-First, hàng đợi đồng bộ (`SyncQueue`) và mã hóa dữ liệu cục bộ AES-256-GCM.
 - **Bảo mật chuyên sâu:** Cách ly cổng Quản trị viên (Localhost Port 9000), chặn rò rỉ qua Tunnel, phòng thủ dò tìm tài khoản (CWE-204), và hệ thống theo dõi bất thường/tấn công thời gian thực.
+- **Cổng Tuyển sinh & Cấp mã tự động:** Cổng xét nguyện vọng trực tuyến độc lập, tự động hóa toàn bộ quy trình tiếp nhận hồ sơ, đối soát điểm chuẩn, xác thực email qua OTP và cấp mã số sinh viên vào CSDL SSMS.
 
 ---
 
-## 🌟 Các Tính Năng & Kiến Trúc Nâng Cấp Nổi Bật
+## 🌟 Các Tính Năng & Kiến Trúc Nổi Bật
 
-### 1. 🛡️ Cô lập Cổng Quản trị Local-Only (Port 9000)
-- **Local Control Panel riêng biệt:** Admin đăng nhập và điều hành độc lập tại cổng Local qua lệnh `python manage.py run_admin_server` (mặc định Port 9000).
+### 1. 🎓 Cổng Xét Nguyện Vọng Đại Học & Cấp Mã Tự Động (`/admission/`)
+- **Đăng ký xét tuyển trực tuyến:** Thí sinh nhập Họ tên, CCCD (12 chữ số), Gmail, SĐT, chọn Trường & Ngành xét tuyển và Điểm thi (thang 30đ, 2 chữ số thập phân).
+- **Kiểm tra CCCD thông minh:** Tích hợp kiểm tra tính hợp lệ của số định danh căn cước công dân.
+- **Xác thực Gmail qua OTP 6 số:** 
+  - Lọc nghiêm ngặt tài khoản `@gmail.com` thật, loại trừ hoàn toàn email rác/ảo.
+  - Tự động sinh mã OTP 6 số và gửi qua hệ thống SMTP Gmail (`bruhlmaobruhlmaoooo@gmail.com`) với thời hạn hiệu lực 10 phút.
+- **Đối soát Điểm Chuẩn tự động:**
+  - Bách Khoa (10011): 27.00 – 29.10đ.
+  - Các trường khác (10012 – 10021): 18.00 – 26.50đ.
+- **Tự động cấp Mã Sinh Viên & Mật khẩu vào SSMS:**
+  - **Quy tắc sinh mã theo trường:** Bắt đầu bằng mã số trường nối tiếp số thứ tự tăng dần.
+    - ĐH Bách Khoa (`10011`): `100110`, `100111`, `100112`...
+    - ĐH Duy Tân (`10012`): `100120`, `100121`...
+    - Tương tự cho các trường: FPT (`10013`), Đông Á (`10014`), Sư phạm (`10015`), Việt - Hàn (`10016`), Y Dược (`10017`), Kinh tế (`10018`), Kiến trúc (`10019`), Ngoại ngữ (`10020`), Sư phạm Kỹ thuật (`10021`).
+  - **Mật khẩu khởi tạo an toàn:** Chuỗi ký tự ngẫu nhiên 8 ký tự gồm chữ hoa, chữ thường và chữ số.
+  - Tự động lưu hồ sơ vào bảng `CustomUser` và `Student` trong SQL Server với khóa hàng (`transaction.atomic`) chống xung đột/trùng mã.
+  - Tự động gửi email chúc mừng trúng tuyển kèm thông tin tài khoản đến Gmail của tân sinh viên.
+- **Tra cứu kết quả xét tuyển:** Tab tra cứu bằng số CCCD giúp thí sinh theo dõi trạng thái hồ sơ và xem mã sinh viên đã cấp.
+
+### 2. 🔑 Cơ Chế Đổi Mật Khẩu Bắt Buộc & Tự Nguyện
+- **Bắt buộc đổi mật khẩu lần đầu:** Khi tân sinh viên được cấp tài khoản đăng nhập lần đầu tiên vào hệ thống chính (`/review/`), popup an ninh lập tức yêu cầu:
+  > *"Hãy đổi lại mật khẩu để tránh mất thông tin"*
+  - Sinh viên bắt buộc phải nhập và xác nhận mật khẩu mới.
+  - API `/api/change-password/` cập nhật mật khẩu băm mới vào SSMS và gỡ cờ bắt buộc. Các lần đăng nhập sau sinh viên sử dụng mật khẩu mới.
+- **Chủ động đổi mật khẩu tại trang cá nhân:** Bổ sung giao diện đổi mật khẩu trong Hồ sơ cá nhân (`Profile`), cho phép cả Sinh viên và Giảng viên chủ động thay đổi mật khẩu định kỳ để bảo vệ tài khoản.
+
+### 3. 🛡️ Cô Lập Cổng Quản Trị Local-Only (Port 9000) & Cyber-Office Dashboard
+- **Local Control Panel riêng biệt:** Admin đăng nhập và điều hành độc lập tại cổng Local qua lệnh `python manage.py run_admin_server 9000`.
 - **Chống rò rỉ qua Internet/Tunnel:** `LocalOnlyAdminMiddleware` giám sát chặt chẽ cả Host Header lẫn Socket IP. Mọi yêu cầu truy cập cổng Admin thông qua domain Ngrok, Cloudflare Tunnel hoặc Reverse Proxy công khai đều bị chặn và trả về **HTTP 404 Not Found** (tàng hình tuyệt đối).
-- **Phân tách cửa đăng nhập:** Tài khoản Admin tuyệt đối bị từ chối tại cổng đăng nhập công khai (`/api/login/`), và ngược lại người dùng công khai (Sinh viên, Giảng viên) không thể vào trang Quản trị.
+- **Tab Xét Nguyện Vọng trên Admin Dashboard:**
+  - Theo dõi danh sách thí sinh nộp hồ sơ, điểm thi, điểm chuẩn, trạng thái OTP.
+  - **Nút Duyệt Thủ Công:** Cho phép Admin xét vớt hoặc cấp mã thủ công khi cần. Hệ thống vẫn tự động sinh mã SV, tạo user SSMS và gửi Gmail mật khẩu như luồng tự động.
+  - Thiết kế phong cách **Văn phòng kết hợp Cyber**: Giao diện tối hiện đại, bố cục rõ ràng, điều hướng mượt mà, tích hợp `AbortController` chống nghẽn đường truyền và triệt tiêu lỗi va chạm dữ liệu.
 
-### 2. 🔐 Bảo mật Xác thực & Chống User Enumeration (CWE-204)
-- **Thông báo đăng nhập chuẩn hóa:** Khi đăng nhập sai mật khẩu, sai mã số hoặc đăng nhập nhầm tab vai trò (Sinh viên vào tab Giảng viên hoặc ngược lại), hệ thống đồng nhất phản hồi lỗi: `"Sai thông tin đăng nhập"`. Kẻ tấn công không thể dựa vào phản hồi để dò quét tài khoản hợp lệ.
-- **Đăng ký theo Mã định danh:** Hỗ trợ kiểm tra mã real-time với endpoint `/api/check-code/?code=...` (`"Mã đã có trong hệ thống"` / `"Mã không có trong hệ thống"`), loại bỏ hoàn toàn các chuỗi cảnh báo "Tên đăng nhập" dễ gây nhầm lẫn.
+### 4. 🔐 Bảo Mật Xác Thực & Chống User Enumeration (CWE-204)
+- **Thông báo đăng nhập chuẩn hóa:** Mọi trường hợp sai mật khẩu, sai mã số hoặc đăng nhập nhầm tab vai trò đều trả về thông báo lỗi chung: `"Sai thông tin đăng nhập"`, ngăn chặn kẻ tấn công dò quét tài khoản.
+- **Đăng ký theo Mã định danh:** Endpoint `/api/check-code/?code=...` kiểm tra sự tồn tại của mã trong hệ thống theo thời gian thực.
+- **Single-Session Enforcement:** Mỗi tài khoản chỉ duy trì 1 phiên hoạt động duy nhất; tự động ép đăng xuất phiên cũ khi phát hiện đăng nhập mới từ thiết bị khác.
 
-### 3. 📊 Hệ thống Giám sát & Phân tích Đe dọa Thời gian thực (Security Analytics)
-- **Ghi vết tự động (Global Audit Logging):** Tự động bắt và phân loại các hành vi nguy hiểm: SQL Injection, Brute Force, User Enumeration, IP Spoofing, Session Hijacking, Tunnel Scanner.
-- **Threat Score & Báo động DDoS:** Tự động tính điểm nguy cơ (An toàn, Cảnh báo, Nguy hiểm, Khẩn cấp) dựa trên tần suất request bất thường từ các IP lạ và hiển thị biểu đồ cảnh báo trực tiếp trên Admin Dashboard.
-- **Log bất biến (MSSQL Hardening):** Kết cấu bảng `AuditLog` lưu vết chi tiết (Timestamp, IP, Endpoint, Action, Severity, Threat Reason) hỗ trợ điều tra số học.
+### 5. 📊 Giám Sát An Ninh & Nhật Ký Kiểm Toán (Audit Trail)
+- **Ghi vết tự động (Global Audit Logging):** Bắt và phân loại các hành vi bất thường, đo đạc độ trễ mạng và phát hiện tấn công DDoS/Brute-force.
+- **Dọn dẹp tài khoản ma (Ghost Accounts Cleaner):** Quản trị viên có công cụ quét và xóa an toàn các tài khoản không hoạt động làm nhiễu database.
 
-### 4. 🧹 Cơ chế Dọn dẹp Tài khoản "Ma" (Ghost Accounts Cleaner)
-- **Giải phóng dung lượng SSM:** Quản trị viên có công cụ quét và xóa an toàn các tài khoản không đăng nhập theo các mốc chu kỳ (1 năm, 3 năm, 5 năm, 10 năm) hoặc tài khoản đăng ký rác không có dữ liệu học tập/giảng dạy liên kết.
-- **An toàn dữ liệu:** Bảo lưu các tài khoản có hồ sơ học tập hoặc tài khoản quản trị, đảm bảo tính toàn vẹn của bảng điểm và lịch sử đào tạo.
+### 6. 📚 Quản Lý Nghiệp Vụ Đào Tạo Hoàn Chỉnh
+- Quản lý Sinh viên, bật/tắt nợ học phí (`toggle-tuition`).
+- Quản lý Bảng điểm, tự động tính GPA hệ 10 và hệ 4 theo thang điểm tín chỉ Việt Nam.
+- Khóa mốc học kỳ đa tầng (trước thi, trước ĐKHP, tạm thời chấm thi).
+- Quản lý Lớp học phần, điều chỉnh lịch học / phòng học / báo nghỉ bù.
 
-### 5. 📚 Quản lý Nghiệp vụ Đào tạo Hoàn chỉnh (Academic Management)
-- **Quản lý Sinh viên & Học phí:** Tìm kiếm đa tiêu chí, lọc theo khoa, kích hoạt/hủy nợ học phí (`toggle-tuition`).
-- **Quản lý Điểm & Tính GPA tự động:** Nhập điểm chuyên cần, giữa kỳ, cuối kỳ; tự động tính GPA hệ 4 và hệ 10 có trọng số tín chỉ (`recalculate_student_gpa`).
-- **Khóa mốc học kỳ đa tầng:** Khóa điểm trước thi, khóa trước đăng ký học phần, và khóa tạm thời trong thời gian chấm thi.
-- **Lịch dạy & Lớp học phần:** Nhân bản lớp học kỳ tự động (`copy-classes-semester`), điều chỉnh thời khóa biểu giảng viên, xuất báo cáo Excel chuyên nghiệp.
+---
 
-### 6. ⚡ Offline-First & Mã hóa Cục bộ
-- Frontend duy trì hoạt động mượt mà khi mất mạng nhờ hàng đợi `SyncQueue`.
-- Toàn bộ dữ liệu đệm được mã hóa tại chỗ (Encrypt-at-Rest) bằng thuật toán **AES-256-GCM** với Web Crypto API.
-- Cơ chế **Single-Session Enforcement**: Mỗi tài khoản chỉ duy trì 1 phiên đăng nhập hợp lệ; tự động vô hiệu hóa phiên cũ khi phát hiện đăng nhập mới từ thiết bị khác.
+## 🏛️ Bảng Mã Trường & Quy Ước Mã Sinh Viên
+
+| STT | Trường Đại Học | Mã Trường | Quy Ước Mã Sinh Viên | Điểm Chuẩn Tham Chiếu |
+|---|---|---|---|---|
+| 1 | **ĐH Bách Khoa (DUT)** | `10011` | `100110`, `100111`, `100112`... | 27.00 – 29.10đ |
+| 2 | **ĐH Duy Tân (DTU)** | `10012` | `100120`, `100121`, `100122`... | 18.00 – 22.50đ |
+| 3 | **ĐH FPT Đà Nẵng (FPT)** | `10013` | `100130`, `100131`, `100132`... | 21.00 – 24.50đ |
+| 4 | **ĐH Đông Á (UDA)** | `10014` | `100140`, `100141`, `100142`... | 18.00 – 20.50đ |
+| 5 | **ĐH Sư phạm (UED)** | `10015` | `100150`, `100151`, `100152`... | 22.00 – 26.50đ |
+| 6 | **ĐH CNTT & TT Việt - Hàn (VKU)** | `10016` | `100160`, `100161`, `100162`... | 22.50 – 25.25đ |
+| 7 | **ĐH Y Dược Đà Nẵng (UMP)** | `10017` | `100170`, `100171`, `100172`... | 21.00 – 26.50đ |
+| 8 | **ĐH Kinh tế (DUE)** | `10018` | `100180`, `100181`, `100182`... | 24.50 – 26.25đ |
+| 9 | **ĐH Kiến trúc Đà Nẵng (DAU)** | `10019` | `100190`, `100191`, `100192`... | 19.00 – 23.50đ |
+| 10 | **ĐH Ngoại ngữ (UFLS)** | `10020` | `100200`, `100201`, `100202`... | 24.00 – 26.50đ |
+| 11 | **ĐH Sư phạm Kỹ thuật (UTE)** | `10021` | `100210`, `100211`, `100212`... | 22.50 – 24.50đ |
 
 ---
 
@@ -84,19 +123,17 @@ Dự án được xây dựng với kiến trúc **Hybrid Web**:
 | `1013` | ThS. Lê Văn C | Kỹ thuật Phần mềm | Port 8000 (`/review/` - Tab Giáo viên) |
 | `1021` | TS. Phạm Văn D | Hệ thống Thông tin | Port 8000 (`/review/` - Tab Giáo viên) |
 | `1041` | PGS.TS Hoàng Thị E | Trí tuệ Nhân tạo | Port 8000 (`/review/` - Tab Giáo viên) |
-| `GV001` | ThS. Nguyễn Văn An | Công nghệ Thông tin | Port 8000 (`/review/` - Tab Giáo viên) |
-| `GV002` | TS. Trần Thị Bình | Công nghệ Thông tin | Port 8000 (`/review/` - Tab Giáo viên) |
 
-### 3. Sinh viên (Students)
-| Mã số SV | Họ và tên | Khoa / Ngành | Cổng đăng nhập |
-|---|---|---|---|
-| `100011` | Nguyễn Văn Nam | Công nghệ Thông tin | Port 8000 (`/review/` - Tab Sinh viên) |
-| `100012` | Trần Thị Mai | Công nghệ Thông tin | Port 8000 (`/review/` - Tab Sinh viên) |
-| `100013` | Lê Bình | Công nghệ Thông tin | Port 8000 (`/review/` - Tab Sinh viên) |
-| `100021` | Phạm Tuấn | Kinh tế | Port 8000 (`/review/` - Tab Sinh viên) |
-| `100041` | Hoàng Quyên | Ngoại ngữ | Port 8000 (`/review/` - Tab Sinh viên) |
-| `100015` | USER_002 | Đại cương | Port 8000 (`/review/` - Tab Sinh viên) |
-| `testreg123` | Test User | Đại cương | Port 8000 (`/review/` - Tab Sinh viên) |
+### 3. Sinh viên mẫu đã được bổ sung đầy đủ thông tin
+| Mã số SV | Họ và tên | Ngày sinh | Giới tính | Khoa / Ngành | Trường | GPA | Cổng đăng nhập |
+|---|---|---|---|---|---|---|---|
+| `100011` | Nguyễn Văn Nam | 15/03/2004 | Nam | CNTT | ĐH Bách Khoa | 3.42 | Port 8000 (`/review/`) |
+| `100012` | Trần Thị Mai | 22/07/2004 | Nữ | CNTT | ĐH Bách Khoa | 3.65 | Port 8000 (`/review/`) |
+| `100013` | Lê Bình | 05/11/2004 | Nam | Kỹ thuật Phần mềm | ĐH Bách Khoa | 3.15 | Port 8000 (`/review/`) |
+| `100021` | Phạm Tuấn | 19/05/2003 | Nam | QTKD | ĐH Kinh tế | 3.30 | Port 8000 (`/review/`) |
+| `100041` | Hoàng Quyên | 30/09/2004 | Nữ | Ngôn ngữ Anh | ĐH Ngoại ngữ | 3.55 | Port 8000 (`/review/`) |
+| `100015` | USER_002 | 02/02/2004 | Nam | Hệ thống Thông tin | ĐH Bách Khoa | 3.20 | Port 8000 (`/review/`) |
+| `testreg1233` | Test User1 | 01/01/2003 | Nam | CNTT | ĐH Bách Khoa | 3.00 | Port 8000 (`/review/`) |
 
 ---
 
@@ -114,11 +151,10 @@ CREATE DATABASE unims_db;
 ```
 
 ### Bước 2: Thiết lập file môi trường (.env)
-Sao chép `.env.example` thành `.env` (hoặc sử dụng file `.env` mẫu đã tạo sẵn):
 ```powershell
 cp .env.example .env
 ```
-*(Mặc định hệ thống kết nối vào `.\SQLEXPRESS` với database `unims_db` qua Windows Authentication)*
+*(Điền cấu hình SMTP Gmail và Database nếu cần tùy chỉnh)*
 
 ### Bước 3: Cài đặt thư viện & Migrate
 ```powershell
@@ -126,106 +162,108 @@ pip install -r requirements.txt
 python manage.py migrate
 ```
 
-### Bước 4: Nạp dữ liệu ban đầu (Seeding)
-Nạp đầy đủ các khoa, học kỳ, lớp môn học và tài khoản mẫu:
+### Bước 4: Nạp dữ liệu ban đầu & Làm giàu thông tin
 ```powershell
 python scripts/seed_db.py
+python scripts/seed_enrich_data.py
 ```
 
 ### Bước 5: Khởi chạy Máy chủ
 
-Hệ thống hỗ trợ 2 cổng hoạt động song song để bảo đảm tính an toàn:
-
-#### Cổng 1: Máy chủ Người dùng công khai (Public Portal - Port 8000)
-Dành cho Sinh viên, Giảng viên và khách truy cập:
+#### Cổng 1: Máy chủ Người dùng công khai & Xét tuyển (Port 8000)
 ```powershell
 python manage.py runserver 127.0.0.1:8000
 ```
-- **Trang chủ / Đăng nhập:** [http://127.0.0.1:8000/review/](http://127.0.0.1:8000/review/)
-- **Cổng thông tin Sinh viên:** [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
+- **Cổng Xét Nguyện Vọng Tuyển Sinh:** [http://127.0.0.1:8000/admission/](http://127.0.0.1:8000/admission/)
+- **Cổng Đăng Nhập Người Dùng (SV / GV):** [http://127.0.0.1:8000/review/](http://127.0.0.1:8000/review/)
+- **Dashboard Sinh Viên & Đào Tạo:** [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
 
 #### Cổng 2: Máy chủ Quản trị viên Cục bộ (Admin Control Panel - Port 9000)
-Dành riêng cho Quản trị viên hệ thống (chỉ cho phép truy cập Local):
 ```powershell
 python manage.py run_admin_server 9000
 ```
-- **Cổng Quản trị Local:** [http://127.0.0.1:9000/admin/login/](http://127.0.0.1:9000/admin/login/)
+- **Cổng Đăng nhập Quản trị:** [http://127.0.0.1:9000/admin/login/](http://127.0.0.1:9000/admin/login/)
 - **Dashboard Quản trị:** [http://127.0.0.1:9000/admin/dashboard/](http://127.0.0.1:9000/admin/dashboard/)
 
 ---
 
-## 🧪 Kiểm Thử Hệ Thống (Unit Tests)
+## 🧪 Kiểm Thử Hệ Thống (Unit & Integration Tests)
 
-Hệ thống tích hợp bộ test tự động kiểm tra toàn bộ luồng nghiệp vụ và bảo mật:
+### 1. Kiểm thử Toàn bộ Phân quyền & Bảo mật (45 Tests)
 ```powershell
 python manage.py test student_management
 ```
-- **Kết quả:** `Ran 45 tests in ~140s — OK (100% Pass Rate)`
-- **Nội dung kiểm thử:** Phân quyền RBAC, Chặn Tunnel Ngrok trên cổng Admin, Single-Session, Rate Limiting, Academic Management, Dọn dẹp tài khoản ma, Phân tích an ninh và Tính điểm GPA.
+- **Kết quả:** `Ran 45 tests — OK (100% Pass Rate)`
+
+### 2. Kiểm thử Tích hợp Tuyển Sinh & Đổi Mật Khẩu (Phase 3 End-to-End)
+```powershell
+python scripts/test_phase3_flow.py
+```
+- **Kết quả:** `TẤT CẢ 8 BƯỚC KIỂM THỬ ĐỀU THÀNH CÔNG 100%!`
 
 ---
 
-## 🏗 Cấu Trúc Thư Mục Dự Án (Sau Refactor)
+## 🏗 Cấu Trúc Thư Mục Dự Án
 
 ```
 📁 24CT1-DO_NGUYEN_HAO/
 ├── 📁 core/                          ⚙️ Cấu hình Django Project
-│   ├── settings.py                   # Cấu hình MSSQL, Security Middleware, Trusted Hosts
+│   ├── settings.py                   # Cấu hình MSSQL, SMTP Gmail, Security Middleware, Trusted Hosts
 │   ├── urls.py                       # Root URL Routing
 │   └── wsgi.py / asgi.py
 │
 ├── 📁 student_management/            🗄️ Backend Core App
-│   ├── models.py                     # 11 models (User, Student, Teacher, Semester, Grade...)
+│   ├── models.py                     # 12 models (User, Student, Teacher, University, AdmissionApplication...)
+│   ├── admission_service.py          # Nghiệp vụ xét tuyển, tra điểm chuẩn, sinh mã SV & mật khẩu
+│   ├── email_service.py              # Dịch vụ gửi Gmail OTP và thông báo trúng tuyển
 │   ├── middleware.py                 # GlobalAudit, LocalOnlyAdmin, SingleSession
 │   ├── decorators.py                 # @require_session, @require_role, @audit_log, @rate_limit
 │   ├── security_utils.py             # Tiện ích băm log SHA-256, kiểm tra IP tin cậy
 │   ├── tests.py                      # 36 Unit Tests nghiệp vụ & phân quyền
 │   ├── tests_security.py             # 9 Unit Tests chuyên sâu về bảo mật
-│   ├── urls.py                       # Routing các API endpoints
+│   ├── urls.py                       # Routing toàn bộ API endpoints
 │   ├── 📁 management/commands/       # Quản lý lệnh tùy chỉnh
 │   │   ├── run_admin_server.py       # Lệnh chạy máy chủ Admin riêng (Port 9000)
 │   │   └── purge_ghost_accounts.py   # Lệnh dọn dẹp tài khoản ma theo chu kỳ
 │   │
-│   └── 📁 views/                     📦 Phân vùng Modules sạch (RBAC)
-│       ├── 📁 user/                  # Dùng chung: auth (login, register, check-code), sync, ai, pages
+│   └── 📁 views/                     📦 Phân vùng Modules sạch theo vai trò
+│       ├── 📁 admission/             # Cổng xét tuyển: render trang, apply, verify-otp, tra cứu CCCD
+│       ├── 📁 user/                  # Dùng chung: auth (login, register, change-password), sync, ai, pages
 │       ├── 📁 student/               # Tác vụ riêng sinh viên: profile, học phí cá nhân
 │       ├── 📁 teacher/               # Tác vụ riêng giảng viên: attendance, điểm danh
-│       └── 📁 admin/                 # Quản trị viên: dashboard, academic, audit logs, analytics
+│       └── 📁 admin/                 # Quản trị viên: dashboard, admissions, academic, audit logs
 │
 ├── 📁 static/                        🌐 Frontend Vanilla JS SPA
-│   ├── 📁 css/                       # Theme & responsive stylesheets
+│   ├── 📁 css/                       # main.css, mobile.css, review.css, admission.css
 │   ├── 📁 js/core/                   # Engine: app, auth, crypto (AES-256), database, sync-queue
-│   └── 📁 js/views/                  # 12 modules hiển thị theo vai trò người dùng
+│   └── 📁 js/views/                  # Các views: public (admission.js), admin, common, student
 │
 ├── 📁 templates/                     📄 Giao diện HTML
+│   ├── admission.html                # Cổng Xét Nguyện Vọng Đại Học
 │   ├── review.html                   # Cổng xác thực người dùng (SV / GV)
-│   ├── index.html                    # Khung ứng dụng người dùng
+│   ├── index.html                    # Khung ứng dụng chính
 │   └── 📁 admin/                     # Giao diện Quản trị viên
 │       ├── login.html                # Đăng nhập Admin Control Panel
-│       └── dashboard.html            # Dashboard KPIs, Audit Logs & Quản lý đào tạo
+│       └── dashboard.html            # Cyber-Office Dashboard & Quản lý Xét tuyển
 │
-├── 📁 scripts/                       🔧 Script tiện ích hỗ trợ
+├── 📁 scripts/                       🔧 Scripts tiện ích & Kiểm thử
 │   ├── seed_db.py                    # Nạp dữ liệu mẫu ban đầu
-│   ├── apply_mssql_hardening.py      # Thiết lập bảo mật và bảng log MSSQL
+│   ├── seed_enrich_data.py           # Nạp mã số 11 trường & bổ sung đầy đủ hồ sơ SV
+│   ├── test_phase3_flow.py           # Test tích hợp luồng xét tuyển, sinh mã & đổi pass
+│   ├── apply_mssql_hardening.py      # Thiết lập bảo mật MSSQL
 │   └── deploy_ngrok.ps1              # Triển khai nhanh qua Ngrok Tunnel
 │
-├── .env                              🔒 File cấu hình môi trường thực tế (chứa danh sách user)
-├── .env.example                      📋 File mẫu biến môi trường gọn gàng
+├── 📁 docs/                          📚 Tài liệu & Sơ đồ hệ thống
+│   ├── DiagramGit.md                 # Biểu đồ tuần tự (Sequence Diagrams) chi tiết từng chức năng
+│   ├── Mermaid.md                    # Sơ đồ quan hệ thực thể (ERD) và Kiến trúc hệ thống
+│   ├── Diagram.md                    # Báo cáo phân tích và sơ đồ Use Case
+│   └── ActivityDiagram.md            # Sơ đồ luồng hoạt động
+│
+├── .env                              🔒 File cấu hình môi trường thực tế
+├── .env.example                      📋 File mẫu biến môi trường
 ├── requirements.txt                  📦 Thư viện Python phụ thuộc
-└── README.md                         📖 Tài liệu hướng dẫn hệ thống
+└── README.md                         📖 Hướng dẫn toàn diện UniMS
 ```
-
----
-
-## 🌐 Triển khai Public qua Ngrok (Tùy chọn)
-
-Để mở cổng Người dùng (Port 8000) cho truy cập bên ngoài mà vẫn đảm bảo cổng Admin (Port 9000) được giữ an toàn tuyệt đối:
-
-```powershell
-# Chạy script tự động kiểm tra và khởi động:
-.\scripts\deploy_ngrok.ps1
-```
-*Lưu ý: Domain Ngrok chỉ trỏ tới cổng 8000. Mọi nỗ lực truy cập `/admin/` qua URL Ngrok đều bị trả về 404 Not Found theo chính sách bảo mật.*
 
 ---
 

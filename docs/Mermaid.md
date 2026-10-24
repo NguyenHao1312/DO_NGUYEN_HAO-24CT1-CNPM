@@ -1,8 +1,10 @@
-# Mô hình Cơ sở dữ liệu (Entity Relationship Diagram)
+# Mô hình Cơ sở dữ liệu (Entity Relationship Diagram) & Kiến trúc Hệ thống
 
-Dưới đây là sơ đồ thực thể liên kết (ERD) được trích xuất từ các Models chính của hệ thống Student Management (UniMS). Sơ đồ được vẽ bằng cú pháp **Mermaid**.
+Dưới đây là sơ đồ thực thể liên kết (ERD) và sơ đồ kiến trúc hệ thống được trích xuất từ các Models và Services chính của hệ thống Student Management (UniMS), bao gồm các tính năng Đăng ký xét tuyển nguyện vọng, Xác thực Gmail OTP, Tự động cấp mã sinh viên và Đổi mật khẩu.
 
-### Sơ đồ ERD (Mermaid)
+---
+
+### 1. Sơ đồ ERD (Mermaid)
 
 ```mermaid
 erDiagram
@@ -14,13 +16,31 @@ erDiagram
         string phone
         string session_token
         datetime last_login_at
+        boolean must_change_password "Bắt buộc đổi MK lần đầu"
     }
     
     UNIVERSITY {
         int id PK
         string name
         string code
+        string university_code "Mã trường số: 10011..10021"
         int fee_per_credit
+    }
+
+    ADMISSIONAPPLICATION {
+        int id PK
+        int university_id FK
+        string full_name
+        string cccd "12 chữ số CCCD"
+        string email "Gmail thật của ứng viên"
+        string major "Ngành đăng ký"
+        float score "Điểm thi THPT (max 30.00)"
+        string status "submitted, passed, failed, rejected"
+        string otp_code "OTP 6 số xác thực"
+        datetime otp_created_at
+        boolean is_otp_verified
+        int generated_student_id FK "Liên kết Student sau khi trúng tuyển"
+        datetime created_at
     }
     
     SEMESTER {
@@ -37,7 +57,7 @@ erDiagram
         int id PK
         int user_id FK
         int university_id FK
-        string student_id
+        string student_id "Mã SV: {univ_code}0..n"
         string full_name
         string email
         string status
@@ -124,6 +144,9 @@ erDiagram
 
     UNIVERSITY ||--o{ STUDENT : "has (1:N)"
     UNIVERSITY ||--o{ TEACHER : "has (1:N)"
+    UNIVERSITY ||--o{ ADMISSIONAPPLICATION : "receives (1:N)"
+
+    STUDENT ||--o| ADMISSIONAPPLICATION : "generated_from (1:1)"
 
     SEMESTER ||--o{ COURSECLASS : "contains (1:N)"
     SEMESTER ||--o{ REGISTRATION : "tracks (1:N)"
@@ -140,8 +163,53 @@ erDiagram
     STUDENT ||--o{ ATTENDANCE : "has (1:N)"
 ```
 
-### Giải thích các Mối quan hệ chính:
-- **CustomUser (Người dùng):** Đóng vai trò là tài khoản đăng nhập chung. Bảng này có quan hệ `1:1` với `Student` hoặc `Teacher`. Mỗi Sinh viên hoặc Giảng viên sẽ liên kết tới 1 User.
-- **Semester (Học kỳ):** Là mốc thời gian cốt lõi. Lớp học phần (`CourseClass`), Đăng ký học (`Registration`) và Bảng điểm (`Grade`) đều liên kết trực tiếp với Học kỳ để dễ dàng truy xuất dữ liệu theo mùa vụ.
-- **CourseClass (Lớp học phần):** Do `Teacher` giảng dạy. Nó chứa danh sách các sinh viên tham gia thông qua `Registration`. Điểm số (`Grade`) và Điểm danh (`Attendance`) được đánh giá dựa trên sự kết hợp giữa `Student` và `CourseClass`.
-- **AuditLog:** Ghi lại vết truy cập hệ thống, liên kết trực tiếp với `CustomUser`.
+### 2. Sơ đồ Kiến trúc Hệ thống UniMS (Mermaid Architecture)
+
+```mermaid
+flowchart TD
+    subgraph CLIENTS["Khách hàng & Người dùng cuối"]
+        CANDIDATE["Thí sinh Xét tuyển\n(Trang /admission/)"]
+        STUDENT_USER["Sinh viên\n(Trang /review/)"]
+        TEACHER_USER["Giảng viên\n(Trang /review/)"]
+        ADMIN_USER["Quản trị viên\n(Trang /admin/dashboard/)"]
+    end
+
+    subgraph NETWORK["Mạng & Kiểm soát Phân quyền"]
+        PORT_8000["Cổng 8000 (Công khai / Public)\n- /admission/ (Xét tuyển)\n- /review/ (Dashboard/Login)\n- /api/* (API nghiệp vụ)"]
+        PORT_9000["Cổng 9000 (Nội bộ / Local Only)\n- /admin/* (Admin Dashboard)\n- Middleware: LocalOnlyAdminMiddleware"]
+    end
+
+    subgraph APPLICATION_SERVICES["UniMS Django Core Services"]
+        AUTH_SVC["Auth & Session Service\n(Login, Must-Change-PW, Change-PW)"]
+        ADMISSION_SVC["Admission Service\n(Đánh giá điểm sàn, Cấp mã SV {code}0..n,\nTạo mật khẩu 8 ký tự alphanumeric)"]
+        EMAIL_SVC["Email Service\n(Gửi OTP 6 số, Gửi thông báo trúng tuyển,\nSMTP bruhlmaobruhlmaoooo@gmail.com)"]
+        ACADEMIC_SVC["Academic Service\n(Điểm danh, Lớp học phần, Bảng điểm)"]
+    end
+
+    subgraph DATABASE["Microsoft SQL Server (SSMS)"]
+        DB_TABLES[("Cơ sở dữ liệu UniMS_DB\n- CustomUser (must_change_password)\n- University (university_code: 10011..10021)\n- AdmissionApplication\n- Student, Teacher, CourseClass, Grade")]
+    end
+
+    CANDIDATE -->|Gửi hồ sơ & Xác thực OTP| PORT_8000
+    STUDENT_USER -->|Đăng nhập & Đổi mật khẩu| PORT_8000
+    TEACHER_USER -->|Đăng nhập & Điểm danh| PORT_8000
+    ADMIN_USER -->|Duyệt hồ sơ & Quản trị| PORT_9000
+
+    PORT_8000 --> AUTH_SVC
+    PORT_8000 --> ADMISSION_SVC
+    PORT_8000 --> ACADEMIC_SVC
+    PORT_9000 --> ADMISSION_SVC
+    PORT_9000 --> AUTH_SVC
+
+    ADMISSION_SVC --> EMAIL_SVC
+    EMAIL_SVC -.->|SMTP TLS 587| CANDIDATE
+    AUTH_SVC --> DB_TABLES
+    ADMISSION_SVC --> DB_TABLES
+    ACADEMIC_SVC --> DB_TABLES
+```
+
+### 3. Giải thích các Thực thể và Mối quan hệ Mới:
+- **`AdmissionApplication` (Hồ sơ xét tuyển):** Lưu trữ thông tin thí sinh nộp hồ sơ, bao gồm họ tên, CCCD (12 số), Gmail thật, ngành xét tuyển, điểm thi THPT (thang điểm 30.00 với 2 chữ số thập phân), mã OTP xác thực (hết hạn sau 10 phút) và trạng thái xét tuyển (`submitted`, `passed`, `failed`, `rejected`).
+- **`University.university_code`:** Lưu mã định danh số của trường đại học, bắt đầu từ `10011` (Bách Khoa - DUT) và tăng dần theo thứ tự: `10012` (Duy Tân - DTU), `10013` (FPT), ..., `10021` (Sư phạm Kỹ thuật - UTE).
+- **`CustomUser.must_change_password`:** Cờ boolean đánh dấu tài khoản vừa được cấp qua xét tuyển, bắt buộc sinh viên phải đổi mật khẩu ngay lần đầu tiên đăng nhập vào cổng chính `/review/`.
+- **Liên kết `Student` và `AdmissionApplication`:** Quan hệ 1:1 tùy chọn (`generated_from`), cho phép truy vết sinh viên trúng tuyển từ hồ sơ đăng ký nguyện vọng ban đầu.

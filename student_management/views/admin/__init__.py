@@ -33,6 +33,11 @@ from student_management.views.admin.academic import (
     api_admin_update_schedule,
     api_admin_semesters,
 )
+from student_management.views.admin.admissions import (
+    api_admin_admissions,
+    api_admin_admission_approve,
+    api_admin_admission_reject,
+)
 
 __all__ = [
     'admin_login_page',
@@ -46,6 +51,7 @@ __all__ = [
     'api_admin_force_logout',
     'api_admin_toggle_user',
     'api_admin_ghost_accounts',
+    'api_admin_ping',
     'api_export_excel',
     'api_copy_classes_semester',
     'api_admin_students',
@@ -55,4 +61,7 @@ __all__ = [
     'api_admin_classes',
     'api_admin_update_schedule',
     'api_admin_semesters',
+    'api_admin_admissions',
+    'api_admin_admission_approve',
+    'api_admin_admission_reject',
 ]
