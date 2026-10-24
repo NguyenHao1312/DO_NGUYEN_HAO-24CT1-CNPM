@@ -4,3 +4,4 @@ pyodbc>=5.0
 whitenoise>=6.0
 gunicorn>=22.0
 openpyxl>=3.1.0
+python-dotenv>=1.0.0
