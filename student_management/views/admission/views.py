@@ -25,74 +25,78 @@ from student_management.admission_service import (
 from student_management.email_service import send_otp_email
 
 
-def check_applicant_duplicates(full_name, clean_cccd, email, phone):
+def check_applicant_duplicates(full_name, clean_cccd, email, phone, check_mode='all'):
     """
     Kiểm tra toàn diện chống trùng lặp dữ liệu thí sinh:
-    - 1 người không được dùng nhiều CCCD.
-    - 1 CCCD không được dùng nhiều Gmail.
-    - 1 Gmail không được dùng nhiều CCCD.
-    - 1 SĐT không được dùng nhiều CCCD.
-    - Không trùng lặp với CustomUser / Student hiện có trong hệ thống.
+    - check_mode == 'cccd_only': Chỉ kiểm tra riêng phần CCCD (dành riêng cho nút 'Kiểm tra' cạnh ô CCCD).
+    - check_mode == 'all': Kiểm tra tất cả (dành cho khi nộp hồ sơ xét tuyển).
     Trả về (is_valid, error_message, error_field).
     """
     # 1. Kiểm tra CCCD
     # Đã có tài khoản User với username là CCCD hoặc đã trúng tuyển
     if CustomUser.objects.filter(username=clean_cccd).exists():
-        return False, f"Số CCCD {clean_cccd} đã được cấp tài khoản người dùng trên hệ thống UniMS.", "cccd"
+        return False, f"Số CCCD {clean_cccd} đã có trong hệ thống và đã được cấp tài khoản trên UniMS.", "cccd"
 
     # Kiểm tra trong AdmissionApplication
     existing_by_cccd = AdmissionApplication.objects.filter(cccd=clean_cccd).first()
     if existing_by_cccd:
-        if existing_by_cccd.status == 'approved' and existing_by_cccd.generated_student_id:
-            return False, f"Số CCCD {clean_cccd} đã trúng tuyển và được cấp Mã Sinh Viên ({existing_by_cccd.generated_student_id}) trong hệ thống. Vui lòng tra cứu tại mục 'Tra Cứu Kết Quả' hoặc đăng nhập vào Cổng Sinh Viên.", "cccd"
-        
-        # Nếu đã có hồ sơ với CCCD này nhưng thông tin khác
-        if existing_by_cccd.email.lower() != email.lower():
+        if existing_by_cccd.generated_student_id:
+            return False, f"Số CCCD {clean_cccd} đã có trong hệ thống và đã được cấp Mã Sinh Viên ({existing_by_cccd.generated_student_id}). Vui lòng tra cứu tại mục 'Tra Cứu Kết Quả' hoặc đăng nhập vào Cổng Sinh Viên.", "cccd"
+        elif existing_by_cccd.status in ['approved', 'credentials_sent']:
+            return False, f"Số CCCD {clean_cccd} đã có hồ sơ trúng tuyển trên hệ thống UniMS.", "cccd"
+
+    # Nếu chỉ kiểm tra riêng CCCD (nút Kiểm tra) thì hoàn thành ngay tại đây, tránh xung đột với các ô còn trống
+    if check_mode == 'cccd_only':
+        return True, "", ""
+
+    # DƯỚI ĐÂY LÀ KIỂM TRA TOÀN DIỆN KHI NỘP HỒ SƠ (check_mode == 'all')
+    if existing_by_cccd:
+        # Nếu đã có hồ sơ với CCCD này nhưng thông tin khai báo khác
+        if email and existing_by_cccd.email.lower() != email.lower():
             return False, f"Số CCCD {clean_cccd} đã được đăng ký với địa chỉ Gmail khác ({existing_by_cccd.email}). Mỗi số CCCD chỉ được liên kết với 01 địa chỉ Gmail duy nhất để bảo mật tài khoản.", "email"
         
-        if existing_by_cccd.phone != phone:
+        if phone and existing_by_cccd.phone != phone:
             return False, f"Số CCCD {clean_cccd} đã được đăng ký với số điện thoại khác ({existing_by_cccd.phone}). Vui lòng sử dụng đúng số điện thoại đã khai báo.", "phone"
 
-        if existing_by_cccd.full_name.strip().upper() != full_name.strip().upper():
+        if full_name and existing_by_cccd.full_name.strip().upper() != full_name.strip().upper():
             return False, f"Số CCCD {clean_cccd} đã được đăng ký dưới họ tên '{existing_by_cccd.full_name}'. Hệ thống không cho phép đổi tên trên cùng một số CCCD.", "full_name"
 
-    # 2. Kiểm tra Email (Gmail)
-    # Không trùng với CustomUser
-    if CustomUser.objects.filter(email__iexact=email).exists():
-        return False, f"Địa chỉ Gmail '{email}' đã được đăng ký bởi một tài khoản đang hoạt động trên hệ thống UniMS.", "email"
+    # 2. Kiểm tra Email (Gmail) - Chỉ kiểm tra khi email không trống
+    if email and email.strip():
+        clean_email = email.strip().lower()
+        if CustomUser.objects.filter(email__iexact=clean_email).exclude(username=clean_cccd).exists():
+            return False, f"Địa chỉ Gmail '{clean_email}' đã được đăng ký bởi một tài khoản đang hoạt động trên hệ thống UniMS.", "email"
 
-    # Không trùng với Student
-    if Student.objects.filter(email__iexact=email).exists():
-        return False, f"Địa chỉ Gmail '{email}' đã tồn tại trong hồ sơ sinh viên của nhà trường.", "email"
+        if Student.objects.filter(email__iexact=clean_email).exists():
+            return False, f"Địa chỉ Gmail '{clean_email}' đã tồn tại trong hồ sơ sinh viên của nhà trường.", "email"
 
-    # Không được dùng cho CCCD khác trong AdmissionApplication
-    existing_by_email = AdmissionApplication.objects.filter(email__iexact=email).exclude(cccd=clean_cccd).first()
-    if existing_by_email:
-        masked_cccd = f"{existing_by_email.cccd[:3]}******{existing_by_email.cccd[-3:]}"
-        return False, f"Địa chỉ Gmail '{email}' đã được sử dụng để đăng ký cho số CCCD khác ({masked_cccd}). Một địa chỉ Gmail chỉ được đăng ký cho 01 thí sinh duy nhất.", "email"
+        existing_by_email = AdmissionApplication.objects.filter(email__iexact=clean_email).exclude(cccd=clean_cccd).first()
+        if existing_by_email:
+            masked_cccd = f"{existing_by_email.cccd[:3]}******{existing_by_email.cccd[-3:]}"
+            return False, f"Địa chỉ Gmail '{clean_email}' đã được sử dụng để đăng ký cho số CCCD khác ({masked_cccd}). Một địa chỉ Gmail chỉ được đăng ký cho 01 thí sinh duy nhất.", "email"
 
-    # 3. Kiểm tra Số điện thoại (SĐT)
-    # Không trùng với CustomUser
-    if CustomUser.objects.filter(phone=phone).exists():
-        return False, f"Số điện thoại '{phone}' đã được đăng ký bởi một tài khoản trên hệ thống UniMS.", "phone"
+    # 3. Kiểm tra Số điện thoại (SĐT) - Chỉ kiểm tra khi phone không trống
+    if phone and phone.strip():
+        clean_phone = phone.strip()
+        if CustomUser.objects.filter(phone=clean_phone).exclude(username=clean_cccd).exists():
+            return False, f"Số điện thoại '{clean_phone}' đã được đăng ký bởi một tài khoản trên hệ thống UniMS.", "phone"
 
-    # Không trùng với Student
-    if Student.objects.filter(phone=phone).exists():
-        return False, f"Số điện thoại '{phone}' đã tồn tại trong danh sách sinh viên của nhà trường.", "phone"
+        if Student.objects.filter(phone=clean_phone).exists():
+            return False, f"Số điện thoại '{clean_phone}' đã tồn tại trong danh sách sinh viên của nhà trường.", "phone"
 
-    # Không được dùng cho CCCD khác trong AdmissionApplication
-    existing_by_phone = AdmissionApplication.objects.filter(phone=phone).exclude(cccd=clean_cccd).first()
-    if existing_by_phone:
-        masked_cccd = f"{existing_by_phone.cccd[:3]}******{existing_by_phone.cccd[-3:]}"
-        return False, f"Số điện thoại '{phone}' đã được sử dụng cho số CCCD khác ({masked_cccd}). Một số điện thoại chỉ được dùng cho 01 thí sinh duy nhất.", "phone"
+        existing_by_phone = AdmissionApplication.objects.filter(phone=clean_phone).exclude(cccd=clean_cccd).first()
+        if existing_by_phone:
+            masked_cccd = f"{existing_by_phone.cccd[:3]}******{existing_by_phone.cccd[-3:]}"
+            return False, f"Số điện thoại '{clean_phone}' đã được sử dụng cho số CCCD khác ({masked_cccd}). Một số điện thoại chỉ được dùng cho 01 thí sinh duy nhất.", "phone"
 
     # 4. Kiểm tra Họ tên + SĐT nhưng khác CCCD (chống 1 người dùng nhiều CCCD)
-    same_name_phone = AdmissionApplication.objects.filter(
-        full_name__iexact=full_name,
-        phone=phone
-    ).exclude(cccd=clean_cccd).first()
-    if same_name_phone:
-        return False, f"Thí sinh '{full_name}' với số điện thoại '{phone}' đã được đăng ký dưới một số CCCD khác trong hệ thống. Quy chế tuyển sinh không cho phép 1 cá nhân sử dụng nhiều số CCCD.", "cccd"
+    if full_name and phone and full_name.strip() and phone.strip():
+        same_name_phone = AdmissionApplication.objects.filter(
+            full_name__iexact=full_name.strip(),
+            phone=phone.strip()
+        ).exclude(cccd=clean_cccd).first()
+        if same_name_phone:
+            return False, f"Thí sinh '{full_name}' với số điện thoại '{phone}' đã được đăng ký dưới một số CCCD khác trong hệ thống. Quy chế tuyển sinh không cho phép 1 cá nhân sử dụng nhiều số CCCD.", "cccd"
 
     return True, "", ""
 
@@ -100,8 +104,9 @@ def check_applicant_duplicates(full_name, clean_cccd, email, phone):
 @csrf_exempt
 def api_admission_check_duplicate(request):
     """
-    POST: API kiểm tra trùng lặp thông tin thí sinh theo thời gian thực trước khi nộp.
-    Payload: { full_name, cccd, email, phone }
+    POST: API kiểm tra trùng lặp thông tin thí sinh theo thời gian thực.
+    Payload: { full_name, cccd, email, phone, check_mode }
+    check_mode: 'cccd_only' | 'all'
     """
     if request.method != 'POST':
         return JsonResponse({'success': False, 'message': 'Only POST allowed'}, status=405)
@@ -112,12 +117,13 @@ def api_admission_check_duplicate(request):
         cccd = data.get('cccd', '').strip()
         email = data.get('email', '').strip().lower()
         phone = data.get('phone', '').strip()
+        check_mode = data.get('check_mode', 'all')
 
         clean_cccd = ''.join(c for c in cccd if c.isdigit())
         if len(clean_cccd) != 12:
             return JsonResponse({'success': False, 'message': 'Số CCCD phải gồm đúng 12 chữ số', 'field': 'cccd'}, status=400)
 
-        is_valid, err_msg, err_field = check_applicant_duplicates(full_name, clean_cccd, email, phone)
+        is_valid, err_msg, err_field = check_applicant_duplicates(full_name, clean_cccd, email, phone, check_mode=check_mode)
         if not is_valid:
             return JsonResponse({
                 'success': False,
@@ -129,7 +135,7 @@ def api_admission_check_duplicate(request):
         return JsonResponse({
             'success': True,
             'is_duplicate': False,
-            'message': 'Thông tin hợp lệ và chưa từng tồn tại trên hệ thống.'
+            'message': 'Số CCCD và thông tin hợp lệ, chưa từng tồn tại trên hệ thống.'
         })
     except json.JSONDecodeError:
         return JsonResponse({'success': False, 'message': 'JSON không hợp lệ'}, status=400)

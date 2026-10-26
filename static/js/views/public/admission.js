@@ -99,9 +99,6 @@ const AdmissionApp = {
 
   async checkCccdMock() {
     const cccd = document.getElementById('cccd').value.trim();
-    const fullName = document.getElementById('full_name')?.value.trim() || '';
-    const email = document.getElementById('email')?.value.trim().toLowerCase() || '';
-    const phone = document.getElementById('phone')?.value.trim() || '';
     const note = document.getElementById('cccd-status');
 
     if (cccd.length !== 12) {
@@ -114,11 +111,12 @@ const AdmissionApp = {
       return;
     }
 
+    // CHỈ KIỂM TRA RIÊNG PHẦN CCCD để tránh xung đột với các ô Gmail/SĐT đang để trống
     try {
       const res = await fetch('/api/admission/check-duplicate/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ full_name: fullName, cccd: cccd, email: email, phone: phone })
+        body: JSON.stringify({ cccd: cccd, check_mode: 'cccd_only' })
       });
       const data = await res.json();
       if (!data.success && data.is_duplicate) {
@@ -129,23 +127,25 @@ const AdmissionApp = {
 
         Swal.fire({
           icon: 'warning',
-          title: 'Thông tin đã tồn tại trong hệ thống',
+          title: 'CCCD đã có trong hệ thống',
           html: `<div style="text-align: left; line-height: 1.6; color: #334155;">${data.message}</div>`,
           confirmButtonColor: '#d97706'
         });
         return;
       }
-    } catch (err) {}
+    } catch (err) {
+      console.warn('Lỗi kiểm tra CCCD:', err);
+    }
 
     note.className = 'validation-note valid';
     note.style.color = '#16a34a';
-    note.innerHTML = '<i class="fas fa-check-circle"></i> Số CCCD đã được đối soát hợp lệ trên Cổng Dữ Liệu Tuyển Sinh Quốc Gia.';
+    note.innerHTML = '<i class="fas fa-check-circle"></i> Số CCCD hợp lệ và chưa có trong hệ thống UniMS.';
     note.style.display = 'block';
 
     Swal.fire({
       icon: 'success',
       title: 'Xác minh CCCD thành công',
-      html: `Số CCCD <b>${cccd}</b> hợp lệ và chưa từng bị trùng lặp. Hệ thống chấp nhận hồ sơ và sẵn sàng xét tuyển.`,
+      html: `Số CCCD <b>${cccd}</b> hợp lệ và chưa có trong hệ thống. Sẵn sàng đăng ký xét tuyển.`,
       timer: 2500,
       showConfirmButton: false
     });

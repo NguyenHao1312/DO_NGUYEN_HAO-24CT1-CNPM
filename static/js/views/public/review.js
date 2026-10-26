@@ -98,7 +98,27 @@ const ReviewApp = {
       node_dut: 'ĐH Bách Khoa<br><span style="font-size:0.7rem;font-weight:400;">(Kỹ thuật - Công nghệ)</span>',
       node_due: 'ĐH Kinh tế<br><span style="font-size:0.7rem;font-weight:400;">(Kinh doanh - Quản lý)</span>',
       node_ued: 'ĐH Sư phạm<br><span style="font-size:0.7rem;font-weight:400;">(Khoa học cơ bản)</span>',
-      node_ufls: 'ĐH Ngoại ngữ<br><span style="font-size:0.7rem;font-weight:400;">(Ngôn ngữ - Văn hóa)</span>'
+      node_ufls: 'ĐH Ngoại ngữ<br><span style="font-size:0.7rem;font-weight:400;">(Ngôn ngữ - Văn hóa)</span>',
+      // Header, Login & Admissions
+      admission_nav: 'Xét Nguyện Vọng',
+      id_placeholder: 'Nhập mã số sinh viên hoặc giảng viên',
+      password_placeholder: 'Nhập mật khẩu',
+      processing: 'Đang xử lý...',
+      login_notice_auto: 'Tài khoản Sinh viên được cấp tự động sau khi trúng tuyển tại <strong>Cổng Xét Nguyện Vọng</strong>. Tài khoản Giảng viên do Nhà trường phân quyền.',
+      nav_admission_lookup: 'Tra Cứu & Xét Tuyển Nguyện Vọng Mới',
+      new_candidate_prompt: 'Thí sinh mới xét tuyển?',
+      admission_portal: 'Cổng Xét Nguyện Vọng',
+      useful_links: 'Liên kết hữu ích',
+      useful_links_sub: 'Truy cập nhanh các cổng thông tin chính thức',
+      moet_title: 'Bộ Giáo dục & Đào tạo',
+      admissions_portal_title: 'Cổng thông tin Tuyển sinh',
+      freshman_info_title: 'Thông tin Tân Sinh viên',
+      freshman_guide: 'Hướng dẫn nhập học',
+      students_count_2026: 'Số lượng thí sinh 2026',
+      pass_rate: 'Tỷ lệ đậu Đại học',
+      total_quota: 'Tổng chỉ tiêu tuyển sinh',
+      quota_title: 'Thông tin Chỉ tiêu các Trường',
+      quota_sub: 'Dự kiến chỉ tiêu tuyển sinh năm 2026 của các trường Top đầu'
     },
     en: {
       login: 'Login',
@@ -226,10 +246,14 @@ const ReviewApp = {
     document.querySelectorAll('[data-i18n]').forEach(el => {
       const key = el.getAttribute('data-i18n');
       if (key) {
-        if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
-          el.placeholder = this.t(key);
-        } else {
-          el.innerHTML = this.t(key);
+        const text = this.t(key);
+        // Bảo vệ: Chỉ thay thế nếu tìm thấy chuỗi dịch hợp lệ (không bao giờ hiển thị raw key)
+        if (text && text !== key) {
+          if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+            el.placeholder = text;
+          } else {
+            el.innerHTML = text;
+          }
         }
       }
     });
@@ -237,7 +261,10 @@ const ReviewApp = {
     document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
       const key = el.getAttribute('data-i18n-placeholder');
       if (key) {
-        el.placeholder = this.t(key);
+        const text = this.t(key);
+        if (text && text !== key) {
+          el.placeholder = text;
+        }
       }
     });
     

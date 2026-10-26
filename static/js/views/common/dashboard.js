@@ -607,6 +607,9 @@ const DashboardView = {
             <div style="margin-top: var(--space-4); font-weight: 700; color: var(--text-primary); font-size: 1.1rem;">
               <span id="static-progress-text">${earnedCredits}/${requiredCredits}</span> ${t('credits')}
             </div>
+            <a href="#/curriculum" class="btn btn-sm" style="margin-top: 12px; background: rgba(139, 92, 246, 0.12); color: #7c3aed; border: 1px solid rgba(139, 92, 246, 0.3); padding: 6px 14px; border-radius: 6px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s ease;">
+              <i class="fas fa-book-open"></i> ${t('view_curriculum_btn') || 'Xem Khung chương trình đào tạo'}
+            </a>
           </div>
         </div>
         ` : `
