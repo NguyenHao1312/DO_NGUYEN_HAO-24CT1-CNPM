@@ -14,7 +14,7 @@ from django.shortcuts import render
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
-from student_management.models import University, AdmissionApplication
+from student_management.models import University, AdmissionApplication, CustomUser, Student, Teacher
 from student_management.admission_service import (
     get_departments_for_university,
     get_benchmark_score,
@@ -23,6 +23,118 @@ from student_management.admission_service import (
     create_candidate_account_and_notify
 )
 from student_management.email_service import send_otp_email
+
+
+def check_applicant_duplicates(full_name, clean_cccd, email, phone):
+    """
+    Kiểm tra toàn diện chống trùng lặp dữ liệu thí sinh:
+    - 1 người không được dùng nhiều CCCD.
+    - 1 CCCD không được dùng nhiều Gmail.
+    - 1 Gmail không được dùng nhiều CCCD.
+    - 1 SĐT không được dùng nhiều CCCD.
+    - Không trùng lặp với CustomUser / Student hiện có trong hệ thống.
+    Trả về (is_valid, error_message, error_field).
+    """
+    # 1. Kiểm tra CCCD
+    # Đã có tài khoản User với username là CCCD hoặc đã trúng tuyển
+    if CustomUser.objects.filter(username=clean_cccd).exists():
+        return False, f"Số CCCD {clean_cccd} đã được cấp tài khoản người dùng trên hệ thống UniMS.", "cccd"
+
+    # Kiểm tra trong AdmissionApplication
+    existing_by_cccd = AdmissionApplication.objects.filter(cccd=clean_cccd).first()
+    if existing_by_cccd:
+        if existing_by_cccd.status == 'approved' and existing_by_cccd.generated_student_id:
+            return False, f"Số CCCD {clean_cccd} đã trúng tuyển và được cấp Mã Sinh Viên ({existing_by_cccd.generated_student_id}) trong hệ thống. Vui lòng tra cứu tại mục 'Tra Cứu Kết Quả' hoặc đăng nhập vào Cổng Sinh Viên.", "cccd"
+        
+        # Nếu đã có hồ sơ với CCCD này nhưng thông tin khác
+        if existing_by_cccd.email.lower() != email.lower():
+            return False, f"Số CCCD {clean_cccd} đã được đăng ký với địa chỉ Gmail khác ({existing_by_cccd.email}). Mỗi số CCCD chỉ được liên kết với 01 địa chỉ Gmail duy nhất để bảo mật tài khoản.", "email"
+        
+        if existing_by_cccd.phone != phone:
+            return False, f"Số CCCD {clean_cccd} đã được đăng ký với số điện thoại khác ({existing_by_cccd.phone}). Vui lòng sử dụng đúng số điện thoại đã khai báo.", "phone"
+
+        if existing_by_cccd.full_name.strip().upper() != full_name.strip().upper():
+            return False, f"Số CCCD {clean_cccd} đã được đăng ký dưới họ tên '{existing_by_cccd.full_name}'. Hệ thống không cho phép đổi tên trên cùng một số CCCD.", "full_name"
+
+    # 2. Kiểm tra Email (Gmail)
+    # Không trùng với CustomUser
+    if CustomUser.objects.filter(email__iexact=email).exists():
+        return False, f"Địa chỉ Gmail '{email}' đã được đăng ký bởi một tài khoản đang hoạt động trên hệ thống UniMS.", "email"
+
+    # Không trùng với Student
+    if Student.objects.filter(email__iexact=email).exists():
+        return False, f"Địa chỉ Gmail '{email}' đã tồn tại trong hồ sơ sinh viên của nhà trường.", "email"
+
+    # Không được dùng cho CCCD khác trong AdmissionApplication
+    existing_by_email = AdmissionApplication.objects.filter(email__iexact=email).exclude(cccd=clean_cccd).first()
+    if existing_by_email:
+        masked_cccd = f"{existing_by_email.cccd[:3]}******{existing_by_email.cccd[-3:]}"
+        return False, f"Địa chỉ Gmail '{email}' đã được sử dụng để đăng ký cho số CCCD khác ({masked_cccd}). Một địa chỉ Gmail chỉ được đăng ký cho 01 thí sinh duy nhất.", "email"
+
+    # 3. Kiểm tra Số điện thoại (SĐT)
+    # Không trùng với CustomUser
+    if CustomUser.objects.filter(phone=phone).exists():
+        return False, f"Số điện thoại '{phone}' đã được đăng ký bởi một tài khoản trên hệ thống UniMS.", "phone"
+
+    # Không trùng với Student
+    if Student.objects.filter(phone=phone).exists():
+        return False, f"Số điện thoại '{phone}' đã tồn tại trong danh sách sinh viên của nhà trường.", "phone"
+
+    # Không được dùng cho CCCD khác trong AdmissionApplication
+    existing_by_phone = AdmissionApplication.objects.filter(phone=phone).exclude(cccd=clean_cccd).first()
+    if existing_by_phone:
+        masked_cccd = f"{existing_by_phone.cccd[:3]}******{existing_by_phone.cccd[-3:]}"
+        return False, f"Số điện thoại '{phone}' đã được sử dụng cho số CCCD khác ({masked_cccd}). Một số điện thoại chỉ được dùng cho 01 thí sinh duy nhất.", "phone"
+
+    # 4. Kiểm tra Họ tên + SĐT nhưng khác CCCD (chống 1 người dùng nhiều CCCD)
+    same_name_phone = AdmissionApplication.objects.filter(
+        full_name__iexact=full_name,
+        phone=phone
+    ).exclude(cccd=clean_cccd).first()
+    if same_name_phone:
+        return False, f"Thí sinh '{full_name}' với số điện thoại '{phone}' đã được đăng ký dưới một số CCCD khác trong hệ thống. Quy chế tuyển sinh không cho phép 1 cá nhân sử dụng nhiều số CCCD.", "cccd"
+
+    return True, "", ""
+
+
+@csrf_exempt
+def api_admission_check_duplicate(request):
+    """
+    POST: API kiểm tra trùng lặp thông tin thí sinh theo thời gian thực trước khi nộp.
+    Payload: { full_name, cccd, email, phone }
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Only POST allowed'}, status=405)
+
+    try:
+        data = json.loads(request.body)
+        full_name = data.get('full_name', '').strip()
+        cccd = data.get('cccd', '').strip()
+        email = data.get('email', '').strip().lower()
+        phone = data.get('phone', '').strip()
+
+        clean_cccd = ''.join(c for c in cccd if c.isdigit())
+        if len(clean_cccd) != 12:
+            return JsonResponse({'success': False, 'message': 'Số CCCD phải gồm đúng 12 chữ số', 'field': 'cccd'}, status=400)
+
+        is_valid, err_msg, err_field = check_applicant_duplicates(full_name, clean_cccd, email, phone)
+        if not is_valid:
+            return JsonResponse({
+                'success': False,
+                'is_duplicate': True,
+                'field': err_field,
+                'message': err_msg
+            }, status=409)
+
+        return JsonResponse({
+            'success': True,
+            'is_duplicate': False,
+            'message': 'Thông tin hợp lệ và chưa từng tồn tại trên hệ thống.'
+        })
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'message': 'JSON không hợp lệ'}, status=400)
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
 
 
 def admission_page(request):
@@ -107,14 +219,39 @@ def api_admission_apply(request):
         if not department:
             return JsonResponse({'success': False, 'message': 'Vui lòng chọn ngành xét tuyển'}, status=400)
 
-        # 2. Tra cứu điểm chuẩn của ngành
+        # 2. KIỂM TRA CHỐNG TRÙNG LẶP THÔNG TIN (Yêu cầu cao)
+        # Chống 1 người dùng nhiều CCCD, 1 CCCD dùng nhiều Gmail, 1 Gmail dùng nhiều người...
+        is_valid, err_msg, err_field = check_applicant_duplicates(full_name, clean_cccd, email, phone)
+        if not is_valid:
+            return JsonResponse({
+                'success': False,
+                'is_duplicate': True,
+                'field': err_field,
+                'message': err_msg
+            }, status=409)
+
+        # 3. Tra cứu điểm chuẩn của ngành
         benchmark = get_benchmark_score(university.university_code or '', department)
 
-        # 3. Đánh giá sơ bộ điều kiện trúng tuyển
-        is_qualified = (score >= benchmark)
-        initial_status = 'approved' if is_qualified else 'rejected'
+        # 4. ĐÁNH GIÁ ĐIỀU KIỆN TRÚNG TUYỂN TRƯỚC KHI GỬI OTP (Yêu cầu cao)
+        # Nếu chưa đạt điểm chuẩn: BÁO LỖI NGAY, TUYỆT ĐỐI KHÔNG GỬI OTP VÀ KHÔNG CHUYỂN TRANG
+        if score < benchmark:
+            shortage = round(benchmark - score, 2)
+            return JsonResponse({
+                'success': False,
+                'code': 'SCORE_NOT_QUALIFIED',
+                'is_qualified': False,
+                'score': score,
+                'benchmark': benchmark,
+                'shortage': shortage,
+                'department': department,
+                'university_name': university.short_name or university.name,
+                'message': f"Điểm xét tuyển ({score:.2f}đ) chưa đạt điểm chuẩn ({benchmark:.2f}đ) của ngành {department} — {university.short_name or university.name}. Bạn còn thiếu {shortage:.2f}đ để đạt điều kiện trúng tuyển."
+            }, status=400)
 
-        # 4. Sinh mã OTP 6 số
+        # 5. Thí sinh ĐÃ ĐỦ ĐIỂM TRÚNG TUYỂN -> Tiến hành sinh mã OTP 6 số
+        is_qualified = True
+        initial_status = 'approved'
         otp = generate_otp()
         now = timezone.now()
 
@@ -136,10 +273,10 @@ def api_admission_apply(request):
             }
         )
 
-        # 5. Gửi mã OTP xác minh qua Gmail
+        # 6. Gửi mã OTP xác minh qua Gmail
         email_sent = send_otp_email(email, otp, full_name)
 
-        msg = f'Đã xác minh số CCCD {clean_cccd} hợp lệ.'
+        msg = f'Chúc mừng bạn đã đủ điều kiện trúng tuyển ngành {department}!'
         if email_sent:
             msg += f' Mã xác thực OTP (6 chữ số) đã được gửi đến hộp thư {email}.'
         else:
@@ -148,9 +285,10 @@ def api_admission_apply(request):
         return JsonResponse({
             'success': True,
             'application_id': app.id,
-            'is_qualified': is_qualified,
+            'is_qualified': True,
             'score': score,
             'benchmark': benchmark,
+            'surplus': round(score - benchmark, 2),
             'university_name': university.short_name or university.name,
             'department': department,
             'email_sent': email_sent,

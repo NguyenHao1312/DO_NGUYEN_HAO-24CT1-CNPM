@@ -39,11 +39,15 @@ Dự án được xây dựng với kiến trúc **Hybrid Web**:
 
 ### 1. 🎓 Cổng Xét Nguyện Vọng Đại Học & Cấp Mã Tự Động (`/admission/`)
 - **Đăng ký xét tuyển trực tuyến:** Thí sinh nhập Họ tên, CCCD (12 chữ số), Gmail, SĐT, chọn Trường & Ngành xét tuyển và Điểm thi (thang 30đ, 2 chữ số thập phân).
-- **Kiểm tra CCCD thông minh:** Tích hợp kiểm tra tính hợp lệ của số định danh căn cước công dân.
+- **Chống gian lận & Trùng lặp thông tin 1:1 nghiêm ngặt:**
+  - Hệ thống tự động xác thực chéo dữ liệu thời gian thực: CCCD, Gmail, Số điện thoại và Họ tên thí sinh với CSDL SQL Server (bao gồm cả tài khoản sinh viên đã cấp và hồ sơ tuyển sinh đã duyệt).
+  - Chặn triệt để tình trạng một người dùng nhiều CCCD, một CCCD dùng nhiều Gmail hoặc một Gmail/SĐT dùng cho nhiều người.
+  - Phản hồi mã lỗi `409 Conflict` kèm thông điệp cảnh báo rõ ràng khi phát hiện trùng lặp.
+- **Kiểm tra CCCD thông minh:** Tích hợp kiểm tra tính hợp lệ và cấu trúc số định danh căn cước công dân.
 - **Đối soát Điểm chuẩn & Thông báo Trúng tuyển trước khi gửi OTP (Lựa chọn A):**
-  - Hệ thống tự động so khớp điểm thi của thí sinh với điểm chuẩn của ngành đã chọn.
+  - Hệ thống tự động so khớp điểm thi của thí sinh với điểm chuẩn của ngành đã chọn ngay tại Cổng xét tuyển.
   - **Trường hợp Trúng tuyển (Đậu):** Hiển thị Modal chúc mừng trúng tuyển trang trọng với đầy đủ thông tin: Trường, Ngành, Điểm của thí sinh, Điểm chuẩn và Điểm vượt chuẩn. Khi thí sinh bấm *"Tiếp tục nhận mã OTP"*, hệ thống mới kích hoạt gửi OTP về Gmail và chuyển sang Bước 2.
-  - **Trường hợp Chưa đạt (Rớt):** Hiển thị rõ số điểm còn thiếu và gợi ý chọn ngành hoặc trường khác có điểm chuẩn phù hợp hơn; hệ thống dừng lại tại Bước 1 và tuyệt đối không gửi OTP.
+  - **Trường hợp Chưa đạt (Rớt):** Hiển thị Modal thông báo không đạt kèm số điểm còn thiếu (ví dụ: `-2.50đ`) và gợi ý chọn ngành hoặc trường khác phù hợp hơn; hệ thống dừng lại tại Bước 1 và tuyệt đối không gửi OTP.
 - **Xác thực Gmail qua OTP 6 số (Giao diện tinh giản Clean UI/UX):** 
   - Lọc nghiêm ngặt tài khoản `@gmail.com` thật, loại trừ hoàn toàn email rác/ảo.
   - Giao diện nhập OTP tối giản, tự động focus, hỗ trợ phím Enter để xác thực tức thời, đếm ngược hiệu lực 10 phút và nút gửi lại OTP.
@@ -82,6 +86,10 @@ Dự án được xây dựng với kiến trúc **Hybrid Web**:
 
 ### 5. 🛡️ Cô Lập Cổng Quản Trị Local-Only (Port 9000) & Cyber-Office Dashboard
 - **Local Control Panel riêng biệt:** Admin đăng nhập và điều hành độc lập tại cổng Local qua lệnh `python manage.py run_admin_server 9000`.
+- **Cơ chế Hết hạn Phiên Đơn điệu 10 Phút (Monotonic 10-Min Session):**
+  - Rút ngắn thời gian hết hạn phiên làm việc từ 30 phút xuống 10 phút (`600s`) đảm bảo chuẩn an ninh cao.
+  - Đồng hồ đếm ngược time-age tính toán chính xác dựa trên mốc thời gian hết hạn cố định của server (`session_expires_at_ms`). Khi Quản trị viên F5, reload trang hoặc forced reload, thời gian đếm ngược không bị reset về 10:00 mà tiếp tục trôi tuyến tính.
+  - Khi hết 10 phút, hệ thống tự động hủy token xác thực và chuyển hướng an toàn về `/admin/login/?error=session_expired`.
 - **Đối Soát & Duyệt Học Phí VietQR Nhanh:** Bổ sung thanh công cụ đối soát trên Tab "Sinh viên & Học phí". Khi nhận được sao kê ngân hàng, Admin chỉ cần nhập Mã SV và bấm *"Duyệt Đã Thanh Toán"*, hệ thống lập tức gỡ nợ trong SQL Server và đồng bộ về Cổng sinh viên.
 - **Chống rò rỉ qua Internet/Tunnel:** `LocalOnlyAdminMiddleware` giám sát chặt chẽ cả Host Header lẫn Socket IP. Mọi yêu cầu truy cập cổng Admin thông qua domain Ngrok, Cloudflare Tunnel hoặc Reverse Proxy công khai đều bị chặn và trả về **HTTP 404 Not Found** (tàng hình tuyệt đối).
 - **Tab Xét Nguyện Vọng trên Admin Dashboard:**
@@ -95,10 +103,16 @@ Dự án được xây dựng với kiến trúc **Hybrid Web**:
 
 ### 7. 📊 Giám Sát An Ninh & Nhật Ký Kiểm Toán (Audit Trail)
 - **Ghi vết tự động (Global Audit Logging):** Bắt và phân loại các hành vi bất thường, đo đạc độ trễ mạng và phát hiện tấn công DDoS/Brute-force.
-- **Dọn dẹp tài khoản ma (Ghost Accounts Cleaner):** Quản trị viên có công cụ quét và xóa an toàn các tài khoản không hoạt động làm nhiễu database.
+- **Bảo toàn WORM trong SQL Server:** Bảng `student_management_auditlog` được khóa bằng Trigger ngăn chặn mọi thao tác UPDATE/DELETE để đảm bảo tính toàn vẹn pháp lý của nhật ký kiểm toán.
 - **Dọn dẹp tài khoản ma (Ghost Accounts Cleaner):** Quản trị viên có công cụ quét và xóa an toàn các tài khoản không hoạt động làm nhiễu database.
 
-### 6. 📚 Quản Lý Nghiệp Vụ Đào Tạo Hoàn Chỉnh
+### 8. 🌐 Đồng Bộ Đa Ngôn Ngữ Song Ngữ (VN/EN i18n Synchronization)
+- **Hỗ trợ song ngữ Tiếng Việt & Tiếng Anh tức thì:** Nút chuyển đổi VN/EN hoạt động đồng bộ trên toàn bộ hệ thống.
+- **Bao phủ trọn vẹn từ Cổng Đăng nhập đến Dashboard sau Đăng nhập:**
+  - Cổng Đăng nhập (`/review/`): Chuyển đổi linh hoạt tiêu đề, placeholder, mô tả tiện ích, thống kê tuyển sinh và liên kết tuyển sinh.
+  - Sau Đăng nhập (Sinh viên / Giảng viên): Chuyển đổi mượt mà toàn bộ thanh điều hướng, cảnh báo nợ học phí, bảng kê học phí VietQR, và khung chương trình đào tạo 4 năm.
+
+### 9. 📚 Quản Lý Nghiệp Vụ Đào Tạo Hoàn Chỉnh
 - Quản lý Sinh viên, bật/tắt nợ học phí (`toggle-tuition`).
 - Quản lý Bảng điểm, tự động tính GPA hệ 10 và hệ 4 theo thang điểm tín chỉ Việt Nam.
 - Khóa mốc học kỳ đa tầng (trước thi, trước ĐKHP, tạm thời chấm thi).

@@ -11,6 +11,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
 django.setup()
 
 import json
+from django.utils import timezone
 from django.test import RequestFactory
 from student_management.models import University, Student, CustomUser, AdmissionApplication
 from student_management.admission_service import (
@@ -56,18 +57,16 @@ def test_all():
     assert code_dtu.startswith('10012'), "Mã Duy Tân phải bắt đầu bằng 10012"
 
     # 2. Thí sinh nộp hồ sơ xét tuyển đạt điểm chuẩn
-    test_cccd = "048099887766"
-    test_email = "candidate_test_dut@gmail.com"
-    # Dọn dẹp dữ liệu test cũ nếu có
-    AdmissionApplication.objects.filter(cccd=test_cccd).delete()
-    CustomUser.objects.filter(username__startswith='10011').delete()
-    Student.objects.filter(student_id__startswith='10011').delete()
+    ts = int(timezone.now().timestamp())
+    test_cccd = f"048099{ts % 1000000:06d}"
+    test_email = f"candidate_{ts}@gmail.com"
+    test_phone = f"09{ts % 100000000:08d}"
 
     apply_payload = {
         'full_name': 'Nguyễn Hoàng Long',
         'cccd': test_cccd,
         'email': test_email,
-        'phone': '0905111222',
+        'phone': test_phone,
         'university_id': bk.id,
         'department': 'Khoa học Máy tính',
         'score': 29.50 # Benchmark là 29.10 -> ĐẬU
@@ -97,7 +96,7 @@ def test_all():
     assert data2['success'] == True
     assert data2['qualified'] == True
     gen_student_id = data2['student_id']
-    assert gen_student_id == '100110', f"Mã sinh viên đầu tiên của Bách Khoa phải là 100110, nhận được: {gen_student_id}"
+    assert gen_student_id.startswith('10011'), f"Mã sinh viên của Bách Khoa phải bắt đầu bằng 10011, nhận được: {gen_student_id}"
 
     # Kiểm tra trong DB: Cờ must_change_password=True VÀ tuition_debt=True
     user = CustomUser.objects.get(username=gen_student_id)

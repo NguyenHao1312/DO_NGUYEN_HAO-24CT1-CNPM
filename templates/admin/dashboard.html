@@ -569,7 +569,7 @@
     </div>
     <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
       <span id="session-countdown-badge" style="display:inline-flex; align-items:center; gap:6px; font-size:0.8rem; font-family:var(--font-mono); font-weight:600; padding:4px 12px; border-radius:20px; background:rgba(16,185,129,0.15); color:#34d399; border:1px solid rgba(16,185,129,0.35); transition:all 0.3s;">
-        <i class="fas fa-hourglass-half"></i> <span id="session-timer-text">30:00</span>
+        <i class="fas fa-hourglass-half"></i> <span id="session-timer-text">10:00</span>
       </span>
       <span style="font-size: 0.85rem; color: var(--text-muted); font-family: var(--font-mono);"><i class="fas fa-user-shield" style="color:var(--accent);"></i> {{ admin_user.username|default:"admin" }}</span>
       <a href="/review/" target="_blank" class="btn btn-primary btn-sm"><i class="fas fa-external-link-alt"></i> Cổng Người dùng</a>
@@ -2194,14 +2194,22 @@
     }
 
     // ==========================================
-    // 10. SESSION COUNTDOWN TIMER (Sliding 30 phút & Keep-Alive)
+    // 10. SESSION COUNTDOWN TIMER (10 phút cố định, không reset khi F5/forced reload)
     // ==========================================
-    const SESSION_MAX_SECONDS = {{ session_timeout_seconds|default:1800 }};
-    let sessionSecondsLeft = SESSION_MAX_SECONDS;
+    const SESSION_EXPIRES_AT = {{ session_expires_at|default:0 }};
+    const SESSION_INIT_SECONDS = {{ session_timeout_seconds|default:600 }};
+    let sessionSecondsLeft = SESSION_INIT_SECONDS;
     let sessionTimerInterval = null;
-    let lastActivityTime = Date.now();
     const warningThresholds = [300, 120, 60, 30, 10];
     const warningFired = {};
+
+    function calculateSecondsLeft() {
+      if (SESSION_EXPIRES_AT > 0) {
+        const diff = Math.floor((SESSION_EXPIRES_AT - Date.now()) / 1000);
+        return Math.max(0, diff);
+      }
+      return sessionSecondsLeft;
+    }
 
     function updateSessionCountdownDisplay() {
       const badge = document.getElementById('session-countdown-badge');
@@ -2240,15 +2248,8 @@
       }
     }
 
-    function resetSessionTimer() {
-      sessionSecondsLeft = SESSION_MAX_SECONDS;
-      lastActivityTime = Date.now();
-      Object.keys(warningFired).forEach(k => delete warningFired[k]);
-      updateSessionCountdownDisplay();
-    }
-
     function updateSessionCountdown() {
-      sessionSecondsLeft--;
+      sessionSecondsLeft = calculateSecondsLeft();
       updateSessionCountdownDisplay();
 
       warningThresholds.forEach(threshold => {
@@ -2261,30 +2262,19 @@
 
       if (sessionSecondsLeft <= 0) {
         clearInterval(sessionTimerInterval);
-        showToast('🔒 Phiên quản trị đã hết hạn. Đang chuyển hướng...', 'error');
-        setTimeout(() => { window.location.href = '/admin/logout/'; }, 1500);
+        showToast('🔒 Phiên quản trị 10 phút đã hết hạn. Đang tự động đăng xuất...', 'error');
+        setTimeout(() => { window.location.href = '/admin/logout/?error=session_expired'; }, 1200);
       }
     }
 
     function startSessionCountdown() {
+      sessionSecondsLeft = calculateSecondsLeft();
       updateSessionCountdownDisplay();
+      if (sessionSecondsLeft <= 0) {
+        window.location.href = '/admin/logout/?error=session_expired';
+        return;
+      }
       sessionTimerInterval = setInterval(updateSessionCountdown, 1000);
-
-      // Theo dõi hoạt động của quản trị viên để giữ phiên
-      ['click', 'keydown'].forEach(evt => {
-        window.addEventListener(evt, () => {
-          lastActivityTime = Date.now();
-        }, { passive: true });
-      });
-
-      // Tự động gia hạn session nếu admin vẫn đang tích cực làm việc
-      setInterval(async () => {
-        if (Date.now() - lastActivityTime < 600000) {
-          try {
-            await fetch('/admin/api/ping/', { credentials: 'include' });
-          } catch (e) {}
-        }
-      }, 300000);
     }
 
     // Inject pulse keyframes if not already present

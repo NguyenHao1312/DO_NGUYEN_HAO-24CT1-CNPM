@@ -552,15 +552,15 @@ const DashboardView = {
           </div>
           <div>
             <div style="font-weight: 700; color: #991b1b; font-size: 1.05rem; display: flex; align-items: center; gap: 8px;">
-              <i class="fas fa-exclamation-triangle"></i> THÔNG BÁO: CHƯA HOÀN TẤT HỌC PHÍ HỌC KỲ 1
+              <i class="fas fa-exclamation-triangle"></i> ${t('tuition_debt_notice_title')}
             </div>
             <div style="color: #475569; font-size: 0.92rem; margin-top: 4px; line-height: 1.5;">
-              Tài khoản Tân sinh viên chưa thanh toán học phí Học kỳ 1 theo định mức tiêu chuẩn (${stdCredits} tín chỉ × ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(feePerCredit)} = <strong style="color: #dc2626;">${formattedStdFee}</strong>). Quét mã QR chuyển khoản và Nhà trường sẽ duyệt gỡ nợ trên Admin Dashboard.
+              ${t('tuition_debt_notice_body', { credits: stdCredits, feePerCredit: new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(feePerCredit), totalFee: `<strong style="color: #dc2626;">${formattedStdFee}</strong>` })}
             </div>
           </div>
         </div>
         <a href="#/tuition" class="btn btn-primary" style="background: #dc2626; border-color: #dc2626; color: white; padding: 10px 20px; border-radius: 8px; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; box-shadow: 0 4px 10px rgba(220, 38, 38, 0.25);">
-          <i class="fas fa-qrcode"></i> Thanh Toán QR Học Phí
+          <i class="fas fa-qrcode"></i> ${t('tuition_qr_pay_btn')}
         </a>
       </div>
       ` : ''}

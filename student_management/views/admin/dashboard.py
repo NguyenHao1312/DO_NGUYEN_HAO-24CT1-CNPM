@@ -16,12 +16,16 @@ from student_management.models import CustomUser, AuditLog, Student, Teacher, Un
 # ============================================================
 #  ADMIN DASHBOARD PAGE
 # ============================================================
-SESSION_TIMEOUT_SECONDS = 1800  # 30 phút
+from django.utils import timezone
+
+SESSION_TIMEOUT_SECONDS = 600  # 10 phút (600 giây) theo yêu cầu hệ thống
 
 def admin_dashboard_page(request):
     """
     Trang dashboard admin — render HTML.
-    Nếu chưa đăng nhập hoặc không phải admin, chuyển hướng sang /admin/login/.
+    Thời hạn phiên làm việc cố định 10 phút tính từ thời điểm đăng nhập (last_login_at).
+    Khi F5 hoặc reload trang, thời gian còn lại không bị reset mà đếm tiếp tục.
+    Khi hết 10 phút, hệ thống tự động ngắt phiên và chuyển hướng về /admin/login/.
     """
     token = request.COOKIES.get('session_token', '').strip() or request.META.get('HTTP_X_SESSION_TOKEN', '').strip()
     if not token:
@@ -33,19 +37,37 @@ def admin_dashboard_page(request):
     except CustomUser.DoesNotExist:
         return redirect('/admin/login/?next=/admin/dashboard/')
 
+    now = timezone.now()
+    if not user.last_login_at:
+        user.last_login_at = now
+        user.save(update_fields=['last_login_at'])
+
+    elapsed_seconds = (now - user.last_login_at).total_seconds()
+    if elapsed_seconds >= SESSION_TIMEOUT_SECONDS:
+        # Phiên 10 phút đã hết hạn -> Tự động out ngay
+        user.session_token = None
+        user.save(update_fields=['session_token'])
+        resp = redirect('/admin/login/?error=session_expired')
+        resp.delete_cookie('session_token', path='/')
+        return resp
+
+    remaining_seconds = max(0, int(SESSION_TIMEOUT_SECONDS - elapsed_seconds))
+    session_expires_at_ms = int((user.last_login_at.timestamp() + SESSION_TIMEOUT_SECONDS) * 1000)
+
     request.session_user = user
     response = render(request, 'admin/dashboard.html', {
         'admin_user': user,
-        'session_timeout_seconds': SESSION_TIMEOUT_SECONDS
+        'session_timeout_seconds': remaining_seconds,
+        'session_expires_at': session_expires_at_ms,
     })
-    # Gia hạn cookie trượt (Sliding session) khi tải dashboard
+    # Giữ nguyên thời hạn cookie theo số giây còn lại thực tế (không reset về 10 phút khi F5)
     response.set_cookie(
         'session_token',
         token,
         httponly=True,
         secure=not request.get_host().split(':')[0] in ('localhost', '127.0.0.1', 'testserver'),
         samesite='Lax',
-        max_age=SESSION_TIMEOUT_SECONDS,
+        max_age=remaining_seconds,
         path='/',
     )
     return response

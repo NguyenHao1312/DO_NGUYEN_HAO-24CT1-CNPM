@@ -193,43 +193,48 @@ sequenceDiagram
     participant DB as SQL Server (SSMS)<br/>(AdmissionApplication, CustomUser, Student)
 
     C->>FE: Điền Họ tên, CCCD (12 số), Gmail, SĐT, Chọn Trường, Ngành, Điểm thi
-    FE->>FE: Kiểm tra CCCD (12 số) & định dạng @gmail.com
-    C->>FE: Nhấn "Nộp Hồ Sơ & Nhận Mã OTP"
-    FE->>BE: POST /api/admission/apply/
-    BE->>SVC: Tra cứu điểm chuẩn theo mã trường & ngành (get_benchmark_score)
-    SVC-->>BE: Điểm chuẩn tham chiếu (VD: Bách Khoa CNTT 28.75đ)
-    BE->>BE: Đối soát điểm thi >= điểm chuẩn? -> approved / rejected
-    BE->>SVC: Sinh mã OTP 6 số (generate_otp)
-    BE->>DB: Lưu AdmissionApplication (status, otp_code, otp_created_at)
-    BE->>MAIL: Gửi mã OTP xác thực qua SMTP Gmail
-    MAIL-->>C: Email chứa mã OTP 6 số
-    BE-->>FE: HTTP 200 {application_id, is_qualified, message}
-    FE-->>C: Hiển thị ô nhập OTP kèm đếm ngược 10 phút
+    FE->>BE: POST /api/admission/check-duplicate/ (Kiểm tra chống trùng lặp CCCD/Gmail/SĐT)
+    alt Phát hiện trùng lặp thông tin
+        BE-->>FE: HTTP 409 Conflict (CCCD/Email/SĐT đã tồn tại hoặc xung đột hồ sơ)
+        FE-->>C: Modal cảnh báo trùng thông tin, chặn nộp và yêu cầu kiểm tra lại
+    else Thông tin hợp lệ và duy nhất
+        BE-->>FE: HTTP 200 {is_duplicate: false}
+        FE->>FE: Tra cứu điểm chuẩn ngành đã chọn (Ví dụ: FPT CNTT 24.50đ)
+        alt Điểm thi < Điểm chuẩn (VD: 22.00đ < 24.50đ)
+            FE-->>C: Modal BÁO RỚT ĐIỂM CHUẨN (Hiện rõ số điểm thiếu: -2.50đ). Dừng ngay, KHÔNG gửi OTP!
+        else Điểm thi >= Điểm chuẩn (Trúng tuyển đợt 1)
+            FE-->>C: Modal CHÚC MỪNG TRÚNG TUYỂN! Thí sinh xác nhận nhận OTP
+            C->>FE: Bấm "Tiếp Tục Nhận Mã OTP"
+            FE->>BE: POST /api/admission/apply/
+            BE->>BE: Kiểm tra lại trùng lặp & điểm chuẩn phía Backend
+            BE->>SVC: Sinh mã OTP 6 số (generate_otp)
+            BE->>DB: Lưu AdmissionApplication (status = approved, otp_code, otp_created_at)
+            BE->>MAIL: Gửi mã OTP xác thực qua SMTP Gmail (kèm on-screen OTP fallback)
+            MAIL-->>C: Email chứa mã OTP 6 số
+            BE-->>FE: HTTP 200 {application_id, is_qualified: true, dev_otp}
+            FE-->>C: Chuyển sang Bước 2: Nhập OTP đơn giản (tự động focus + đếm ngược 10 phút)
+        end
+    end
 
-    C->>FE: Nhập mã OTP 6 số và nhấn "Xác Thực"
+    C->>FE: Nhập mã OTP 6 số và nhấn Enter / "Xác Thực"
     FE->>BE: POST /api/admission/verify-otp/ (application_id, otp)
     BE->>DB: Kiểm tra OTP khớp và trong thời hạn 10 phút
     
     alt OTP sai hoặc hết hạn
-        BE-->>FE: HTTP 400 (Mã OTP không chính xác hoặc hết hạn)
+        BE-->>FE: HTTP 400 (Mã OTP không chính xác hoặc quá 10 phút)
         FE-->>C: Báo lỗi và cho phép bấm "Gửi lại mã OTP"
     else OTP hợp lệ
         BE->>DB: Cập nhật email_verified = True
-        alt Điểm thi >= Điểm chuẩn (Trúng tuyển)
-            BE->>SVC: create_candidate_account_and_notify(application)
-            SVC->>DB: Sinh mã SV kế tiếp (100110 cho Bách Khoa) có khóa hàng atomic
-            SVC->>SVC: Sinh mật khẩu ngẫu nhiên 8 ký tự (chữ + số)
-            SVC->>DB: INSERT CustomUser (username = mã SV, role = student, must_change_password = True)
-            SVC->>DB: INSERT Student (student_id = mã SV, full_name, university, department)
-            SVC->>DB: UPDATE AdmissionApplication (status = credentials_sent, generated_student_id = mã SV)
-            SVC->>MAIL: Gửi email trúng tuyển kèm Mã SV & Mật khẩu khởi tạo
-            MAIL-->>C: Nhận Gmail thông báo Mã SV + Mật khẩu
-            BE-->>FE: HTTP 200 {qualified: true, student_id: 100110}
-            FE-->>C: Hiển thị thiệp chúc mừng trúng tuyển, hiện mã SV và nút "Đăng Nhập Cổng Sinh Viên"
-        else Điểm thi < Điểm chuẩn
-            BE-->>FE: HTTP 200 {qualified: false, message: Chưa đạt điểm chuẩn}
-            FE-->>C: Thông báo chưa đạt chuẩn, hồ sơ lưu vào hàng đợi xét bổ sung
-        end
+        BE->>SVC: create_candidate_account_and_notify(application)
+        SVC->>DB: Sinh mã SV kế tiếp (VD: 100110) có khóa hàng atomic
+        SVC->>SVC: Sinh mật khẩu ngẫu nhiên 8 ký tự (chữ + số)
+        SVC->>DB: INSERT CustomUser (username = mã SV, role = student, must_change_password = True)
+        SVC->>DB: INSERT Student (student_id = mã SV, tuition_debt = True)
+        SVC->>DB: UPDATE AdmissionApplication (status = credentials_sent, generated_student_id = mã SV)
+        SVC->>MAIL: Gửi email trúng tuyển kèm Mã SV & Mật khẩu khởi tạo
+        MAIL-->>C: Nhận Gmail thông báo Mã SV + Mật khẩu
+        BE-->>FE: HTTP 200 {qualified: true, student_id: 100110}
+        FE-->>C: Hiển thị thiệp chúc mừng chính thức, hiện Mã SV và nút "Đăng Nhập Cổng Sinh Viên"
     end
 ```
 

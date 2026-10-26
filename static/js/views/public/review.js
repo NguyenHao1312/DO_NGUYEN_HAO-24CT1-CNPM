@@ -229,8 +229,15 @@ const ReviewApp = {
         if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
           el.placeholder = this.t(key);
         } else {
-          el.innerHTML = this.t(key); // Use innerHTML to allow icons or HTML from translations
+          el.innerHTML = this.t(key);
         }
+      }
+    });
+
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+      const key = el.getAttribute('data-i18n-placeholder');
+      if (key) {
+        el.placeholder = this.t(key);
       }
     });
     
@@ -576,8 +583,8 @@ const ReviewApp = {
 
       <!-- Liên kết tĩnh (Static Links) -->
       <div style="margin-bottom: var(--space-4); margin-top: var(--space-6);">
-        <h2 style="font-size: 1.4rem; font-weight: 700; color: var(--text-primary); margin-bottom: 4px;">Liên kết hữu ích / Useful Links</h2>
-        <p style="font-size: 0.9rem; color: var(--text-secondary);">Truy cập nhanh các cổng thông tin chính thức</p>
+        <h2 style="font-size: 1.4rem; font-weight: 700; color: var(--text-primary); margin-bottom: 4px;">${this.t('useful_links')}</h2>
+        <p style="font-size: 0.9rem; color: var(--text-secondary);">${this.t('useful_links_sub')}</p>
       </div>
 
       <div style="display: flex; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-6);">
@@ -586,7 +593,7 @@ const ReviewApp = {
             <i class="fas fa-university"></i>
           </div>
           <div>
-            <h3 style="font-size: 1.1rem; color: var(--text-primary); margin: 0 0 4px 0;">Bộ Giáo dục & Đào tạo</h3>
+            <h3 style="font-size: 1.1rem; color: var(--text-primary); margin: 0 0 4px 0;">${this.t('moet_title')}</h3>
             <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0;">moet.gov.vn</p>
           </div>
         </a>
@@ -596,7 +603,7 @@ const ReviewApp = {
             <i class="fas fa-user-graduate"></i>
           </div>
           <div>
-            <h3 style="font-size: 1.1rem; color: var(--text-primary); margin: 0 0 4px 0;">Cổng thông tin Tuyển sinh</h3>
+            <h3 style="font-size: 1.1rem; color: var(--text-primary); margin: 0 0 4px 0;">${this.t('admissions_portal_title')}</h3>
             <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0;">thitotnghiepthpt.edu.vn</p>
           </div>
         </a>
@@ -606,8 +613,8 @@ const ReviewApp = {
             <i class="fas fa-info-circle"></i>
           </div>
           <div>
-            <h3 style="font-size: 1.1rem; color: var(--text-primary); margin: 0 0 4px 0;">Thông tin Tân Sinh viên</h3>
-            <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0;">Hướng dẫn nhập học</p>
+            <h3 style="font-size: 1.1rem; color: var(--text-primary); margin: 0 0 4px 0;">${this.t('freshman_info_title')}</h3>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0;">${this.t('freshman_guide')}</p>
           </div>
         </a>
       </div>
@@ -616,42 +623,42 @@ const ReviewApp = {
       <section class="rv-stats-strip reveal" style="background: linear-gradient(135deg, var(--primary-800), var(--primary-900)); color: #fff; border-radius: var(--radius-lg); padding: var(--space-8); margin-bottom: var(--space-8); display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-6); text-align: center; box-shadow: var(--shadow-lg);">
         <div>
           <div style="font-size: 2.5rem; font-weight: 800; color: var(--primary-300); margin-bottom: 8px;">1.2M+</div>
-          <div style="font-size: 1.05rem; opacity: 0.9;">Số lượng học sinh 2026</div>
+          <div style="font-size: 1.05rem; opacity: 0.9;">${this.t('students_count_2026')}</div>
         </div>
         <div>
           <div style="font-size: 2.5rem; font-weight: 800; color: var(--success); margin-bottom: 8px;">95.6%</div>
-          <div style="font-size: 1.05rem; opacity: 0.9;">Tỷ lệ đậu Đại học</div>
+          <div style="font-size: 1.05rem; opacity: 0.9;">${this.t('pass_rate')}</div>
         </div>
         <div>
           <div style="font-size: 2.5rem; font-weight: 800; color: var(--warning); margin-bottom: 8px;">680K+</div>
-          <div style="font-size: 1.05rem; opacity: 0.9;">Tổng chỉ tiêu tuyển sinh</div>
+          <div style="font-size: 1.05rem; opacity: 0.9;">${this.t('total_quota')}</div>
         </div>
       </section>
 
       <!-- Section 2: Admission Quotas -->
       <section style="margin-bottom: var(--space-8);">
         <div style="margin-bottom: var(--space-5); text-align: center;">
-          <h2 style="font-size: 1.8rem; font-weight: 800; color: var(--text-primary); margin-bottom: 8px;">Thông tin Chỉ tiêu các Trường</h2>
-          <p style="font-size: 1.05rem; color: var(--text-secondary);">Dự kiến chỉ tiêu tuyển sinh năm 2026 của các trường Top đầu</p>
+          <h2 style="font-size: 1.8rem; font-weight: 800; color: var(--text-primary); margin-bottom: 8px;">${this.t('quota_title')}</h2>
+          <p style="font-size: 1.05rem; color: var(--text-secondary);">${this.t('quota_sub')}</p>
         </div>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--space-5);">
           <div class="rv-news-card reveal" style="padding: var(--space-5); text-align: center; background: #fff;">
             <div style="width: 80px; height: 80px; margin: 0 auto var(--space-4); background: url('https://upload.wikimedia.org/wikipedia/commons/2/2c/Toa_S_DUT.jpg') center/cover; border-radius: 50%;"></div>
-            <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--primary-700); margin-bottom: 8px;">Đại học Bách Khoa</h3>
-            <p style="color: var(--text-secondary); margin-bottom: 16px;">Kỹ thuật, Công nghệ & IT</p>
-            <div style="font-size: 1.5rem; font-weight: 800; color: var(--success);">4,500 <span style="font-size: 0.9rem; font-weight: 500; color: var(--text-tertiary);">chỉ tiêu</span></div>
+            <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--primary-700); margin-bottom: 8px;">${this.t('Đại học Bách Khoa')}</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 16px;">${this.t('engineering_it')}</p>
+            <div style="font-size: 1.5rem; font-weight: 800; color: var(--success);">4,500 <span style="font-size: 0.9rem; font-weight: 500; color: var(--text-tertiary);">${this.t('target_quota')}</span></div>
           </div>
           <div class="rv-news-card reveal" style="padding: var(--space-5); text-align: center; background: #fff; transition-delay: 100ms;">
             <div style="width: 80px; height: 80px; margin: 0 auto var(--space-4); background: url('https://upload.wikimedia.org/wikipedia/commons/4/49/Logo_DUE.jpg') center/cover; border-radius: 50%;"></div>
-            <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--primary-700); margin-bottom: 8px;">Đại học Kinh tế</h3>
-            <p style="color: var(--text-secondary); margin-bottom: 16px;">Kinh tế, Quản trị & Marketing</p>
-            <div style="font-size: 1.5rem; font-weight: 800; color: var(--success);">3,200 <span style="font-size: 0.9rem; font-weight: 500; color: var(--text-tertiary);">chỉ tiêu</span></div>
+            <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--primary-700); margin-bottom: 8px;">${this.t('Đại học Kinh tế')}</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 16px;">${this.t('economics_business')}</p>
+            <div style="font-size: 1.5rem; font-weight: 800; color: var(--success);">3,200 <span style="font-size: 0.9rem; font-weight: 500; color: var(--text-tertiary);">${this.t('target_quota')}</span></div>
           </div>
           <div class="rv-news-card reveal" style="padding: var(--space-5); text-align: center; background: #fff; transition-delay: 200ms;">
             <div style="width: 80px; height: 80px; margin: 0 auto var(--space-4); background: url('https://images.unsplash.com/photo-1577412647305-991150c7d163?w=800&q=80') center/cover; border-radius: 50%;"></div>
-            <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--primary-700); margin-bottom: 8px;">Đại học Sư phạm</h3>
-            <p style="color: var(--text-secondary); margin-bottom: 16px;">Giáo dục, Khoa học Tự nhiên & Xã hội</p>
-            <div style="font-size: 1.5rem; font-weight: 800; color: var(--success);">2,800 <span style="font-size: 0.9rem; font-weight: 500; color: var(--text-tertiary);">chỉ tiêu</span></div>
+            <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--primary-700); margin-bottom: 8px;">${this.t('Đại học Sư phạm')}</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 16px;">${this.t('pedagogy_sciences')}</p>
+            <div style="font-size: 1.5rem; font-weight: 800; color: var(--success);">2,800 <span style="font-size: 0.9rem; font-weight: 500; color: var(--text-tertiary);">${this.t('target_quota')}</span></div>
           </div>
         </div>
       </section>
@@ -659,8 +666,8 @@ const ReviewApp = {
       <!-- Section 3: Gallery / Info Block -->
       <section style="margin-bottom: var(--space-8);">
         <div style="margin-bottom: var(--space-6); text-align: center;">
-          <h2 style="font-size: 1.8rem; font-weight: 800; color: var(--text-primary); margin-bottom: 8px;">Hành trang & Định hướng</h2>
-          <p style="font-size: 1.05rem; color: var(--text-secondary);">Chuẩn bị tốt nhất cho chặng đường Đại học phía trước</p>
+          <h2 style="font-size: 1.8rem; font-weight: 800; color: var(--text-primary); margin-bottom: 8px;">${this.t('orientation_title')}</h2>
+          <p style="font-size: 1.05rem; color: var(--text-secondary);">${this.t('orientation_sub')}</p>
         </div>
         
         <div style="display: flex; flex-direction: column; gap: var(--space-6);">
@@ -669,24 +676,24 @@ const ReviewApp = {
               <img src="/static/assets/logos/MTHT.jfif" alt="Môi trường học tập" style="width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block;" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1546410531-df4cb71576ac?w=800&q=80';">
             </div>
             <div>
-              <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--primary-600); margin-bottom: 12px;">Môi trường học tập hiện đại</h3>
-              <p style="color: var(--text-secondary); font-size: 1.05rem; line-height: 1.6; margin-bottom: 16px;">Trải nghiệm không gian học thuật tiên tiến với trang thiết bị đầy đủ, thư viện số và các phòng thí nghiệm mô phỏng thực tế giúp sinh viên phát triển toàn diện kỹ năng chuyên môn.</p>
+              <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--primary-600); margin-bottom: 12px;">${this.t('modern_env_title')}</h3>
+              <p style="color: var(--text-secondary); font-size: 1.05rem; line-height: 1.6; margin-bottom: 16px;">${this.t('modern_env_desc')}</p>
               <ul style="color: var(--text-secondary); padding-left: 20px; line-height: 1.8;">
-                <li>Phòng Lab tiêu chuẩn quốc tế</li>
-                <li>Thư viện thông minh 24/7</li>
-                <li>Khu vực Coworking space sáng tạo</li>
+                <li>${this.t('lab_intl')}</li>
+                <li>${this.t('library_smart')}</li>
+                <li>${this.t('coworking_space')}</li>
               </ul>
             </div>
           </div>
           
           <div class="reveal" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--space-6); align-items: center; transition-delay: 150ms;">
             <div style="order: 2;">
-              <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--primary-600); margin-bottom: 12px;">Kết nối Doanh nghiệp & Việc làm</h3>
-              <p style="color: var(--text-secondary); font-size: 1.05rem; line-height: 1.6; margin-bottom: 16px;">Mạng lưới đối tác doanh nghiệp rộng khắp mang đến hàng ngàn cơ hội thực tập và việc làm ngay từ khi còn ngồi trên ghế nhà trường. Sinh viên được trang bị kỹ năng thực chiến.</p>
+              <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--primary-600); margin-bottom: 12px;">${this.t('enterprise_connect_title')}</h3>
+              <p style="color: var(--text-secondary); font-size: 1.05rem; line-height: 1.6; margin-bottom: 16px;">${this.t('enterprise_connect_desc')}</p>
               <ul style="color: var(--text-secondary); padding-left: 20px; line-height: 1.8;">
-                <li>Thực tập hưởng lương (Paid Internship)</li>
-                <li>Job Fair thường niên</li>
-                <li>Định hướng nghề nghiệp 1-1</li>
+                <li>${this.t('paid_internship')}</li>
+                <li>${this.t('job_fair')}</li>
+                <li>${this.t('career_orientation')}</li>
               </ul>
             </div>
             <div style="border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-md); order: 1;">

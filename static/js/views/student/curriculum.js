@@ -476,10 +476,10 @@ const CurriculumView = {
           <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
             <div>
               <h1 class="page-title" style="font-size: 1.8rem; display: flex; align-items: center; gap: 10px;">
-                <i class="fas fa-book-bookmark" style="color: #8b5cf6;"></i> Khung Chương Trình Đào Tạo 4 Năm
+                <i class="fas fa-book-bookmark" style="color: #8b5cf6;"></i> ${t('curriculum_title')}
               </h1>
               <p class="page-subtitle" style="font-size: 0.95rem; color: var(--text-secondary);">
-                Lộ trình chi tiết 8 học kỳ (từ HK1 Năm 1 đến HK2 Năm 4) — Tiêu chuẩn đào tạo Đại học chính quy
+                ${t('curriculum_sub')}
               </p>
             </div>
             <div style="display: flex; align-items: center; gap: 10px;">
@@ -497,8 +497,8 @@ const CurriculumView = {
               <i class="fas fa-layer-group"></i>
             </div>
             <div>
-              <div style="font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Tổng số tín chỉ</div>
-              <div style="font-size: 1.45rem; font-weight: 800; color: var(--text-primary);">${totalCredits} tín chỉ</div>
+              <div style="font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">${t('total_curriculum_credits')}</div>
+              <div style="font-size: 1.45rem; font-weight: 800; color: var(--text-primary);">${totalCredits} ${t('credits')}</div>
             </div>
           </div>
 
@@ -507,8 +507,8 @@ const CurriculumView = {
               <i class="fas fa-check-double"></i>
             </div>
             <div>
-              <div style="font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Học phần Bắt buộc</div>
-              <div style="font-size: 1.45rem; font-weight: 800; color: #059669;">${requiredCredits} tín chỉ</div>
+              <div style="font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">${t('compulsory_credits')}</div>
+              <div style="font-size: 1.45rem; font-weight: 800; color: #059669;">${requiredCredits} ${t('credits')}</div>
             </div>
           </div>
 
@@ -517,8 +517,8 @@ const CurriculumView = {
               <i class="fas fa-sliders"></i>
             </div>
             <div>
-              <div style="font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Học phần Tự chọn</div>
-              <div style="font-size: 1.45rem; font-weight: 800; color: #d97706;">${electiveCredits} tín chỉ</div>
+              <div style="font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">${t('elective_credits')}</div>
+              <div style="font-size: 1.45rem; font-weight: 800; color: #d97706;">${electiveCredits} ${t('credits')}</div>
             </div>
           </div>
 
@@ -527,8 +527,8 @@ const CurriculumView = {
               <i class="fas fa-calendar-check"></i>
             </div>
             <div>
-              <div style="font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Thời gian đào tạo</div>
-              <div style="font-size: 1.45rem; font-weight: 800; color: #2563eb;">4 Năm (8 Học kỳ)</div>
+              <div style="font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">${t('training_duration') || 'Thời gian'}</div>
+              <div style="font-size: 1.45rem; font-weight: 800; color: #2563eb;">4 ${t('years') || 'Năm'} (8 ${t('semesters') || 'Học kỳ'})</div>
             </div>
           </div>
         </div>
@@ -540,12 +540,12 @@ const CurriculumView = {
             <!-- DROPDOWN CHỌN NGÀNH -->
             <div style="display: flex; align-items: center; gap: 10px; min-width: 320px;">
               <label for="select-curriculum-major" style="font-weight: 700; font-size: 0.9rem; color: var(--text-primary); white-space: nowrap;">
-                <i class="fas fa-diagram-project" style="color: #8b5cf6;"></i> Ngành đào tạo:
+                <i class="fas fa-diagram-project" style="color: #8b5cf6;"></i> ${t('select_major_label')}:
               </label>
               <select id="select-curriculum-major" class="form-control" style="font-weight: 600; padding: 8px 14px; border-radius: 8px; border: 1.5px solid var(--primary-500); background: var(--bg-primary); color: var(--text-primary); cursor: pointer;">
                 ${majorKeys.map(k => `
                   <option value="${k}" ${k === this.currentMajor ? 'selected' : ''}>
-                    ${k} (${CURRICULUM_DATA[k].code})
+                    ${t(k) || k} (${CURRICULUM_DATA[k].code})
                   </option>
                 `).join('')}
               </select>
@@ -554,19 +554,19 @@ const CurriculumView = {
             <!-- TABS LỌC NĂM HỌC -->
             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
               <button class="btn btn-sm ${this.currentYearFilter === 'all' ? 'btn-primary' : 'btn-secondary'}" onclick="CurriculumView.setYearFilter('all')" style="border-radius: 6px; font-weight: 600;">
-                Tất cả 4 năm
+                ${t('filter_all_years')}
               </button>
               <button class="btn btn-sm ${this.currentYearFilter === '1' ? 'btn-primary' : 'btn-secondary'}" onclick="CurriculumView.setYearFilter('1')" style="border-radius: 6px; font-weight: 600;">
-                Năm 1 (HK1-2)
+                ${t('year_1')} (HK1-2)
               </button>
               <button class="btn btn-sm ${this.currentYearFilter === '2' ? 'btn-primary' : 'btn-secondary'}" onclick="CurriculumView.setYearFilter('2')" style="border-radius: 6px; font-weight: 600;">
-                Năm 2 (HK3-4)
+                ${t('year_2')} (HK3-4)
               </button>
               <button class="btn btn-sm ${this.currentYearFilter === '3' ? 'btn-primary' : 'btn-secondary'}" onclick="CurriculumView.setYearFilter('3')" style="border-radius: 6px; font-weight: 600;">
-                Năm 3 (HK5-6)
+                ${t('year_3')} (HK5-6)
               </button>
               <button class="btn btn-sm ${this.currentYearFilter === '4' ? 'btn-primary' : 'btn-secondary'}" onclick="CurriculumView.setYearFilter('4')" style="border-radius: 6px; font-weight: 600;">
-                Năm 4 (HK7-8)
+                ${t('year_4')} (HK7-8)
               </button>
             </div>
 
@@ -616,11 +616,11 @@ const CurriculumView = {
                   <table class="table" style="width: 100%; border-collapse: collapse; margin: 0;">
                     <thead style="background: var(--bg-surface); border-bottom: 1px solid var(--border-color);">
                       <tr>
-                        <th style="padding: 12px 16px; text-align: left; width: 14%; font-size: 0.78rem; text-transform: uppercase; color: var(--text-secondary);">Mã Học Phần</th>
-                        <th style="padding: 12px 16px; text-align: left; width: 44%; font-size: 0.78rem; text-transform: uppercase; color: var(--text-secondary);">Tên Môn Học / Học Phần</th>
-                        <th style="padding: 12px 16px; text-align: center; width: 12%; font-size: 0.78rem; text-transform: uppercase; color: var(--text-secondary);">Số Tín Chỉ</th>
-                        <th style="padding: 12px 16px; text-align: center; width: 14%; font-size: 0.78rem; text-transform: uppercase; color: var(--text-secondary);">Phân Loại</th>
-                        <th style="padding: 12px 16px; text-align: left; width: 16%; font-size: 0.78rem; text-transform: uppercase; color: var(--text-secondary);">Môn Tiên Quyết</th>
+                        <th style="padding: 12px 16px; text-align: left; width: 14%; font-size: 0.78rem; text-transform: uppercase; color: var(--text-secondary);">${t('course_code')}</th>
+                        <th style="padding: 12px 16px; text-align: left; width: 44%; font-size: 0.78rem; text-transform: uppercase; color: var(--text-secondary);">${t('course_name')}</th>
+                        <th style="padding: 12px 16px; text-align: center; width: 12%; font-size: 0.78rem; text-transform: uppercase; color: var(--text-secondary);">${t('credits')}</th>
+                        <th style="padding: 12px 16px; text-align: center; width: 14%; font-size: 0.78rem; text-transform: uppercase; color: var(--text-secondary);">${t('type')}</th>
+                        <th style="padding: 12px 16px; text-align: left; width: 16%; font-size: 0.78rem; text-transform: uppercase; color: var(--text-secondary);">${t('prereq_label')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -639,11 +639,11 @@ const CurriculumView = {
                             </td>
                             <td style="padding: 12px 16px; text-align: center;">
                               <span class="badge" style="background: ${isRequired ? 'rgba(59, 130, 246, 0.1)' : 'rgba(245, 158, 11, 0.1)'}; color: ${isRequired ? '#2563eb' : '#d97706'}; font-weight: 600; padding: 2px 8px; border-radius: 4px; font-size: 0.78rem;">
-                                ${c.type}
+                                ${isRequired ? t('course_type_compulsory') : t('course_type_elective')}
                               </span>
                             </td>
                             <td style="padding: 12px 16px; color: ${c.prereq === 'Không' ? 'var(--text-tertiary)' : '#dc2626'}; font-size: 0.85rem; font-family: ${c.prereq === 'Không' ? 'inherit' : 'monospace'}; font-weight: ${c.prereq === 'Không' ? 'normal' : '600'};">
-                              ${c.prereq}
+                              ${c.prereq === 'Không' ? t('prereq_none') : c.prereq}
                             </td>
                           </tr>
                         `;

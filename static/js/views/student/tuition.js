@@ -96,11 +96,11 @@ const TuitionView = {
             <div>
               ${hasDebt ? `
                 <span class="badge" style="background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; padding: 8px 16px; border-radius: 8px; font-weight: 700; font-size: 0.95rem; display: inline-flex; align-items: center; gap: 6px;">
-                  <i class="fas fa-circle-exclamation"></i> Tình trạng: Còn nợ học phí
+                  <i class="fas fa-circle-exclamation"></i> ${t('tuition_debt_badge')}
                 </span>
               ` : `
                 <span class="badge" style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; padding: 8px 16px; border-radius: 8px; font-weight: 700; font-size: 0.95rem; display: inline-flex; align-items: center; gap: 6px;">
-                  <i class="fas fa-circle-check"></i> Tình trạng: Đã hoàn tất học phí
+                  <i class="fas fa-circle-check"></i> ${t('tuition_paid_badge')}
                 </span>
               `}
             </div>
@@ -113,7 +113,7 @@ const TuitionView = {
             <i class="fas fa-hand-holding-dollar"></i>
           </div>
           <div style="font-size: 0.92rem; color: #7f1d1d; line-height: 1.5;">
-            <strong>Lưu ý học vụ:</strong> Tài khoản của bạn hiện có khoản học phí chưa thanh toán. Sau khi thực hiện quét mã QR chuyển khoản, Ban Giám hiệu / Phòng Đào tạo sẽ kiểm tra mã sinh viên và duyệt đã thanh toán trên Admin Dashboard.
+            ${t('academic_tuition_note')}
           </div>
         </div>
         ` : ''}
@@ -121,7 +121,7 @@ const TuitionView = {
         <div class="grid-row" style="display: grid; grid-template-columns: 2fr 1fr; gap: var(--space-6); margin-bottom: var(--space-6);">
           <div class="card glass-panel" style="padding: 0;">
             <div class="card-header" style="padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: var(--bg-secondary);">
-              <h3 style="margin: 0; font-size: 1.1rem; color: var(--text-primary);"><i class="fas fa-list-ul"></i> ${isNewStudentMode ? 'Khung Học Phần Học Kỳ 1 (Tiêu Chuẩn)' : t('registered_courses')}</h3>
+              <h3 style="margin: 0; font-size: 1.1rem; color: var(--text-primary);"><i class="fas fa-list-ul"></i> ${isNewStudentMode ? t('freshman_hk1_frame') : t('registered_courses')}</h3>
               <div style="background: rgba(20, 184, 166, 0.1); color: var(--primary-600); padding: 4px 12px; border-radius: 4px; font-size: 0.85rem; font-weight: 600;">
                 <i class="fas fa-tags"></i> ${t('unit_price')}: ${formattedFeePerCredit}/${t('credit')}
               </div>
@@ -152,7 +152,7 @@ const TuitionView = {
 
           <div class="card glass-panel" style="display: flex; flex-direction: column;">
             <div class="card-header" style="padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--border-color); background: var(--bg-secondary);">
-              <h3 style="margin: 0; font-size: 1.1rem; color: var(--text-primary);"><i class="fas fa-file-invoice-dollar"></i> Tổng Hợp Học Phí</h3>
+              <h3 style="margin: 0; font-size: 1.1rem; color: var(--text-primary);"><i class="fas fa-file-invoice-dollar"></i> ${t('tuition_summary_title')}</h3>
             </div>
             <div class="card-body" style="padding: var(--space-4);">
               <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 4px;">Số tiền học kỳ này (${totalCredits} tín chỉ):</div>

@@ -97,8 +97,11 @@ const AdmissionApp = {
     note.style.display = 'none';
   },
 
-  checkCccdMock() {
+  async checkCccdMock() {
     const cccd = document.getElementById('cccd').value.trim();
+    const fullName = document.getElementById('full_name')?.value.trim() || '';
+    const email = document.getElementById('email')?.value.trim().toLowerCase() || '';
+    const phone = document.getElementById('phone')?.value.trim() || '';
     const note = document.getElementById('cccd-status');
 
     if (cccd.length !== 12) {
@@ -111,14 +114,38 @@ const AdmissionApp = {
       return;
     }
 
+    try {
+      const res = await fetch('/api/admission/check-duplicate/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ full_name: fullName, cccd: cccd, email: email, phone: phone })
+      });
+      const data = await res.json();
+      if (!data.success && data.is_duplicate) {
+        note.className = 'validation-note invalid';
+        note.style.color = '#dc2626';
+        note.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${data.message}`;
+        note.style.display = 'block';
+
+        Swal.fire({
+          icon: 'warning',
+          title: 'Thông tin đã tồn tại trong hệ thống',
+          html: `<div style="text-align: left; line-height: 1.6; color: #334155;">${data.message}</div>`,
+          confirmButtonColor: '#d97706'
+        });
+        return;
+      }
+    } catch (err) {}
+
     note.className = 'validation-note valid';
+    note.style.color = '#16a34a';
     note.innerHTML = '<i class="fas fa-check-circle"></i> Số CCCD đã được đối soát hợp lệ trên Cổng Dữ Liệu Tuyển Sinh Quốc Gia.';
     note.style.display = 'block';
 
     Swal.fire({
       icon: 'success',
       title: 'Xác minh CCCD thành công',
-      html: `Số CCCD <b>${cccd}</b> hợp lệ. Hệ thống chấp nhận hồ sơ và sẵn sàng xét tuyển.`,
+      html: `Số CCCD <b>${cccd}</b> hợp lệ và chưa từng bị trùng lặp. Hệ thống chấp nhận hồ sơ và sẵn sàng xét tuyển.`,
       timer: 2500,
       showConfirmButton: false
     });
@@ -196,12 +223,67 @@ const AdmissionApp = {
     const deptSelect = document.getElementById('department_select');
     const selectedOpt = deptSelect.options[deptSelect.selectedIndex];
     const bmVal = selectedOpt ? selectedOpt.getAttribute('data-bm') : null;
-    const benchmarkScore = bmVal ? parseFloat(bmVal) : 20.0;
+    let benchmarkScore = bmVal ? parseFloat(bmVal) : 0;
+
+    // Tìm trong universitiesData nếu bmVal chưa có
+    if (!benchmarkScore && this.selectedUniversity && this.selectedUniversity.majors) {
+      const foundMajor = this.selectedUniversity.majors.find(m => m.name === department);
+      if (foundMajor) benchmarkScore = foundMajor.benchmark;
+    }
+    if (!benchmarkScore) benchmarkScore = 20.0;
+
     const uniName = this.selectedUniversity ? (this.selectedUniversity.short_name || this.selectedUniversity.name) : 'trường đã chọn';
 
-    // ── KIỂM TRA ĐẬU HAY RỚT TRƯỚC KHI GỬI OTP ──
+    const btnSubmit = document.getElementById('btn-submit-apply');
+    btnSubmit.disabled = true;
+    btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang đối soát thông tin...';
+
+    // ── BƯỚC 1: KIỂM TRA CHỐNG TRÙNG LẶP TRƯỚC TIÊN (YÊU CẦU CAO) ──
+    try {
+      const dupRes = await fetch('/api/admission/check-duplicate/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          full_name: fullName,
+          cccd: cccd,
+          email: email,
+          phone: phone
+        })
+      });
+      const dupData = await dupRes.json();
+      if (!dupData.success && dupData.is_duplicate) {
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = '<i class="fas fa-paper-plane"></i> Nộp Hồ Sơ & Nhận Mã OTP Xác Thực';
+
+        Swal.fire({
+          icon: 'warning',
+          title: 'THÔNG TIN ĐÃ CÓ TRONG HỆ THỐNG',
+          html: `
+            <div style="text-align: left; font-size: 0.95rem; line-height: 1.6; color: #334155;">
+              <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px; margin-bottom: 12px; color: #92400e; font-weight: 600;">
+                <i class="fas fa-triangle-exclamation"></i> Phát hiện trùng lặp dữ liệu tuyển sinh
+              </div>
+              <p style="margin-bottom: 10px;">${dupData.message}</p>
+              <div style="font-size: 0.88rem; color: #64748b; border-top: 1px dashed #cbd5e1; padding-top: 8px;">
+                * Mỗi thí sinh chỉ được sử dụng 01 số CCCD, 01 Gmail và 01 Số điện thoại duy nhất để bảo đảm tính minh bạch trong tuyển sinh.
+              </div>
+            </div>
+          `,
+          confirmButtonColor: '#d97706',
+          confirmButtonText: '<i class="fas fa-check"></i> Đã Hiểu & Kiểm Tra Lại'
+        });
+        return;
+      }
+    } catch (err) {
+      console.warn('Lỗi kiểm tra trùng lặp:', err);
+    }
+
+    btnSubmit.disabled = false;
+    btnSubmit.innerHTML = '<i class="fas fa-paper-plane"></i> Nộp Hồ Sơ & Nhận Mã OTP Xác Thực';
+
+    // ── BƯỚC 2: KIỂM TRA ĐẬU HAY RỚT TRƯỚC KHI GỬI OTP (YÊU CẦU CAO) ──
     if (score < benchmarkScore) {
-      // TRƯỜNG HỢP: RỚT / CHƯA ĐẠT ĐIỂM CHUẨN -> KHÔNG GỬI OTP
+      // TRƯỜNG HỢP: RỚT / CHƯA ĐẠT ĐIỂM CHUẨN -> TUYỆT ĐỐI KHÔNG GỬI OTP, KHÔNG CHUYỂN TRANG
       const diff = (benchmarkScore - score).toFixed(2);
       Swal.fire({
         icon: 'error',
@@ -218,7 +300,7 @@ const AdmissionApp = {
               </div>
             </div>
             <p style="color: #64748b; font-size: 0.9rem; line-height: 1.5;">
-              Rất tiếc bạn chưa đủ điều kiện trúng tuyển nguyện vọng này. Vui lòng chọn ngành khác hoặc trường đại học khác có điểm chuẩn phù hợp hơn để đăng ký lại.
+              Rất tiếc bạn chưa đủ điều kiện trúng tuyển nguyện vọng này. Vui lòng chọn ngành khác hoặc trường đại học khác có điểm chuẩn phù hợp hơn (≤ ${score.toFixed(2)}đ) để đăng ký lại.
             </p>
           </div>
         `,
@@ -228,7 +310,7 @@ const AdmissionApp = {
       return;
     }
 
-    // TRƯỜNG HỢP: ĐẬU / ĐẠT ĐIỂM CHUẨN -> HIỂN THỊ THÔNG BÁO TRÚNG TUYỂN TRƯỚC (LỰA CHỌN A)
+    // ── BƯỚC 3: ĐẬU / ĐẠT ĐIỂM CHUẨN -> THÔNG BÁO CHÚC MỪNG VÀ XÁC NHẬN NHẬN OTP ──
     const surplus = (score - benchmarkScore).toFixed(2);
     const confirmResult = await Swal.fire({
       icon: 'success',
@@ -268,9 +350,8 @@ const AdmissionApp = {
       return;
     }
 
-    const btnSubmit = document.getElementById('btn-submit-apply');
     btnSubmit.disabled = true;
-    btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý & gửi OTP...';
+    btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang gửi mã OTP...';
 
     try {
       const res = await fetch('/api/admission/apply/', {
@@ -289,7 +370,11 @@ const AdmissionApp = {
 
       const data = await res.json();
       if (!data.success) {
-        Swal.fire({ icon: 'error', title: 'Không thành công', text: data.message });
+        Swal.fire({
+          icon: data.is_duplicate ? 'warning' : 'error',
+          title: data.is_duplicate ? 'Thông tin đã tồn tại' : 'Không thành công',
+          text: data.message
+        });
         btnSubmit.disabled = false;
         btnSubmit.innerHTML = '<i class="fas fa-paper-plane"></i> Nộp Hồ Sơ & Nhận Mã OTP Xác Thực';
         return;
@@ -328,22 +413,15 @@ const AdmissionApp = {
         if (otpInput) {
           otpInput.focus();
           otpInput.onkeyup = (evt) => {
-            if (evt.key === 'Enter') AdmissionApp.verifyOtp();
+            if (evt.key === 'Enter' && otpInput.value.trim().length === 6) {
+              this.verifyOtp();
+            }
           };
         }
       }, 300);
 
-      Swal.fire({
-        icon: 'info',
-        title: 'Đã gửi mã xác thực',
-        text: data.message,
-        confirmButtonColor: '#3b82f6',
-        timer: 3500
-      });
-
     } catch (err) {
-      console.error(err);
-      Swal.fire({ icon: 'error', title: 'Lỗi máy chủ', text: 'Không thể kết nối đến máy chủ tuyển sinh' });
+      Swal.fire({ icon: 'error', title: 'Lỗi kết nối', text: 'Không thể kết nối đến máy chủ tuyển sinh' });
       btnSubmit.disabled = false;
       btnSubmit.innerHTML = '<i class="fas fa-paper-plane"></i> Nộp Hồ Sơ & Nhận Mã OTP Xác Thực';
     }

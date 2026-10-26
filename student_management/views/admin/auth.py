@@ -119,14 +119,14 @@ def admin_login_page(request):
         else:
             response = HttpResponseRedirect(next_url)
 
-        # Thiết lập HttpOnly Cookie (Thời hạn 30 phút = 1800 giây)
+        # Thiết lập HttpOnly Cookie (Thời hạn 10 phút = 600 giây)
         response.set_cookie(
             'session_token',
             new_token,
             httponly=True,
             secure=not request.get_host().split(':')[0] in ('localhost', '127.0.0.1', 'testserver'),
             samesite='Lax',
-            max_age=1800,  # 30 phút (1800 giây)
+            max_age=600,  # 10 phút (600 giây)
             path='/',
         )
         return response

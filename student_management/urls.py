@@ -31,6 +31,7 @@ urlpatterns = [
     path('admission/', views.admission_page, name='admission_page'),
     path('api/admission/universities/', views.api_admission_universities, name='api_admission_universities'),
     path('api/admission/apply/', views.api_admission_apply, name='api_admission_apply'),
+    path('api/admission/check-duplicate/', views.api_admission_check_duplicate, name='api_admission_check_duplicate'),
     path('api/admission/verify-otp/', views.api_admission_verify_otp, name='api_admission_verify_otp'),
     path('api/admission/resend-otp/', views.api_admission_resend_otp, name='api_admission_resend_otp'),
     path('api/admission/check-status/', views.api_admission_check_status, name='api_admission_check_status'),
