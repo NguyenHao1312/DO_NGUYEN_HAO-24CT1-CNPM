@@ -192,21 +192,39 @@ sequenceDiagram
     participant MAIL as Email Service<br/>(student_management/email_service.py)
     participant DB as SQL Server (SSMS)<br/>(AdmissionApplication, CustomUser, Student)
 
-    C->>FE: Điền Họ tên, CCCD (12 số), Gmail, SĐT, Chọn Trường, Ngành, Điểm thi
-    FE->>BE: POST /api/admission/check-duplicate/ (Kiểm tra chống trùng lặp CCCD/Gmail/SĐT)
-    alt Phát hiện trùng lặp thông tin
-        BE-->>FE: HTTP 409 Conflict (CCCD/Email/SĐT đã tồn tại hoặc xung đột hồ sơ)
-        FE-->>C: Modal cảnh báo trùng thông tin, chặn nộp và yêu cầu kiểm tra lại
-    else Thông tin hợp lệ và duy nhất
+    Note over C,DB: BƯỚC 1: KIỂM TRA CCCD ĐỘC LẬP (Nút "Kiểm tra" cạnh ô CCCD)
+    C->>FE: Nhập 12 số CCCD và bấm nút "Kiểm tra"
+    FE->>BE: POST /api/admission/check-duplicate/ {cccd, check_mode: 'cccd_only'}
+    BE->>DB: Kiểm tra CCCD trong CustomUser & AdmissionApplication (đã cấp mã/trúng tuyển)
+    alt CCCD đã có trong hệ thống UniMS
+        DB-->>BE: CCCD đã tồn tại
+        BE-->>FE: HTTP 409 Conflict (Số CCCD đã được cấp mã SV hoặc tài khoản)
+        FE-->>C: Cảnh báo đỏ: "Số CCCD này đã có trong hệ thống UniMS"
+    else CCCD hợp lệ và chưa từng đăng ký
+        DB-->>BE: Không tìm thấy
         BE-->>FE: HTTP 200 {is_duplicate: false}
+        FE-->>C: Huy hiệu xanh: "Số CCCD hợp lệ và sẵn sàng đăng ký xét tuyển"
+    end
+
+    Note over C,DB: BƯỚC 2: ĐIỀN ĐỦ THÔNG TIN VÀ NỘP HỒ SƠ XÉT TUYỂN
+    C->>FE: Điền Họ tên, Gmail thật, SĐT, Chọn Trường, Chọn Ngành, Nhập Điểm thi
+    C->>FE: Bấm "Nộp Hồ Sơ & Nhận Mã OTP Xác Thực"
+    FE->>BE: POST /api/admission/check-duplicate/ {full_name, cccd, email, phone, check_mode: 'all'}
+    alt Người dùng mặc kệ cảnh báo CCCD ở bước trước HOẶC trùng Gmail/SĐT
+        BE-->>FE: HTTP 409 Conflict (Phát hiện trùng lặp dữ liệu)
+        FE-->>C: Modal cảnh báo thứ 2: Chặn nộp hồ sơ, yêu cầu kiểm tra lại
+    else Dữ liệu hợp lệ toàn diện (1:1 duy nhất)
+        BE-->>FE: HTTP 200 {is_duplicate: false}
+        
+        Note over C,FE: BƯỚC 3: ĐỐI SOÁT ĐIỂM CHUẨN TRƯỚC KHI GỬI OTP (LỰA CHỌN A)
         FE->>FE: Tra cứu điểm chuẩn ngành đã chọn (Ví dụ: FPT CNTT 24.50đ)
         alt Điểm thi < Điểm chuẩn (VD: 22.00đ < 24.50đ)
             FE-->>C: Modal BÁO RỚT ĐIỂM CHUẨN (Hiện rõ số điểm thiếu: -2.50đ). Dừng ngay, KHÔNG gửi OTP!
         else Điểm thi >= Điểm chuẩn (Trúng tuyển đợt 1)
-            FE-->>C: Modal CHÚC MỪNG TRÚNG TUYỂN! Thí sinh xác nhận nhận OTP
+            FE-->>C: Modal CHÚC MỪNG TRÚNG TUYỂN! Hiển thị điểm vượt chuẩn & mời nhận OTP
             C->>FE: Bấm "Tiếp Tục Nhận Mã OTP"
             FE->>BE: POST /api/admission/apply/
-            BE->>BE: Kiểm tra lại trùng lặp & điểm chuẩn phía Backend
+            BE->>BE: Kiểm tra lại điểm chuẩn & khóa hàng atomic
             BE->>SVC: Sinh mã OTP 6 số (generate_otp)
             BE->>DB: Lưu AdmissionApplication (status = approved, otp_code, otp_created_at)
             BE->>MAIL: Gửi mã OTP xác thực qua SMTP Gmail (kèm on-screen OTP fallback)
@@ -357,11 +375,16 @@ sequenceDiagram
     autonumber
 
     actor S as Sinh viên (Mới hoặc Hiện tại)
-    participant FE as Giao diện Khung Môn Học<br/>(static/js/views/student/curriculum.js)
+    participant FE as Giao diện Khung Chương Trình<br/>(static/js/views/student/curriculum.js)
     participant APP as Core Router & State<br/>(static/js/core/app.js)
     participant DB_CLIENT as Local Database<br/>(static/js/core/database.js)
 
-    S->>FE: Bấm chọn menu "Khung môn học" (#/curriculum)
+    Note over S,DB_CLIENT: Truy cập trực tiếp từ Menu #2 (Left Sidebar) hoặc Nút bấm trên Dashboard
+    alt Cách 1: Bấm menu "Khung chương trình" trên thanh điều hướng bên trái (Vị trí #2)
+        S->>FE: Click "Khung chương trình" (#/curriculum)
+    else Cách 2: Bấm nút "Xem Khung chương trình đào tạo" tại thẻ Tiến độ học tập
+        S->>FE: Click nút CTA tại Dashboard (#/curriculum)
+    end
     FE->>APP: Lấy thông tin sinh viên hiện tại (Auth.getCurrentUser())
     FE->>FE: Tự động nhận diện ngành của sinh viên (VD: Công nghệ Thông tin)
     FE->>DB_CLIENT: Truy vấn kết quả học tập & lớp học đã đăng ký

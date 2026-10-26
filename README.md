@@ -43,7 +43,10 @@ Dự án được xây dựng với kiến trúc **Hybrid Web**:
   - Hệ thống tự động xác thực chéo dữ liệu thời gian thực: CCCD, Gmail, Số điện thoại và Họ tên thí sinh với CSDL SQL Server (bao gồm cả tài khoản sinh viên đã cấp và hồ sơ tuyển sinh đã duyệt).
   - Chặn triệt để tình trạng một người dùng nhiều CCCD, một CCCD dùng nhiều Gmail hoặc một Gmail/SĐT dùng cho nhiều người.
   - Phản hồi mã lỗi `409 Conflict` kèm thông điệp cảnh báo rõ ràng khi phát hiện trùng lặp.
-- **Kiểm tra CCCD thông minh:** Tích hợp kiểm tra tính hợp lệ và cấu trúc số định danh căn cước công dân.
+- **Kiểm tra CCCD độc lập & Thông minh:**
+  - Nút *"Kiểm tra"* cạnh ô CCCD thực hiện kiểm tra riêng biệt số định danh trong hệ thống (`check_mode: cccd_only`), hoàn toàn không gây xung đột hoặc báo lỗi sai khi các ô Gmail và Số điện thoại còn đang để trống.
+  - Nếu CCCD đã có trong hệ thống (đã được cấp mã sinh viên hoặc trúng tuyển), giao diện lập tức cảnh báo đỏ.
+  - Khi thí sinh điền đầy đủ và bấm *"Nộp hồ sơ"*, hệ thống tiếp tục đối soát toàn diện (`check_mode: all`); nếu thí sinh phớt lờ cảnh báo trước đó thì hệ thống sẽ hiện cảnh báo thứ hai và chặn nộp hồ sơ.
 - **Đối soát Điểm chuẩn & Thông báo Trúng tuyển trước khi gửi OTP (Lựa chọn A):**
   - Hệ thống tự động so khớp điểm thi của thí sinh với điểm chuẩn của ngành đã chọn ngay tại Cổng xét tuyển.
   - **Trường hợp Trúng tuyển (Đậu):** Hiển thị Modal chúc mừng trúng tuyển trang trọng với đầy đủ thông tin: Trường, Ngành, Điểm của thí sinh, Điểm chuẩn và Điểm vượt chuẩn. Khi thí sinh bấm *"Tiếp tục nhận mã OTP"*, hệ thống mới kích hoạt gửi OTP về Gmail và chuyển sang Bước 2.
@@ -80,7 +83,10 @@ Dự án được xây dựng với kiến trúc **Hybrid Web**:
   - Tích hợp mã QR VietQR chuẩn ngân hàng với cú pháp bắt buộc: `UNIMS <MãSV> HOCPHI HK1`.
 
 ### 4. 📚 Khung Chương Trình Đào Tạo 4 Năm (8 Học Kỳ)
-- **Tra cứu lộ trình học tập toàn diện:** Module `#/curriculum` cho phép tất cả sinh viên (cũ và mới) xem chi tiết các môn học từ HK1 Năm 1 đến HK2 Năm 4.
+- **Vị trí ưu tiên trên giao diện Sinh viên:**
+  - Đặt tại **vị trí số #2** trên thanh điều hướng bên trái (Left Sidebar) ngay liền kề *Bảng điều khiển*.
+  - Bổ sung nút truy cập trực tiếp *"Xem Khung chương trình đào tạo"* ngay tại thẻ *Tiến độ học tập* trên Dashboard sinh viên.
+- **Tra cứu lộ trình học tập toàn diện:** Module `#/curriculum` cho phép tất cả sinh viên (cũ và mới) xem chi tiết các môn học từ HK1 Năm 1 đến HK2 Năm 4 kèm tổng số tín chỉ.
 - **Dropdown chọn chuyên ngành:** Tự động nhận diện ngành của sinh viên đăng nhập và cho phép chuyển đổi xem khung môn học của các ngành khác (Công nghệ thông tin, Kỹ thuật Điều khiển & TĐH, Quản trị kinh doanh, Ngôn ngữ Anh...).
 - **Bộ lọc linh hoạt:** Lọc theo Năm học (Năm 1, Năm 2, Năm 3, Năm 4, Tất cả 4 năm), ô tìm kiếm nhanh môn học/mã môn, phân loại Bắt buộc/Tự chọn và kiểm tra điều kiện tiên quyết.
 
@@ -104,7 +110,9 @@ Dự án được xây dựng với kiến trúc **Hybrid Web**:
 ### 7. 📊 Giám Sát An Ninh & Nhật Ký Kiểm Toán (Audit Trail)
 - **Ghi vết tự động (Global Audit Logging):** Bắt và phân loại các hành vi bất thường, đo đạc độ trễ mạng và phát hiện tấn công DDoS/Brute-force.
 - **Bảo toàn WORM trong SQL Server:** Bảng `student_management_auditlog` được khóa bằng Trigger ngăn chặn mọi thao tác UPDATE/DELETE để đảm bảo tính toàn vẹn pháp lý của nhật ký kiểm toán.
-- **Dọn dẹp tài khoản ma (Ghost Accounts Cleaner):** Quản trị viên có công cụ quét và xóa an toàn các tài khoản không hoạt động làm nhiễu database.
+- **Dọn dẹp tài khoản ma (Ghost Accounts Cleaner) & Làm sạch dữ liệu:**
+  - Quản trị viên có công cụ quét và xóa an toàn các tài khoản không hoạt động (0 môn học, 0 điểm thi) làm nhiễu database.
+  - Toàn bộ tài khoản mẫu trong hệ thống đã được nạp đầy đủ dữ liệu học vụ cơ bản (CourseClass, Registration, Grade, Attendance qua script `seed_academic_data.py`), đưa số lượng tài khoản ma về **0 tài khoản ma**.
 
 ### 8. 🌐 Đồng Bộ Đa Ngôn Ngữ Song Ngữ (VN/EN i18n Synchronization)
 - **Hỗ trợ song ngữ Tiếng Việt & Tiếng Anh tức thì:** Nút chuyển đổi VN/EN hoạt động đồng bộ trên toàn bộ hệ thống.
@@ -281,6 +289,7 @@ python scripts/test_phase3_flow.py
 ├── 📁 scripts/                       🔧 Scripts tiện ích & Kiểm thử
 │   ├── seed_db.py                    # Nạp dữ liệu mẫu ban đầu
 │   ├── seed_enrich_data.py           # Nạp mã số 11 trường & bổ sung đầy đủ hồ sơ SV
+│   ├── seed_academic_data.py         # Nạp dữ liệu học vụ (CourseClass, Grade) chống tài khoản ma
 │   ├── test_phase3_flow.py           # Test tích hợp luồng xét tuyển, sinh mã & đổi pass
 │   ├── apply_mssql_hardening.py      # Thiết lập bảo mật MSSQL
 │   └── deploy_ngrok.ps1              # Triển khai nhanh qua Ngrok Tunnel

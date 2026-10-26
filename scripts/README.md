@@ -25,7 +25,18 @@ Script Python làm giàu và đồng bộ hóa toàn bộ dữ liệu trong SQL 
   python scripts/seed_enrich_data.py
   ```
 
-### 3. `test_phase3_flow.py`
+### 3. `seed_academic_data.py`
+Script Python bổ sung toàn diện dữ liệu học vụ cơ bản cho các tài khoản đang có trong hệ thống để tránh bị phân loại thành tài khoản "ma":
+- Khởi tạo hồ sơ Giảng viên cho các tài khoản mồ côi (`GV001`: ThS. Vũ Đình Trọng, `GV002`: TS. Đặng Thị Nga).
+- Tạo và phân công các lớp học phần (`CourseClass`: *CS101, CS102, CS103, IS201, AI301, SE201, BA101, EN101*) cho tất cả giảng viên.
+- Khởi tạo bản ghi Đăng ký môn học (`Registration`), Bảng điểm tích lũy (`Grade`) và Điểm danh (`Attendance`) cho tất cả tài khoản sinh viên mẫu.
+- Cập nhật thời gian hoạt động `last_login_at` giúp giảm số lượng tài khoản ma về **0 tài khoản ma**.
+- **Cách chạy**:
+  ```powershell
+  python scripts/seed_academic_data.py
+  ```
+
+### 4. `test_phase3_flow.py`
 Bộ kịch bản kiểm thử tích hợp tự động (End-to-End Integration Test) chạy 8 bước kiểm thử toàn diện:
 1. Kiểm tra cấu hình `university_code` của tất cả 11 trường đại học.
 2. Kiểm tra định dạng dữ liệu và mã số của các sinh viên hiện có.
@@ -40,7 +51,7 @@ Bộ kịch bản kiểm thử tích hợp tự động (End-to-End Integration 
   python scripts/test_phase3_flow.py
   ```
 
-### 4. `seed_db.py` & `run_seed.ps1`
+### 5. `seed_db.py` & `run_seed.ps1`
 Script tạo dữ liệu nền tảng ban đầu (Admin, University, Giáo viên, Sinh viên cơ bản).
 - **Cách chạy**:
   ```powershell
@@ -49,14 +60,14 @@ Script tạo dữ liệu nền tảng ban đầu (Admin, University, Giáo viên
   python scripts/seed_db.py
   ```
 
-### 5. `apply_mssql_hardening.py` & `harden_mssql_auditlog.sql`
+### 6. `apply_mssql_hardening.py` & `harden_mssql_auditlog.sql`
 Script Python và SQL áp dụng tối ưu hóa chỉ mục (Indexes) và cơ chế phân quyền bảo mật cho bảng `AuditLog` trên Microsoft SQL Server.
 - **Cách chạy**:
   ```powershell
   python scripts/apply_mssql_hardening.py
   ```
 
-### 6. `deploy_ngrok.ps1`
+### 7. `deploy_ngrok.ps1`
 Script PowerShell dùng để mở port server ra Internet qua Ngrok nhằm phục vụ kiểm thử thiết bị di động hoặc chia sẻ bản demo.
 - **Cách chạy**:
   ```powershell

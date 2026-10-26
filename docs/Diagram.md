@@ -19,6 +19,8 @@ Dựa vào kiến trúc hệ thống và Front-End Views, các chức năng đư
   - Đổi mật khẩu bắt buộc lần đầu: Nếu cờ `must_change_password` bật, hệ thống hiển thị thông báo *"Hãy đổi lại mật khẩu để tránh mất thông tin"*, chặn thao tác và lưu mật khẩu mới vào SSMS.
   - Đổi mật khẩu tự nguyện trong trang Thông tin cá nhân (Profile).
 - **Từ Dashboard Sinh viên (`/review/`):**
+  - **Khung Chương Trình Đào Tạo 4 Năm:** Tra cứu lộ trình 8 học kỳ từ Năm 1 đến Năm 4, xem tổng số tín chỉ, môn tiên quyết và môn tự chọn theo từng chuyên ngành (menu vị trí #2 và nút bấm tại Dashboard).
+  - **Học Phí & Thanh Toán VietQR:** Xem bảng kê 15 tín chỉ tiêu chuẩn cho tân sinh viên, quét mã VietQR tự động điền cú pháp chuẩn ngân hàng.
   - Xem kết quả học tập (Grades) & Trạng thái khóa điểm (Grade Lock Status).
   - Xem danh sách học kỳ (Semesters).
   - Đồng bộ dữ liệu cá nhân (Sync Data).
@@ -37,6 +39,9 @@ Dựa vào kiến trúc hệ thống và Front-End Views, các chức năng đư
   - Admin -> Đăng nhập (Login) -> Truy cập Admin Dashboard (`/admin/dashboard/`).
 - **Từ Admin Dashboard, quản trị viên có thể điều hướng đến:**
   - **Xét tuyển Nguyện vọng (Admissions):** Xem danh sách hồ sơ nộp từ trang `/admission/`, lọc theo trạng thái (`submitted`, `passed`, `failed`, `rejected`), duyệt thủ công hồ sơ và tự động kích hoạt tạo mã SV/mật khẩu gửi về Gmail thí sinh, hoặc từ chối hồ sơ.
+  - **Đối Soát & Duyệt Học Phí VietQR Nhanh:** Nhập Mã SV vào thanh công cụ đối soát trên Tab Sinh viên & Học phí, bấm "Duyệt Đã Thanh Toán" để gỡ cấm xem điểm / ĐKHP trong SQL Server.
+  - **Dọn Dẹp An Toàn Tài Khoản Ma (Ghost Accounts Cleaner):** Quét phát hiện và xóa an toàn các tài khoản không hoạt động (0 môn học, 0 điểm thi) để làm sạch database và ghi log kiểm toán WORM.
+  - **Phiên Làm Việc 10 Phút Monotonic:** Bảo vệ an ninh cấp cao, đếm lùi thời gian thực dựa trên mốc máy chủ, không bị reset khi F5/reload trang.
   - **Quản lý dữ liệu:** Sao chép cấu trúc lớp học (Copy Classes), Xuất dữ liệu ra Excel (Export).
   - **Quản trị hệ thống:** Xem thống kê hệ thống (Stats), Xem nhật ký bảo mật (Audit Logs).
   - **Quản lý người dùng:** Quản lý danh sách User, Cưỡng chế đăng xuất (Force Logout), Khóa/Mở khóa User (Toggle Active Status).
@@ -54,8 +59,10 @@ actor "Giảng viên" as Teacher
 actor "Quản trị viên" as Admin
 
 package "Cổng Xét Tuyển Trực Tuyến (/admission/)" {
-  usecase "Nộp Hồ sơ Nguyện vọng" as UC_ApplyAdmission
-  usecase "Xác thực Gmail OTP" as UC_VerifyOTP
+  usecase "Kiểm tra CCCD Độc Lập" as UC_CheckCCCD
+  usecase "Nộp Hồ sơ Nguyện vọng & Chống Trùng" as UC_ApplyAdmission
+  usecase "Đối Soát Điểm Chuẩn Trước OTP" as UC_CheckBenchmark
+  usecase "Xác thực Gmail OTP (Clean UI)" as UC_VerifyOTP
   usecase "Tra cứu Trạng thái CCCD" as UC_CheckStatus
 }
 
@@ -64,10 +71,13 @@ package "Luồng Xác Thực & Tài Khoản (Auth)" {
   usecase "Đăng xuất (Logout)" as UC_Logout
   usecase "Đổi mật khẩu Bắt buộc (First Login)" as UC_ForceChangePW
   usecase "Đổi mật khẩu Tự nguyện (Profile)" as UC_VoluntaryChangePW
+  usecase "Đồng Bộ Ngôn Ngữ Song Ngữ (VN/EN)" as UC_I18nSync
 }
 
 package "Luồng Nghiệp vụ Sinh Viên (/review/)" {
   usecase "Truy cập Student Dashboard" as UC_SDash
+  usecase "Xem Khung Chương Trình Đào Tạo 4 Năm" as UC_SCurriculum
+  usecase "Thanh toán Học phí VietQR" as UC_STuitionQR
   usecase "Xem Điểm (Grades & Lock Status)" as UC_SGrades
   usecase "Xem Học Kỳ (View Semesters)" as UC_SSemesters
   usecase "Đồng bộ Dữ liệu (Sync Down/Up)" as UC_SSync
@@ -80,10 +90,12 @@ package "Luồng Nghiệp vụ Giảng Viên (/review/)" {
 }
 
 package "Luồng Nghiệp vụ Quản Trị Viên (/admin/)" {
-  usecase "Truy cập Admin Dashboard" as UC_ADash
+  usecase "Truy cập Admin Dashboard (10-Min Timeout)" as UC_ADash
   usecase "Quản lý & Duyệt Xét Nguyện Vọng" as UC_AManageAdmissions
+  usecase "Đối Soát & Duyệt Học Phí VietQR Nhanh" as UC_AToggleTuition
+  usecase "Dọn dẹp An toàn Tài khoản Ma" as UC_APurgeGhosts
   usecase "Quản lý Người Dùng (Lock, Force Logout)" as UC_AManageUsers
-  usecase "Quản trị Hệ thống (Stats, Audit Logs)" as UC_ASystem
+  usecase "Quản trị Hệ thống & Nhật ký WORM" as UC_ASystem
   usecase "Sao chép Lớp học (Copy Classes)" as UC_ACopy
   usecase "Xuất Dữ liệu Excel (Export)" as UC_AExport
 }
