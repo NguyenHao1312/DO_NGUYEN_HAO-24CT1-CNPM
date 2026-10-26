@@ -702,6 +702,72 @@ body.dark-mode .stat-card.success .stat-icon {
 }
 .btn-primary:hover { background-color: var(--primary-600); }
 
+.btn-secondary {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1.5px solid var(--border-color);
+}
+.btn-secondary:hover {
+  background-color: var(--bg-secondary);
+  border-color: var(--primary-400);
+  color: var(--primary-500);
+}
+[data-theme="dark"] .btn-secondary,
+body.dark-mode .btn-secondary {
+  background-color: #1e293b;
+  color: #e2e8f0;
+  border: 1.5px solid #334155;
+}
+[data-theme="dark"] .btn-secondary:hover,
+body.dark-mode .btn-secondary:hover {
+  background-color: #273549;
+  border-color: var(--primary-400);
+  color: #ffffff;
+}
+
+/* Curriculum Year Filter Tabs - Light border highlight */
+.curriculum-tab-btn {
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1.5px solid var(--border-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.curriculum-tab-btn:hover {
+  border-color: var(--primary-400);
+  color: var(--primary-500);
+  background: var(--bg-secondary);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+  transform: translateY(-1px);
+}
+.curriculum-tab-btn.active {
+  background: linear-gradient(135deg, #2563eb, #3b82f6) !important;
+  color: #ffffff !important;
+  border-color: #60a5fa !important;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35) !important;
+}
+[data-theme="dark"] .curriculum-tab-btn:not(.active),
+body.dark-mode .curriculum-tab-btn:not(.active) {
+  background: #1e293b;
+  color: #e2e8f0;
+  border: 1.5px solid #334155;
+}
+[data-theme="dark"] .curriculum-tab-btn:not(.active):hover,
+body.dark-mode .curriculum-tab-btn:not(.active):hover {
+  background: #273549;
+  border-color: #60a5fa;
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(96, 165, 250, 0.3);
+}
+
 .btn-success { background-color: var(--success); color: white; }
 .btn-success:hover { background-color: #059669; }
 

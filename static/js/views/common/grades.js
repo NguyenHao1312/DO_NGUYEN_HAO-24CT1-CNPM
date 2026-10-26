@@ -116,7 +116,13 @@ const GradesView = {
     
     if (Auth.isStudent()) {
        // Students only see their own grades
-       items = items.filter(g => g.studentId === user.linkedId);
+       const userCode = user.linkedId || user.studentId || user.username;
+       items = items.filter(g => 
+         g.studentId === user.linkedId || 
+         g.studentId === userCode || 
+         g.studentCode === user.linkedId || 
+         g.studentCode === userCode
+       );
     } else if (Auth.isTeacher() && user.linkedId) {
        // Teachers only see grades for their own classes
        const teacherObj = Database.teachers.getById(user.linkedId);
@@ -142,8 +148,8 @@ const GradesView = {
     if (Auth.isAdmin() || Auth.isTeacher()) {
       const students = Database.students.getAll();
       const enrichedItems = items.map(g => {
-         const student = students.find(s => s.id === g.studentId) || {};
-         return { ...g, studentName: student.name || 'N/A' };
+         const student = students.find(s => s.id === g.studentId || s.studentId === g.studentId || s.id === g.id) || {};
+         return { ...g, studentName: g.studentName || student.name || student.full_name || 'N/A' };
       });
       
       const totalGrades = enrichedItems.length;
@@ -327,16 +333,35 @@ const GradesView = {
     const students = Database.students.getAll();
     const classes = Database.classes.getAll();
 
+    const currentUser = (typeof Auth !== 'undefined' && Auth.getCurrentUser) ? Auth.getCurrentUser() : null;
+    const isStudent = (typeof Auth !== 'undefined' && Auth.isStudent && Auth.isStudent());
+
     // Enrich items với student name và class name
     items = items.map(g => {
-      const student = students.find(s => s.id === g.studentId) || {};
-      const cls = classes.find(c => c.id === g.classId) || {};
+      const student = students.find(s => s.id === g.studentId || s.studentId === g.studentId || s.id === g.id) || {};
+      const cls = classes.find(c => c.id === g.classId || c.classCode === g.classCode) || {};
+
+      const studentName = g.studentName 
+        || student.name 
+        || student.full_name 
+        || (isStudent ? (currentUser?.name || currentUser?.full_name || currentUser?.first_name) : '') 
+        || 'N/A';
+
+      const studentCode = g.studentCode 
+        || g.studentId 
+        || student.studentId 
+        || (isStudent ? (currentUser?.linkedId || currentUser?.studentId || currentUser?.username) : '') 
+        || 'N/A';
+
+      const className = g.className || cls.name || 'N/A';
+      const classCode = g.classCode || cls.classCode || 'N/A';
+
       return {
         ...g,
-        studentName: student.name || 'N/A',
-        studentCode: student.studentId || 'N/A',
-        className: cls.name || 'N/A',
-        classCode: cls.classCode || 'N/A'
+        studentName,
+        studentCode,
+        className,
+        classCode
       };
     });
 

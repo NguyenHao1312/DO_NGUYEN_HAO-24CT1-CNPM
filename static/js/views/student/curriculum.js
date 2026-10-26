@@ -527,7 +527,7 @@ const CurriculumView = {
               <i class="fas fa-calendar-check"></i>
             </div>
             <div>
-              <div style="font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">${t('training_duration') || 'Thời gian'}</div>
+              <div style="font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">${(t('training_duration') && t('training_duration') !== 'training_duration') ? t('training_duration') : 'Thời gian đào tạo'}</div>
               <div style="font-size: 1.45rem; font-weight: 800; color: #2563eb;">4 ${t('years') || 'Năm'} (8 ${t('semesters') || 'Học kỳ'})</div>
             </div>
           </div>
@@ -551,22 +551,22 @@ const CurriculumView = {
               </select>
             </div>
 
-            <!-- TABS LỌC NĂM HỌC -->
-            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-              <button class="btn btn-sm ${this.currentYearFilter === 'all' ? 'btn-primary' : 'btn-secondary'}" onclick="CurriculumView.setYearFilter('all')" style="border-radius: 6px; font-weight: 600;">
-                ${t('filter_all_years')}
+            <!-- TABS LỌC NĂM HỌC (HIGHLIGHT VIỀN SÁNG RÕ RÀNG) -->
+            <div class="curriculum-year-tabs" style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button class="curriculum-tab-btn ${this.currentYearFilter === 'all' ? 'active' : ''}" onclick="CurriculumView.setYearFilter('all')">
+                <i class="fas fa-layer-group"></i> ${t('filter_all_years')}
               </button>
-              <button class="btn btn-sm ${this.currentYearFilter === '1' ? 'btn-primary' : 'btn-secondary'}" onclick="CurriculumView.setYearFilter('1')" style="border-radius: 6px; font-weight: 600;">
-                ${t('year_1')} (HK1-2)
+              <button class="curriculum-tab-btn ${this.currentYearFilter === '1' ? 'active' : ''}" onclick="CurriculumView.setYearFilter('1')">
+                <i class="fas fa-calendar-day"></i> ${t('year_1')} (HK1-2)
               </button>
-              <button class="btn btn-sm ${this.currentYearFilter === '2' ? 'btn-primary' : 'btn-secondary'}" onclick="CurriculumView.setYearFilter('2')" style="border-radius: 6px; font-weight: 600;">
-                ${t('year_2')} (HK3-4)
+              <button class="curriculum-tab-btn ${this.currentYearFilter === '2' ? 'active' : ''}" onclick="CurriculumView.setYearFilter('2')">
+                <i class="fas fa-calendar-day"></i> ${t('year_2')} (HK3-4)
               </button>
-              <button class="btn btn-sm ${this.currentYearFilter === '3' ? 'btn-primary' : 'btn-secondary'}" onclick="CurriculumView.setYearFilter('3')" style="border-radius: 6px; font-weight: 600;">
-                ${t('year_3')} (HK5-6)
+              <button class="curriculum-tab-btn ${this.currentYearFilter === '3' ? 'active' : ''}" onclick="CurriculumView.setYearFilter('3')">
+                <i class="fas fa-calendar-day"></i> ${t('year_3')} (HK5-6)
               </button>
-              <button class="btn btn-sm ${this.currentYearFilter === '4' ? 'btn-primary' : 'btn-secondary'}" onclick="CurriculumView.setYearFilter('4')" style="border-radius: 6px; font-weight: 600;">
-                ${t('year_4')} (HK7-8)
+              <button class="curriculum-tab-btn ${this.currentYearFilter === '4' ? 'active' : ''}" onclick="CurriculumView.setYearFilter('4')">
+                <i class="fas fa-calendar-day"></i> ${t('year_4')} (HK7-8)
               </button>
             </div>
 

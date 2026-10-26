@@ -97,10 +97,15 @@ def api_sync_down(request):
 
         # ── Serialize Registrations ──
         registrations = list(registrations_qs.values(
-            'id', 'student__student_id', 'course_class_id', 'semester_id', 'registered_at'
+            'id', 'student__student_id', 'student__full_name', 'course_class_id',
+            'course_class__name', 'course_class__class_code', 'semester_id', 'registered_at'
         ))
         for r in registrations:
             r['studentId'] = r.pop('student__student_id')
+            r['studentName'] = r.pop('student__full_name', '')
+            r['studentCode'] = r['studentId']
+            r['className'] = r.pop('course_class__name', '')
+            r['classCode'] = r.pop('course_class__class_code', '')
             r['classId'] = 'c_' + str(r.pop('course_class_id'))
             r['semesterId'] = r.pop('semester_id')
             r['registeredAt'] = r.pop('registered_at').isoformat() if r.get('registered_at') else ''
@@ -108,13 +113,18 @@ def api_sync_down(request):
 
         # ── Serialize Grades ──
         grades = list(grades_qs.values(
-            'id', 'student__student_id', 'course_class_id', 'semester_id',
+            'id', 'student__student_id', 'student__full_name', 'course_class_id',
+            'course_class__name', 'course_class__class_code', 'semester_id',
             'assignment', 'midterm', 'final',
             'average10', 'average4', 'letter_grade', 'classification',
             'is_component_locked', 'is_fully_locked', 'updated_at'
         ))
         for g in grades:
             g['studentId'] = g.pop('student__student_id')
+            g['studentName'] = g.pop('student__full_name', '')
+            g['studentCode'] = g['studentId']
+            g['className'] = g.pop('course_class__name', '')
+            g['classCode'] = g.pop('course_class__class_code', '')
             g['classId'] = 'c_' + str(g.pop('course_class_id'))
             g['semesterId'] = g.pop('semester_id')
             g['letterGrade'] = g.pop('letter_grade')
