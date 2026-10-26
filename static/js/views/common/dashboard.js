@@ -512,6 +512,14 @@ const DashboardView = {
     // Get notifications
     const allNotifs = Database.notifications.getByUserId ? Database.notifications.getByUserId(user.id) : [];
     const recentNotifs = allNotifs.slice(0, 5);
+
+    const hasTuitionDebt = (role === 'student') && (user.tuition_debt === true || user.tuition_debt === 'true');
+    const universities = typeof UNIVERSITIES !== 'undefined' ? UNIVERSITIES : [];
+    const userUni = universities.find(u => u.id === parseInt(user.universityId)) || universities[0];
+    const feePerCredit = userUni ? (userUni.feePerCredit || 385000) : 385000;
+    const stdCredits = 15;
+    const stdFee = stdCredits * feePerCredit;
+    const formattedStdFee = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(stdFee);
     
     return `
       <div class="page-header" style="margin-bottom: var(--space-4); display: flex; flex-direction: column; align-items: stretch; gap: var(--space-4);">
@@ -534,6 +542,28 @@ const DashboardView = {
           </div>
         </div>
       </div>
+
+      ${hasTuitionDebt ? `
+      <!-- Cảnh báo nợ học phí dành cho sinh viên mới / còn nợ học phí -->
+      <div class="card" style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.08), rgba(245, 158, 11, 0.08)); border: 1.5px solid rgba(239, 68, 68, 0.35); border-radius: 12px; padding: 18px 24px; margin-bottom: var(--space-6); display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; box-shadow: 0 4px 14px rgba(239, 68, 68, 0.08);">
+        <div style="display: flex; align-items: center; gap: 16px; flex: 1; min-width: 280px;">
+          <div style="width: 48px; height: 48px; border-radius: 50%; background: #fee2e2; color: #dc2626; display: flex; align-items: center; justify-content: center; font-size: 1.35rem; flex-shrink: 0; border: 2px solid #fca5a5;">
+            <i class="fas fa-hand-holding-dollar"></i>
+          </div>
+          <div>
+            <div style="font-weight: 700; color: #991b1b; font-size: 1.05rem; display: flex; align-items: center; gap: 8px;">
+              <i class="fas fa-exclamation-triangle"></i> THÔNG BÁO: CHƯA HOÀN TẤT HỌC PHÍ HỌC KỲ 1
+            </div>
+            <div style="color: #475569; font-size: 0.92rem; margin-top: 4px; line-height: 1.5;">
+              Tài khoản Tân sinh viên chưa thanh toán học phí Học kỳ 1 theo định mức tiêu chuẩn (${stdCredits} tín chỉ × ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(feePerCredit)} = <strong style="color: #dc2626;">${formattedStdFee}</strong>). Quét mã QR chuyển khoản và Nhà trường sẽ duyệt gỡ nợ trên Admin Dashboard.
+            </div>
+          </div>
+        </div>
+        <a href="#/tuition" class="btn btn-primary" style="background: #dc2626; border-color: #dc2626; color: white; padding: 10px 20px; border-radius: 8px; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; box-shadow: 0 4px 10px rgba(220, 38, 38, 0.25);">
+          <i class="fas fa-qrcode"></i> Thanh Toán QR Học Phí
+        </a>
+      </div>
+      ` : ''}
 
       <!-- 2 Column Layout -->
       <div class="grid-row" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--space-6); margin-bottom: var(--space-6);">

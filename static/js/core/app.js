@@ -74,6 +74,7 @@ const NAV_ITEMS = [
   { hash: '#/registration', color: '#EC4899', icon: '<svg viewBox="0 0 24 24" class="nav-svg"><rect x="5" y="3" width="14" height="18" rx="2" fill="currentColor" opacity="0.3"/><path d="M9 9h6M9 13h6M9 17h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M14 2l5 5h-3a2 2 0 01-2-2V2z" fill="currentColor"/></svg>', labelKey: 'nav_registration', label: 'Đăng ký môn học', labelEn: 'Course Registration', id: 'registration' },
   { hash: '#/tuition', color: '#F43F5E', icon: '<svg viewBox="0 0 24 24" class="nav-svg"><rect x="3" y="6" width="18" height="12" rx="2" fill="currentColor" opacity="0.3"/><circle cx="12" cy="12" r="3" fill="currentColor"/><path d="M3 10h18M3 14h18" stroke="currentColor" stroke-width="1" opacity="0.5"/><path d="M20 6h-2M20 18h-2" stroke="currentColor" stroke-width="2"/></svg>', labelKey: 'nav_tuition', label: 'Học phí & Lệ phí', labelEn: 'Tuition & Fees', id: 'tuition' },
   { hash: '#/grades', color: '#0EA5E9', icon: '<svg viewBox="0 0 24 24" class="nav-svg"><path d="M12 2l2.4 7.4h7.6l-6.2 4.5 2.4 7.4-6.2-4.5-6.2 4.5 2.4-7.4-6.2-4.5h7.6z" fill="currentColor" opacity="0.4"/><path d="M12 5l1.6 4.8h5.1l-4.1 3 1.6 4.8-4.2-3-4.2 3 1.6-4.8-4.1-3h5.1z" fill="currentColor"/></svg>', labelKey: 'nav_grades', label: 'Bảng điểm & Kết quả', labelEn: 'Grades & Results', id: 'grades' },
+  { hash: '#/curriculum', color: '#8B5CF6', icon: '<svg viewBox="0 0 24 24" class="nav-svg"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2zm4-8H9V5h10v2z" fill="currentColor"/></svg>', labelKey: 'nav_curriculum', label: 'Khung môn học', labelEn: 'Curriculum', id: 'curriculum' },
   { divider: true },
   { hash: '#/chatbot', color: '#14B8A6', icon: '<svg viewBox="0 0 24 24" class="nav-svg"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z" fill="currentColor" opacity="0.3"/><circle cx="9" cy="10" r="1.5" fill="currentColor"/><circle cx="15" cy="10" r="1.5" fill="currentColor"/><path d="M9 15h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>', labelKey: 'nav_chatbot', label: 'Trợ lý AI UniMS', labelEn: 'AI Assistant', id: 'chatbot' },
   { hash: '#/helpdesk', color: '#F97316', icon: '<svg viewBox="0 0 24 24" class="nav-svg"><circle cx="12" cy="12" r="10" fill="currentColor" opacity="0.2"/><path d="M12 2a10 10 0 00-10 10v4a2 2 0 002 2h2a2 2 0 002-2v-4a2 2 0 00-2-2H4" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/><path d="M12 2a10 10 0 0110 10v4a2 2 0 01-2 2h-2a2 2 0 01-2-2v-4a2 2 0 012-2h2" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/><path d="M15 22H9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>', labelKey: 'nav_helpdesk', label: 'Hỗ trợ kỹ thuật', labelEn: 'Technical Support', id: 'helpdesk' },
@@ -91,6 +92,7 @@ const routes = {
   '#/registration': () => typeof RegistrationView !== 'undefined' ? RegistrationView.render() : console.log('RegistrationView missing'),
   '#/tuition': () => typeof TuitionView !== 'undefined' ? TuitionView.render() : console.log('TuitionView missing'),
   '#/grades': () => typeof GradesView !== 'undefined' ? GradesView.render() : console.log('GradesView missing'),
+  '#/curriculum': () => typeof CurriculumView !== 'undefined' ? CurriculumView.render() : console.log('CurriculumView missing'),
   '#/chatbot': () => typeof ChatbotView !== 'undefined' ? ChatbotView.render() : console.log('ChatbotView missing'),
   '#/helpdesk': () => typeof HelpdeskView !== 'undefined' ? HelpdeskView.render() : console.log('HelpdeskView missing'),
   '#/workshop': () => typeof WorkshopView !== 'undefined' ? WorkshopView.render() : console.log('WorkshopView missing'),
@@ -142,6 +144,15 @@ const App = {
         if (data.server_timestamp) {
           localStorage.setItem('unims_last_sync_timestamp', data.server_timestamp);
         }
+        if (data.student_profile) {
+          const u = Auth.getCurrentUser();
+          if (u) {
+            u.tuition_debt = data.student_profile.tuition_debt;
+            if (data.student_profile.department) u.department = data.student_profile.department;
+            sessionStorage.setItem(Auth.SESSION_KEY, JSON.stringify(u));
+            localStorage.setItem(Auth.SESSION_KEY + '_auto', JSON.stringify(u));
+          }
+        }
       }
     } catch(err) {
       console.log("Offline mode: Skipping sync down");
@@ -186,7 +197,9 @@ const App = {
         </div>
       `,
       icon: 'warning',
-      showCancelButton: false,
+      showCancelButton: true,
+      cancelButtonText: '<i class="fas fa-user-gear"></i> Đi Đến Trang Hồ Sơ',
+      cancelButtonColor: '#64748b',
       allowOutsideClick: false,
       allowEscapeKey: false,
       confirmButtonText: '<i class="fas fa-key"></i> Đổi Mật Khẩu & Lưu Vào Hệ Thống',
@@ -205,6 +218,10 @@ const App = {
         return newPass;
       }
     }).then(async (result) => {
+      if (result.dismiss === Swal.DismissReason.cancel) {
+        window.location.hash = '#/profile';
+        return;
+      }
       if (result.isConfirmed && result.value) {
         try {
           const res = await Auth.apiFetch('/api/change-password/', {

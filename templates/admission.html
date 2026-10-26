@@ -162,41 +162,38 @@
         </div>
       </form>
 
-      <!-- BƯỚC 2: XÁC THỰC OTP -->
+      <!-- BƯỚC 2: XÁC THỰC OTP (GIAO DIỆN ĐƠN GIẢN - UI/UX) -->
       <div id="otp-section" style="display: none;" class="otp-box">
         <div class="otp-header">
-          <div class="otp-icon-wrap"><i class="fas fa-envelope-open-text"></i></div>
-          <h3>Xác Thực Địa Chỉ Gmail</h3>
-          <p>Mã OTP 6 chữ số đã được gửi đến: <strong id="otp-target-email" class="text-primary"></strong></p>
+          <div class="otp-icon-wrap"><i class="fas fa-shield-halved"></i></div>
+          <h3>Nhập Mã Xác Thực OTP</h3>
+          <p>Mã bảo mật 6 chữ số đã được gửi đến: <strong id="otp-target-email" class="text-primary"></strong></p>
         </div>
 
-                <!-- Khung trợ giúp mã OTP trực quan -->
-        <div id="otp-dev-box" style="display: none; margin: 16px auto; max-width: 480px; padding: 14px 18px; border-radius: 10px; background: rgba(56, 189, 248, 0.08); border: 1px dashed rgba(56, 189, 248, 0.4); text-align: center;">
-          <div style="font-size: 0.88rem; color: #0284c7; margin-bottom: 8px;">
-            <i class="fas fa-key"></i> Mã xác thực OTP của bạn: <strong id="dev-otp-val" style="font-size: 1.35rem; letter-spacing: 4px; color: #0369a1; font-family: monospace;">------</strong>
+        <!-- Khung trợ giúp mã OTP trực quan khi test / dev -->
+        <div id="otp-dev-box" style="display: none; margin: 0 auto 20px; max-width: 440px; padding: 12px 16px; border-radius: 10px; background: rgba(56, 189, 248, 0.08); border: 1px dashed rgba(56, 189, 248, 0.4); text-align: center;">
+          <div style="font-size: 0.88rem; color: #0284c7; margin-bottom: 6px;">
+            <i class="fas fa-key"></i> Mã OTP hệ thống: <strong id="dev-otp-val" style="font-size: 1.3rem; letter-spacing: 4px; color: #0369a1; font-family: monospace;">------</strong>
           </div>
-          <button type="button" class="btn-sm" onclick="AdmissionApp.autoFillOtp()" style="background: #0284c7; color: #fff; border: none; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 0.82rem; font-weight: 600;">
-            <i class="fas fa-magic"></i> Tự động điền mã OTP này
+          <button type="button" class="btn-sm" onclick="AdmissionApp.autoFillOtp()" style="background: #0284c7; color: #fff; border: none; padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: 600;">
+            <i class="fas fa-magic"></i> Tự động điền mã này
           </button>
-          <div style="font-size: 0.75rem; color: #64748b; margin-top: 6px;">
-            (Hệ thống tự động hiển thị mã hỗ trợ khi tài khoản gửi thư chưa kích hoạt Google App Password)
-          </div>
         </div>
 
-        <div class="otp-input-row">
-          <input type="text" id="otp-digit" class="otp-input-field" maxlength="6" placeholder="• • • • • •" autocomplete="one-time-code">
+        <div class="otp-input-row" style="margin-bottom: 16px;">
+          <input type="text" id="otp-digit" class="otp-input-field" maxlength="6" placeholder="------" autocomplete="one-time-code" autofocus>
         </div>
 
-        <div class="otp-timer">
-          Mã hết hạn trong: <span id="otp-countdown" class="badge-time">10:00</span>
+        <div class="otp-timer" style="margin-bottom: 20px;">
+          Thời gian hiệu lực: <span id="otp-countdown" class="badge-time">10:00</span>
         </div>
 
-        <div class="otp-actions">
-          <button type="button" class="btn-secondary" onclick="AdmissionApp.resendOtp()">
-            <i class="fas fa-redo"></i> Gửi lại mã OTP
+        <div class="otp-actions" style="display: flex; flex-direction: column; gap: 10px; max-width: 360px; margin: 0 auto;">
+          <button type="button" class="btn-primary-lg" style="width: 100%; justify-content: center;" onclick="AdmissionApp.verifyOtp()">
+            <i class="fas fa-check-circle"></i> Xác Thực & Hoàn Tất Cấp Mã SV
           </button>
-          <button type="button" class="btn-primary-lg" onclick="AdmissionApp.verifyOtp()">
-            <i class="fas fa-check-circle"></i> Xác Thực & Hoàn Tất Xét Tuyển
+          <button type="button" class="btn-secondary" style="width: 100%; justify-content: center; font-size: 0.88rem;" onclick="AdmissionApp.resendOtp()">
+            <i class="fas fa-redo"></i> Chưa nhận được mã? Gửi lại OTP
           </button>
         </div>
       </div>

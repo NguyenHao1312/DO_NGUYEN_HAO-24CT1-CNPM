@@ -612,6 +612,24 @@
 
     <!-- TAB 2: STUDENTS & TUITION -->
     <div id="tab-students" class="tab-panel">
+      <!-- QUICK QR TUITION APPROVAL PANEL -->
+      <div class="card" style="border-left: 4px solid #10b981; background: #0F172A; margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+          <div>
+            <div style="font-size: 1.05rem; font-weight: 700; color: #34d399; display: flex; align-items: center; gap: 8px;">
+              <i class="fas fa-qrcode"></i> Đối Soát & Duyệt Học Phí VietQR Nhanh
+            </div>
+            <div style="font-size: 0.84rem; color: #94a3b8; margin-top: 4px;">
+              Khi nhận được sao kê chuyển khoản cú pháp <code class="code-pill">UNIMS [MãSV] HOCPHI HK1</code>, Admin nhập Mã SV bên dưới để kiểm tra và duyệt gỡ nợ ngay lập tức.
+            </div>
+          </div>
+          <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <input type="text" id="quick-tuition-sid" class="input-ctrl" placeholder="Nhập Mã Sinh Viên (VD: 100110)..." style="width: 250px; font-family: monospace; font-weight: 600;" onkeyup="if(event.key==='Enter') quickApproveTuition()">
+            <button class="btn btn-success" onclick="quickApproveTuition()"><i class="fas fa-check-double"></i> Duyệt Đã Thanh Toán</button>
+          </div>
+        </div>
+      </div>
+
       <div class="card">
         <div class="card-header">
           <div class="card-title"><i class="fas fa-user-graduate"></i> Danh sách Sinh viên & Quản lý Học phí</div>
@@ -1380,6 +1398,32 @@
         document.getElementById('students-pagination').innerHTML = phtml;
       } catch (e) {
         document.getElementById('students-table-wrapper').innerHTML = '<div class="loading" style="color:#f87171;">Không thể tải danh sách sinh viên.</div>';
+      }
+    }
+
+    async function quickApproveTuition() {
+      const sidInput = document.getElementById('quick-tuition-sid');
+      const sid = sidInput?.value.trim();
+      if (!sid) {
+        showToast('Vui lòng nhập Mã Sinh Viên cần duyệt học phí', 'error');
+        return;
+      }
+
+      try {
+        const res = await adminFetch('/admin/api/students/toggle-tuition/', {
+          method: 'POST', headers: API_HEADERS,
+          body: JSON.stringify({ student_id: sid, tuition_debt: false }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(data.message || `Đã duyệt thanh toán học phí thành công cho SV ${sid}!`, 'success');
+          sidInput.value = '';
+          loadStudents(studentCurrentPage);
+        } else {
+          showToast(data.error || 'Không tìm thấy sinh viên hoặc lỗi xử lý', 'error');
+        }
+      } catch (e) {
+        showToast('Lỗi kết nối khi duyệt học phí', 'error');
       }
     }
 

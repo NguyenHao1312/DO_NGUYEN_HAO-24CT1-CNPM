@@ -40,10 +40,15 @@ Dự án được xây dựng với kiến trúc **Hybrid Web**:
 ### 1. 🎓 Cổng Xét Nguyện Vọng Đại Học & Cấp Mã Tự Động (`/admission/`)
 - **Đăng ký xét tuyển trực tuyến:** Thí sinh nhập Họ tên, CCCD (12 chữ số), Gmail, SĐT, chọn Trường & Ngành xét tuyển và Điểm thi (thang 30đ, 2 chữ số thập phân).
 - **Kiểm tra CCCD thông minh:** Tích hợp kiểm tra tính hợp lệ của số định danh căn cước công dân.
-- **Xác thực Gmail qua OTP 6 số:** 
+- **Đối soát Điểm chuẩn & Thông báo Trúng tuyển trước khi gửi OTP (Lựa chọn A):**
+  - Hệ thống tự động so khớp điểm thi của thí sinh với điểm chuẩn của ngành đã chọn.
+  - **Trường hợp Trúng tuyển (Đậu):** Hiển thị Modal chúc mừng trúng tuyển trang trọng với đầy đủ thông tin: Trường, Ngành, Điểm của thí sinh, Điểm chuẩn và Điểm vượt chuẩn. Khi thí sinh bấm *"Tiếp tục nhận mã OTP"*, hệ thống mới kích hoạt gửi OTP về Gmail và chuyển sang Bước 2.
+  - **Trường hợp Chưa đạt (Rớt):** Hiển thị rõ số điểm còn thiếu và gợi ý chọn ngành hoặc trường khác có điểm chuẩn phù hợp hơn; hệ thống dừng lại tại Bước 1 và tuyệt đối không gửi OTP.
+- **Xác thực Gmail qua OTP 6 số (Giao diện tinh giản Clean UI/UX):** 
   - Lọc nghiêm ngặt tài khoản `@gmail.com` thật, loại trừ hoàn toàn email rác/ảo.
-  - Tự động sinh mã OTP 6 số và gửi qua hệ thống SMTP Gmail (cấu hình trong file .env) với thời hạn hiệu lực 10 phút.
-- **Đối soát Điểm Chuẩn tự động:**
+  - Giao diện nhập OTP tối giản, tự động focus, hỗ trợ phím Enter để xác thực tức thời, đếm ngược hiệu lực 10 phút và nút gửi lại OTP.
+  - Tự động sinh mã OTP 6 số và gửi qua hệ thống SMTP Gmail (cấu hình trong file .env).
+- **Điểm Chuẩn tham chiếu các trường:**
   - Bách Khoa (10011): 27.00 – 29.10đ.
   - Các trường khác (10012 – 10021): 18.00 – 26.50đ.
 - **Tự động cấp Mã Sinh Viên & Mật khẩu vào SSMS:**
@@ -52,32 +57,45 @@ Dự án được xây dựng với kiến trúc **Hybrid Web**:
     - ĐH Duy Tân (`10012`): `100120`, `100121`...
     - Tương tự cho các trường: FPT (`10013`), Đông Á (`10014`), Sư phạm (`10015`), Việt - Hàn (`10016`), Y Dược (`10017`), Kinh tế (`10018`), Kiến trúc (`10019`), Ngoại ngữ (`10020`), Sư phạm Kỹ thuật (`10021`).
   - **Mật khẩu khởi tạo an toàn:** Chuỗi ký tự ngẫu nhiên 8 ký tự gồm chữ hoa, chữ thường và chữ số.
-  - Tự động lưu hồ sơ vào bảng `CustomUser` và `Student` trong SQL Server với khóa hàng (`transaction.atomic`) chống xung đột/trùng mã.
+  - Tự động lưu hồ sơ vào bảng `CustomUser` (cờ `must_change_password=True`) và `Student` (cờ `tuition_debt=True`) trong SQL Server với khóa hàng (`transaction.atomic`) chống xung đột/trùng mã.
   - Tự động gửi email chúc mừng trúng tuyển kèm thông tin tài khoản đến Gmail của tân sinh viên.
 - **Tra cứu kết quả xét tuyển:** Tab tra cứu bằng số CCCD giúp thí sinh theo dõi trạng thái hồ sơ và xem mã sinh viên đã cấp.
 
 ### 2. 🔑 Cơ Chế Đổi Mật Khẩu Bắt Buộc & Tự Nguyện
-- **Bắt buộc đổi mật khẩu lần đầu:** Khi tân sinh viên được cấp tài khoản đăng nhập lần đầu tiên vào hệ thống chính (`/review/`), popup an ninh lập tức yêu cầu:
+- **Bắt buộc đổi mật khẩu lần đầu (An toàn thông tin):** Khi tân sinh viên được cấp tài khoản đăng nhập lần đầu tiên vào hệ thống chính (`/review/`), popup an ninh lập tức xuất hiện và khóa modal:
   > *"Hãy đổi lại mật khẩu để tránh mất thông tin"*
-  - Sinh viên bắt buộc phải nhập và xác nhận mật khẩu mới.
-  - API `/api/change-password/` cập nhật mật khẩu băm mới vào SSMS và gỡ cờ bắt buộc. Các lần đăng nhập sau sinh viên sử dụng mật khẩu mới.
-- **Chủ động đổi mật khẩu tại trang cá nhân:** Bổ sung giao diện đổi mật khẩu trong Hồ sơ cá nhân (`Profile`), cho phép cả Sinh viên và Giảng viên chủ động thay đổi mật khẩu định kỳ để bảo vệ tài khoản.
+  - Sinh viên bắt buộc phải thiết lập mật khẩu mới (có thể nhập trực tiếp trên modal hoặc bấm nút chuyển đến trang Hồ sơ cá nhân `#/profile`).
+  - API `/api/change-password/` cập nhật mật khẩu băm mới vào SSMS và gỡ cờ bắt buộc. Các lần đăng nhập sau sinh viên sử dụng mật khẩu mới đã đổi.
+- **Chủ động đổi mật khẩu tại trang cá nhân:** Giao diện đổi mật khẩu trong Hồ sơ cá nhân (`Profile`), cho phép cả Sinh viên và Giảng viên chủ động thay đổi mật khẩu định kỳ để bảo vệ tài khoản.
 
-### 3. 🛡️ Cô Lập Cổng Quản Trị Local-Only (Port 9000) & Cyber-Office Dashboard
+### 3. 💳 Quản Lý Học Phí Tân Sinh Viên & Thanh Toán VietQR
+- **Khởi tạo nợ học phí tự động:** Tất cả sinh viên mới trúng tuyển được tự động khởi tạo trạng thái `tuition_debt = True` trong SSMS.
+- **Banner cảnh báo học phí trên Bàn làm việc (Dashboard):** Hiển thị cảnh báo trực quan kèm số tiền học phí tạm tính theo định mức 15 tín chỉ tiêu chuẩn của Học kỳ 1 (`15 tín chỉ x Đơn giá tín chỉ của trường`).
+- **Cổng Học Phí (`#/tuition`) & Thanh toán VietQR:**
+  - Bảng kê 15 tín chỉ chuẩn HK1 cho tân sinh viên chưa đăng ký môn.
+  - Tích hợp mã QR VietQR chuẩn ngân hàng với cú pháp bắt buộc: `UNIMS <MãSV> HOCPHI HK1`.
+
+### 4. 📚 Khung Chương Trình Đào Tạo 4 Năm (8 Học Kỳ)
+- **Tra cứu lộ trình học tập toàn diện:** Module `#/curriculum` cho phép tất cả sinh viên (cũ và mới) xem chi tiết các môn học từ HK1 Năm 1 đến HK2 Năm 4.
+- **Dropdown chọn chuyên ngành:** Tự động nhận diện ngành của sinh viên đăng nhập và cho phép chuyển đổi xem khung môn học của các ngành khác (Công nghệ thông tin, Kỹ thuật Điều khiển & TĐH, Quản trị kinh doanh, Ngôn ngữ Anh...).
+- **Bộ lọc linh hoạt:** Lọc theo Năm học (Năm 1, Năm 2, Năm 3, Năm 4, Tất cả 4 năm), ô tìm kiếm nhanh môn học/mã môn, phân loại Bắt buộc/Tự chọn và kiểm tra điều kiện tiên quyết.
+
+### 5. 🛡️ Cô Lập Cổng Quản Trị Local-Only (Port 9000) & Cyber-Office Dashboard
 - **Local Control Panel riêng biệt:** Admin đăng nhập và điều hành độc lập tại cổng Local qua lệnh `python manage.py run_admin_server 9000`.
+- **Đối Soát & Duyệt Học Phí VietQR Nhanh:** Bổ sung thanh công cụ đối soát trên Tab "Sinh viên & Học phí". Khi nhận được sao kê ngân hàng, Admin chỉ cần nhập Mã SV và bấm *"Duyệt Đã Thanh Toán"*, hệ thống lập tức gỡ nợ trong SQL Server và đồng bộ về Cổng sinh viên.
 - **Chống rò rỉ qua Internet/Tunnel:** `LocalOnlyAdminMiddleware` giám sát chặt chẽ cả Host Header lẫn Socket IP. Mọi yêu cầu truy cập cổng Admin thông qua domain Ngrok, Cloudflare Tunnel hoặc Reverse Proxy công khai đều bị chặn và trả về **HTTP 404 Not Found** (tàng hình tuyệt đối).
 - **Tab Xét Nguyện Vọng trên Admin Dashboard:**
   - Theo dõi danh sách thí sinh nộp hồ sơ, điểm thi, điểm chuẩn, trạng thái OTP.
   - **Nút Duyệt Thủ Công:** Cho phép Admin xét vớt hoặc cấp mã thủ công khi cần. Hệ thống vẫn tự động sinh mã SV, tạo user SSMS và gửi Gmail mật khẩu như luồng tự động.
   - Thiết kế phong cách **Văn phòng kết hợp Cyber**: Giao diện tối hiện đại, bố cục rõ ràng, điều hướng mượt mà, tích hợp `AbortController` chống nghẽn đường truyền và triệt tiêu lỗi va chạm dữ liệu.
 
-### 4. 🔐 Bảo Mật Xác Thực & Chống User Enumeration (CWE-204)
+### 6. 🔐 Bảo Mật Xác Thực & Chống User Enumeration (CWE-204)
 - **Thông báo đăng nhập chuẩn hóa:** Mọi trường hợp sai mật khẩu, sai mã số hoặc đăng nhập nhầm tab vai trò đều trả về thông báo lỗi chung: `"Sai thông tin đăng nhập"`, ngăn chặn kẻ tấn công dò quét tài khoản.
-- **Đăng ký theo Mã định danh:** Endpoint `/api/check-code/?code=...` kiểm tra sự tồn tại của mã trong hệ thống theo thời gian thực.
 - **Single-Session Enforcement:** Mỗi tài khoản chỉ duy trì 1 phiên hoạt động duy nhất; tự động ép đăng xuất phiên cũ khi phát hiện đăng nhập mới từ thiết bị khác.
 
-### 5. 📊 Giám Sát An Ninh & Nhật Ký Kiểm Toán (Audit Trail)
+### 7. 📊 Giám Sát An Ninh & Nhật Ký Kiểm Toán (Audit Trail)
 - **Ghi vết tự động (Global Audit Logging):** Bắt và phân loại các hành vi bất thường, đo đạc độ trễ mạng và phát hiện tấn công DDoS/Brute-force.
+- **Dọn dẹp tài khoản ma (Ghost Accounts Cleaner):** Quản trị viên có công cụ quét và xóa an toàn các tài khoản không hoạt động làm nhiễu database.
 - **Dọn dẹp tài khoản ma (Ghost Accounts Cleaner):** Quản trị viên có công cụ quét và xóa an toàn các tài khoản không hoạt động làm nhiễu database.
 
 ### 6. 📚 Quản Lý Nghiệp Vụ Đào Tạo Hoàn Chỉnh

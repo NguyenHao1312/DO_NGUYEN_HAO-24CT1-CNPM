@@ -123,14 +123,25 @@ def api_sync_down(request):
             g['updatedAt'] = g.pop('updated_at').isoformat() if g.get('updated_at') else ''
             g['id'] = 'g_' + str(g['id'])
 
-        return JsonResponse({
+        res_data = {
             'success': True,
             'classes': classes,
             'registrations': registrations,
             'grades': grades,
             'semesters': semesters,
             'server_timestamp': timezone.now().isoformat(),
-        })
+        }
+        if user.role == 'student':
+            student_profile = getattr(user, 'student_profile', None)
+            if student_profile:
+                res_data['student_profile'] = {
+                    'student_id': student_profile.student_id,
+                    'full_name': student_profile.full_name,
+                    'tuition_debt': student_profile.tuition_debt,
+                    'department': student_profile.department,
+                    'status': student_profile.status,
+                }
+        return JsonResponse(res_data)
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 

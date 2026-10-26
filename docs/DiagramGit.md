@@ -341,3 +341,75 @@ sequenceDiagram
         FE-->>C: Hiển thị danh thiếp kết quả: Tên trường, Ngành, Điểm thi/Điểm chuẩn, Trạng thái (Trúng tuyển / Đã cấp mã SV) và Mã SV (nếu đã cấp)
     end
 ```
+
+
+---
+
+## 9. Biểu đồ Tuần tự: Khung Chương Trình Đào Tạo 4 Năm & Tra Cứu Lộ Trình Học Tập
+
+```mermaid
+sequenceDiagram
+    autonumber
+
+    actor S as Sinh viên (Mới hoặc Hiện tại)
+    participant FE as Giao diện Khung Môn Học<br/>(static/js/views/student/curriculum.js)
+    participant APP as Core Router & State<br/>(static/js/core/app.js)
+    participant DB_CLIENT as Local Database<br/>(static/js/core/database.js)
+
+    S->>FE: Bấm chọn menu "Khung môn học" (#/curriculum)
+    FE->>APP: Lấy thông tin sinh viên hiện tại (Auth.getCurrentUser())
+    FE->>FE: Tự động nhận diện ngành của sinh viên (VD: Công nghệ Thông tin)
+    FE->>DB_CLIENT: Truy vấn kết quả học tập & lớp học đã đăng ký
+    DB_CLIENT-->>FE: Trả về danh sách môn đã học / hoàn thành
+    FE-->>S: Hiển thị giao diện 8 học kỳ (từ HK1 Năm 1 đến HK2 Năm 4)
+
+    alt Sinh viên đổi ngành cần xem
+        S->>FE: Chọn ngành khác trên Dropdown (Kỹ thuật Điều khiển & TĐH, QTKD, Ngôn ngữ Anh...)
+        FE->>FE: Nạp lại lộ trình 4 năm và cập nhật tổng tín chỉ (130 - 145 TC)
+        FE-->>S: Hiển thị danh sách môn học, số tín chỉ, phân loại và điều kiện tiên quyết
+    else Sinh viên lọc theo năm học
+        S->>FE: Bấm tab "Năm 1", "Năm 2", "Năm 3" hoặc "Năm 4"
+        FE->>FE: Thu gọn chỉ hiển thị 2 học kỳ của năm được chọn
+        FE-->>S: Giao diện học kỳ tương ứng được hiển thị rõ ràng
+    end
+```
+
+---
+
+## 10. Biểu đồ Tuần tự: Nợ Học Phí Tân Sinh Viên, Quét Mã VietQR & Admin Duyệt Thanh Toán
+
+```mermaid
+sequenceDiagram
+    autonumber
+
+    actor S as Tân Sinh Viên
+    participant DASH as Cổng Sinh Viên / Bàn Làm Việc<br/>(static/js/views/common/dashboard.js)
+    participant TUI as Cổng Học Phí<br/>(static/js/views/student/tuition.js)
+    actor A as Quản trị viên (Admin)
+    participant ADM as Admin Control Panel (Port 9000)<br/>(templates/admin/dashboard.html)
+    participant API as Admin Academic API<br/>(student_management/views/admin/academic.py)
+    participant DB as SQL Server (SSMS)<br/>(student_management_student)
+
+    Note over S,DB: 1. Tân sinh viên được cấp tài khoản với tuition_debt = True
+    S->>DASH: Đăng nhập Cổng sinh viên lần đầu
+    DASH-->>S: Hiển thị Banner cảnh báo nợ học phí HK1 (15 tín chỉ x đơn giá)
+    S->>TUI: Bấm "Thanh toán QR Học phí" (chuyển tới #/tuition)
+    TUI-->>S: Hiển thị bảng kê 15 tín chỉ HK1 và mã QR VietQR kèm cú pháp: UNIMS [MãSV] HOCPHI HK1
+    S->>S: Thực hiện chuyển khoản ngân hàng qua App Mobile Banking
+
+    Note over A,ADM: 2. Nhà trường nhận tiền và Quản trị viên đối soát
+    A->>ADM: Mở Tab "Sinh viên & Học phí" trên Admin Dashboard
+    A->>ADM: Nhập Mã SV vào ô "Đối soát & Duyệt học phí VietQR nhanh"
+    A->>ADM: Bấm "Duyệt Đã Thanh Toán" (hoặc bấm nút "Duyệt Đã Nộp" trên bảng)
+    ADM->>API: POST /admin/api/students/toggle-tuition/ {student_id, tuition_debt: false}
+    API->>DB: UPDATE student_management_student SET tuition_debt = 0 WHERE student_id = ...
+    DB-->>API: Ghi nhận thành công vào SSMS
+    API-->>ADM: HTTP 200 {success: true, message: Đã hoàn thành học phí}
+    ADM-->>A: Toast xanh: Sinh viên đã hoàn thành học phí (Đã mở khoá hệ thống)
+
+    Note over S,DASH: 3. Sinh viên đồng bộ trạng thái mới
+    S->>DASH: F5 hoặc chuyển trang (kích hoạt Sync Down)
+    DASH->>DB: GET /api/sync/down/
+    DB-->>DASH: Trả về student_profile {tuition_debt: false}
+    DASH-->>S: Banner cảnh báo nợ học phí biến mất, sinh viên được phép ĐKHP và xem điểm
+```

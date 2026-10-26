@@ -228,6 +228,8 @@ def api_login(request):
             if student is not None:
                 try:
                     user_info['linkedId'] = student.student_id
+                    user_info['tuition_debt'] = getattr(student, 'tuition_debt', True)
+                    user_info['department'] = getattr(student, 'department', '')
                 except (Student.DoesNotExist, AttributeError):
                     pass
         elif user.role == 'teacher':
@@ -329,6 +331,7 @@ def api_session_check(request):
                 'username': user.username,
                 'role': user.role,
                 'name': user.first_name or user.username,
+                'must_change_password': getattr(user, 'must_change_password', False),
             }
         })
     except CustomUser.DoesNotExist:

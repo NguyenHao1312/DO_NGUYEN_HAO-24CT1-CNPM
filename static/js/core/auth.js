@@ -424,9 +424,9 @@ const Auth = {
     const user = this.getCurrentUser();
     if (!user) return false;
     const perms = {
-      admin:   ['dashboard','students','teachers','classes','registration','grades','chatbot','helpdesk','workshop','notifications','profile'],
-      teacher: ['dashboard','students','classes','grades','chatbot','helpdesk','notifications','profile'],
-      student: ['dashboard','classes','registration','tuition','grades','chatbot','helpdesk','notifications','profile'],
+      admin:   ['dashboard','students','teachers','classes','registration','grades','curriculum','chatbot','helpdesk','workshop','notifications','profile'],
+      teacher: ['dashboard','students','classes','grades','curriculum','chatbot','helpdesk','notifications','profile'],
+      student: ['dashboard','classes','registration','tuition','grades','curriculum','chatbot','helpdesk','notifications','profile'],
     };
     return perms[user.role]?.includes(feature) ?? false;
   },

@@ -222,7 +222,7 @@ def create_candidate_account_and_notify(app: AdmissionApplication, login_url: st
         user.set_password(temp_pwd)
         user.save()
 
-        # 2. Tạo hồ sơ Student trong SSMS
+        # 2. Tạo hồ sơ Student trong SSMS (mặc định nợ học phí kỳ 1 để chờ kế toán duyệt)
         student = Student.objects.create(
             user=user,
             student_id=student_id,
@@ -233,6 +233,7 @@ def create_candidate_account_and_notify(app: AdmissionApplication, login_url: st
             academic_year=f"{timezone.now().year}-{timezone.now().year + 4}",
             university=app.university,
             status='active',
+            tuition_debt=True,
         )
 
         # 3. Cập nhật Application

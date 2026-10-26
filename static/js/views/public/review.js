@@ -1392,6 +1392,7 @@ const ReviewApp = {
             role: result.user.role || selectedRole,
             avatar: result.user.avatar || null,
             linkedId: result.user.linkedId || null,
+            must_change_password: result.user.must_change_password || false,
             universityId: null,
             device: navigator.userAgent,
             loginAt: new Date().toISOString(),

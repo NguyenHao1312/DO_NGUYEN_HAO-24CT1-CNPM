@@ -174,7 +174,8 @@ const AdmissionApp = {
     const phone = document.getElementById('phone').value.trim();
     const universityId = document.getElementById('university_select').value;
     const department = document.getElementById('department_select').value;
-    const score = parseFloat(document.getElementById('score').value);
+    const scoreVal = document.getElementById('score').value;
+    const score = parseFloat(scoreVal);
 
     if (cccd.length !== 12) {
       Swal.fire({ icon: 'error', title: 'Lỗi', text: 'Số CCCD phải gồm đúng 12 chữ số' });
@@ -183,6 +184,87 @@ const AdmissionApp = {
 
     if (!email.endsWith('@gmail.com')) {
       Swal.fire({ icon: 'error', title: 'Lỗi', text: 'Email bắt buộc phải là @gmail.com' });
+      return;
+    }
+
+    if (isNaN(score) || score < 0 || score > 30) {
+      Swal.fire({ icon: 'error', title: 'Lỗi', text: 'Điểm xét tuyển phải từ 0.00 đến 30.00' });
+      return;
+    }
+
+    // Tra cứu điểm chuẩn của ngành được chọn
+    const deptSelect = document.getElementById('department_select');
+    const selectedOpt = deptSelect.options[deptSelect.selectedIndex];
+    const bmVal = selectedOpt ? selectedOpt.getAttribute('data-bm') : null;
+    const benchmarkScore = bmVal ? parseFloat(bmVal) : 20.0;
+    const uniName = this.selectedUniversity ? (this.selectedUniversity.short_name || this.selectedUniversity.name) : 'trường đã chọn';
+
+    // ── KIỂM TRA ĐẬU HAY RỚT TRƯỚC KHI GỬI OTP ──
+    if (score < benchmarkScore) {
+      // TRƯỜNG HỢP: RỚT / CHƯA ĐẠT ĐIỂM CHUẨN -> KHÔNG GỬI OTP
+      const diff = (benchmarkScore - score).toFixed(2);
+      Swal.fire({
+        icon: 'error',
+        title: 'CHƯA ĐẠT ĐIỂM CHUẨN XÉT TUYỂN',
+        html: `
+          <div style="text-align: left; font-size: 0.95rem; line-height: 1.6; color: #334155;">
+            <p style="margin-bottom: 8px;">Thí sinh: <b>${fullName}</b> (CCCD: ${cccd})</p>
+            <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 12px; margin-bottom: 12px; color: #991b1b;">
+              <div>Nguyện vọng: <b>${department}</b> — <b>${uniName}</b></div>
+              <div style="margin-top: 4px;">Điểm xét tuyển của bạn: <b style="color: #dc2626; font-size: 1.15rem;">${score.toFixed(2)}đ</b></div>
+              <div>Điểm chuẩn ngành này: <b>${benchmarkScore.toFixed(2)}đ</b></div>
+              <div style="margin-top: 6px; font-weight: 700; color: #b91c1c;">
+                <i class="fas fa-exclamation-circle"></i> Bạn còn thiếu: <u>${diff}đ</u> để đạt điểm chuẩn đợt 1.
+              </div>
+            </div>
+            <p style="color: #64748b; font-size: 0.9rem; line-height: 1.5;">
+              Rất tiếc bạn chưa đủ điều kiện trúng tuyển nguyện vọng này. Vui lòng chọn ngành khác hoặc trường đại học khác có điểm chuẩn phù hợp hơn để đăng ký lại.
+            </p>
+          </div>
+        `,
+        confirmButtonText: '<i class="fas fa-redo"></i> Chọn Nguyện Vọng Khác',
+        confirmButtonColor: '#3b82f6'
+      });
+      return;
+    }
+
+    // TRƯỜNG HỢP: ĐẬU / ĐẠT ĐIỂM CHUẨN -> HIỂN THỊ THÔNG BÁO TRÚNG TUYỂN TRƯỚC (LỰA CHỌN A)
+    const surplus = (score - benchmarkScore).toFixed(2);
+    const confirmResult = await Swal.fire({
+      icon: 'success',
+      title: 'CHÚC MỪNG BẠN ĐÃ TRÚNG TUYỂN!',
+      html: `
+        <div style="text-align: left; font-size: 0.95rem; line-height: 1.6; color: #334155;">
+          <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 14px; margin-bottom: 14px; color: #166534;">
+            <div style="font-size: 1.1rem; font-weight: 700; margin-bottom: 6px; color: #15803d;">
+              <i class="fas fa-award"></i> Đạt điều kiện trúng tuyển đợt 1!
+            </div>
+            <div>Thí sinh: <b>${fullName}</b> (CCCD: ${cccd})</div>
+            <div>Trường trúng tuyển: <b>${uniName}</b></div>
+            <div>Ngành đào tạo: <b>${department}</b></div>
+            <div style="margin-top: 6px;">
+              Điểm của bạn: <b style="color: #15803d; font-size: 1.15rem;">${score.toFixed(2)}đ</b> / Điểm chuẩn: <b>${benchmarkScore.toFixed(2)}đ</b>
+              <span style="display: inline-block; background: #dcfce7; color: #15803d; padding: 2px 8px; border-radius: 6px; font-weight: 700; font-size: 0.85rem; margin-left: 6px;">
+                Vượt chuẩn +${surplus}đ
+              </span>
+            </div>
+          </div>
+          <p style="color: #475569; font-size: 0.92rem; margin-bottom: 8px;">
+            Nhấn <b>Tiếp tục</b> để hệ thống gửi mã xác thực OTP về Gmail: <b style="color: #2563eb;">${email}</b>.
+          </p>
+          <div style="background: #eff6ff; border-left: 3px solid #3b82f6; padding: 8px 12px; font-size: 0.85rem; color: #1e40af; border-radius: 4px;">
+            <i class="fas fa-shield-alt"></i> Sau khi xác thực mã OTP, bạn sẽ được tự động cấp <b>Mã Sinh Viên chính thức</b> và <b>Mật khẩu đăng nhập</b>.
+          </div>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: '<i class="fas fa-arrow-right"></i> Tiếp Tục Nhận Mã OTP',
+      cancelButtonText: '<i class="fas fa-edit"></i> Kiểm Tra Lại',
+      confirmButtonColor: '#16a34a',
+      cancelButtonColor: '#64748b'
+    });
+
+    if (!confirmResult.isConfirmed) {
       return;
     }
 
@@ -215,7 +297,7 @@ const AdmissionApp = {
 
       this.currentApplicationId = data.application_id;
 
-      // Chuyển sang Bước 2: Nhập OTP
+      // Chuyển sang Bước 2: Nhập OTP (Giao diện đơn giản, tinh tế)
       document.getElementById('apply-form').style.display = 'none';
       document.getElementById('otp-section').style.display = 'block';
       document.getElementById('otp-target-email').textContent = email;
@@ -236,24 +318,27 @@ const AdmissionApp = {
       document.getElementById('step-badge-1').classList.remove('active');
       document.getElementById('step-line-1').classList.add('active');
       document.getElementById('step-badge-2').classList.add('active');
-      document.getElementById('step-title').textContent = 'Bước 2: Xác Thực Gmail Bằng Mã OTP';
+      document.getElementById('step-title').textContent = 'Bước 2: Nhập Mã Xác Thực OTP';
 
       this.startCountdown();
-        if (data.dev_otp) {
-          this.lastDevOtp = data.dev_otp;
-          const devBox = document.getElementById('otp-dev-box');
-          const devVal = document.getElementById('dev-otp-val');
-          if (devBox && devVal) {
-            devVal.textContent = data.dev_otp;
-            devBox.style.display = 'block';
-          }
+
+      // Tự động focus ô nhập OTP & lắng nghe phím Enter
+      setTimeout(() => {
+        const otpInput = document.getElementById('otp-digit');
+        if (otpInput) {
+          otpInput.focus();
+          otpInput.onkeyup = (evt) => {
+            if (evt.key === 'Enter') AdmissionApp.verifyOtp();
+          };
         }
+      }, 300);
 
       Swal.fire({
         icon: 'info',
         title: 'Đã gửi mã xác thực',
         text: data.message,
-        confirmButtonColor: '#3b82f6'
+        confirmButtonColor: '#3b82f6',
+        timer: 3500
       });
 
     } catch (err) {

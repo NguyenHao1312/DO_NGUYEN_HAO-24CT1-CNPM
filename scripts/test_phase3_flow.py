@@ -26,17 +26,22 @@ from student_management.views.admission import (
 from student_management.views.user.auth import (
     api_login,
     api_change_password,
+    api_session_check,
 )
+from student_management.views.user.sync import api_sync_down
 from student_management.views.admin.admissions import (
     api_admin_admissions,
     api_admin_admission_approve,
+)
+from student_management.views.admin.academic import (
+    api_admin_toggle_tuition,
 )
 
 rf = RequestFactory()
 
 def test_all():
     print("==================================================")
-    print("KIỂM THỬ TÍNH NĂNG GIAI ĐOẠN 3 (PHASE 3 END-TO-END)")
+    print("KIỂM THỬ TÍNH NĂNG GIAI ĐOẠN 3.5 (FULL END-TO-END)")
     print("==================================================")
 
     # 1. Kiểm tra sinh mã sinh viên theo trường
@@ -94,15 +99,15 @@ def test_all():
     gen_student_id = data2['student_id']
     assert gen_student_id == '100110', f"Mã sinh viên đầu tiên của Bách Khoa phải là 100110, nhận được: {gen_student_id}"
 
-    # Kiểm tra trong DB
+    # Kiểm tra trong DB: Cờ must_change_password=True VÀ tuition_debt=True
     user = CustomUser.objects.get(username=gen_student_id)
     student = Student.objects.get(student_id=gen_student_id)
     print(f"   ✓ Đã tạo CustomUser trong SSMS: {user.username} (must_change_password={user.must_change_password})")
-    print(f"   ✓ Đã tạo Student profile trong SSMS: {student.full_name} ({student.department} - {student.university.short_name})")
+    print(f"   ✓ Đã tạo Student profile trong SSMS: {student.full_name} (tuition_debt={student.tuition_debt})")
     assert user.must_change_password == True, "must_change_password phải bằng True cho SV mới"
+    assert student.tuition_debt == True, "tuition_debt phải bằng True cho SV mới tạo"
 
     # 4. Kiểm tra thí sinh đăng nhập lần đầu vào hệ thống chính
-    # Vì mật khẩu tạm được hash trong DB, lấy user để kiểm tra logic login
     login_payload = {
         'username': gen_student_id,
         'password': 'WrongPassword123'
@@ -121,8 +126,10 @@ def test_all():
     res_login = api_login(req_login)
     data_login = json.loads(res_login.content)
     print(f"   Đăng nhập lần đầu: success={data_login.get('success')}")
-    print(f"   Cờ must_change_password trả về client: {data_login['user']['must_change_password']}")
+    print(f"   Cờ must_change_password trả về: {data_login['user']['must_change_password']}")
+    print(f"   Trạng thái nợ học phí tuition_debt trả về: {data_login['user']['tuition_debt']}")
     assert data_login['user']['must_change_password'] == True
+    assert data_login['user']['tuition_debt'] == True
     session_token = data_login['session_token']
 
     # 5. Sinh viên đổi mật khẩu
@@ -148,17 +155,10 @@ def test_all():
     data_login2 = json.loads(res_login2.content)
     assert data_login2['success'] == True
     assert data_login2['user']['must_change_password'] == False
+    session_token2 = data_login2['session_token']
     print("6. Đăng nhập lại với mật khẩu mới: Thành công rực rỡ, không còn yêu cầu đổi pass.")
 
-    # 7. Kiểm tra API Tra cứu bằng CCCD
-    req_lookup = rf.get(f'/api/admission/check-status/?cccd={test_cccd}')
-    res_lookup = api_admission_check_status(req_lookup)
-    data_lookup = json.loads(res_lookup.content)
-    print(f"7. Tra cứu CCCD ({test_cccd}): tìm thấy {len(data_lookup['applications'])} hồ sơ, Mã SV: {data_lookup['applications'][0]['generated_student_id']}")
-    assert data_lookup['found'] == True
-    assert data_lookup['applications'][0]['generated_student_id'] == gen_student_id
-
-    # 8. Kiểm tra Admin Dashboard Admission API
+    # 7. Kiểm tra Quản trị viên duyệt thanh toán học phí (Gỡ nợ)
     admin_user = CustomUser.objects.filter(role='admin').first()
     if not admin_user:
         admin_user = CustomUser.objects.create_superuser('admin_test', 'admin@unims.vn', '123')
@@ -167,15 +167,46 @@ def test_all():
     admin_user.session_token = 'admin-test-token-123'
     admin_user.save()
 
+    # Admin duyệt học phí cho sinh viên
+    req_toggle = rf.post('/admin/api/students/toggle-tuition/',
+                         data=json.dumps({'student_id': gen_student_id, 'tuition_debt': False}),
+                         content_type='application/json',
+                         HTTP_X_SESSION_TOKEN=admin_user.session_token)
+    res_toggle = api_admin_toggle_tuition(req_toggle)
+    data_toggle = json.loads(res_toggle.content)
+    print(f"7. Admin duyệt thanh toán học phí: success={data_toggle['success']}, message={data_toggle['message']}")
+    assert data_toggle['success'] == True
+    student.refresh_from_db()
+    assert student.tuition_debt == False, "Sau khi admin duyệt, tuition_debt phải bằng False trong SSMS"
+    print("   ✓ SSMS đã ghi nhận sinh viên hoàn tất đóng học phí.")
+
+    # 8. Sinh viên Sync Down nhận trạng thái học phí mới
+    req_sync = rf.get('/api/sync/down/', HTTP_X_SESSION_TOKEN=session_token2)
+    res_sync = api_sync_down(req_sync)
+    data_sync = json.loads(res_sync.content)
+    assert data_sync['success'] == True
+    assert 'student_profile' in data_sync
+    assert data_sync['student_profile']['tuition_debt'] == False
+    print(f"8. Sync Down: Sinh viên nhận trạng thái mới từ SSMS: tuition_debt={data_sync['student_profile']['tuition_debt']}")
+
+    # 9. Kiểm tra API Tra cứu bằng CCCD
+    req_lookup = rf.get(f'/api/admission/check-status/?cccd={test_cccd}')
+    res_lookup = api_admission_check_status(req_lookup)
+    data_lookup = json.loads(res_lookup.content)
+    print(f"9. Tra cứu CCCD ({test_cccd}): tìm thấy {len(data_lookup['applications'])} hồ sơ, Mã SV: {data_lookup['applications'][0]['generated_student_id']}")
+    assert data_lookup['found'] == True
+    assert data_lookup['applications'][0]['generated_student_id'] == gen_student_id
+
+    # 10. Kiểm tra Admin Dashboard Admission API
     req_adm_list = rf.get('/admin/api/admissions/', HTTP_X_SESSION_TOKEN=admin_user.session_token)
     res_adm_list = api_admin_admissions(req_adm_list)
     data_adm_list = json.loads(res_adm_list.content)
-    print(f"8. Admin API: Lấy danh sách hồ sơ: success={data_adm_list['success']}, tổng số={data_adm_list['total']}")
+    print(f"10. Admin API: Lấy danh sách hồ sơ: success={data_adm_list['success']}, tổng số={data_adm_list['total']}")
     assert data_adm_list['success'] == True
     assert data_adm_list['total'] >= 1
 
     print("\n==================================================")
-    print("🎉 TẤT CẢ 8 BƯỚC KIỂM THỬ ĐỀU THÀNH CÔNG 100%!")
+    print("🎉 TẤT CẢ 10 BƯỚC KIỂM THỬ ĐỀU THÀNH CÔNG 100%!")
     print("==================================================")
 
 if __name__ == '__main__':
